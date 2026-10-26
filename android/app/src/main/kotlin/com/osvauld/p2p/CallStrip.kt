@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -70,17 +71,17 @@ fun CallStrips(app: P2pApp) {
             val secs = ((now - (c.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
             val vi by app.video.info.collectAsState()
             val video = vi?.let { it.callId == c.info.callId && (it.localCamera || it.remoteCamera) } == true
-            val name = c.info.peerName.ifBlank { "Unknown" }
-            val status = callStatus(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs, c.stats?.waking == true)
-            StripRow(if (video) PgIcons.Video else PgIcons.Phone, name, status, slim, "Return to call with $name") {
+            val name = c.info.peerName.ifBlank { stringResource(R.string.common_unknown) }
+            val status = callStatusText(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs, c.stats?.waking == true)
+            StripRow(if (video) PgIcons.Video else PgIcons.Phone, name, status, slim, stringResource(R.string.call_strip_return, name)) {
                 ctx.startActivity(Intent(ctx, CallActivity::class.java))
             }
         }
         AnimatedVisibility(group, enter = expandVertically(tween(160, delayMillis = 80)) + fadeIn(tween(160, delayMillis = 80)),
             exit = shrinkVertically(tween(160)) + fadeOut(tween(160))) {
-            val name = app.groups.list.collectAsState().value.firstOrNull { it.id == g.gid }?.name ?: "Group call"
+            val name = app.groups.list.collectAsState().value.firstOrNull { it.id == g.gid }?.name ?: stringResource(R.string.call_strip_group_fallback)
             val secs = rememberCallSecs(g)
-            StripRow(PgIcons.Users, name, if (g.phase == GcPhase.Active) clockOf(secs) else g.status, slim, "Return to group call in $name") {
+            StripRow(PgIcons.Users, name, if (g.phase == GcPhase.Active) clockOf(secs) else g.status, slim, stringResource(R.string.call_strip_return_group, name)) {
                 app.groupCallUi.restore()
             }
         }
@@ -92,8 +93,9 @@ fun CallStrips(app: P2pApp) {
 private fun StripRow(icon: ImageVector, name: String, status: String, slim: Boolean, label: String, onOpen: () -> Unit) {
     val c = Tin.c
     val h by animateDpAsState(if (slim) 26.dp else 44.dp, tween(160), label = "strip")
+    val stripDesc = stringResource(R.string.call_strip_desc, label, status)
     Row(Modifier.fillMaxWidth().height(h).background(c.accent).clickable(role = Role.Button, onClick = onOpen)
-        .semantics(mergeDescendants = true) { contentDescription = "$label. $status" }.padding(horizontal = 16.dp),
+        .semantics(mergeDescendants = true) { contentDescription = stripDesc }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Icon(icon, null, Modifier.size(if (slim) 14.dp else 18.dp), tint = c.onAccent)
         Text(name, Modifier.weight(1f), style = PgBodyText.copy(fontSize = if (slim) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold),
@@ -118,14 +120,14 @@ fun MiniVideo(app: P2pApp, modifier: Modifier = Modifier) {
     val live = u?.takeIf { it.state is CallState.Active && it.info.callId == vi?.callId }
     val theirs = vi?.let { it.negotiated && it.remoteCamera } == true
     val show = live != null && theirs
-    val name = live?.info?.peerName?.ifBlank { "Unknown" } ?: ""
+    val name = live?.info?.peerName?.ifBlank { stringResource(R.string.common_unknown) } ?: ""
     val frozen = live?.stats?.reconnecting == true
     AnimatedVisibility(show, modifier, enter = fadeIn(tween(200, easing = Motion.EaseOut)) + scaleIn(tween(200, easing = Motion.EaseOut), initialScale = 0.9f),
         exit = fadeOut(tween(140, easing = Motion.CubicIn)) + scaleOut(tween(140, easing = Motion.CubicIn), targetScale = 0.9f)) {
         val shape = SmoothCornerShape(16.dp)
         Box(Modifier.width(92.dp).aspectRatio(3f / 4f).depth(Depth.Pop, shape).clip(shape).background(Color(0xFF15171C))
             .border(1.5.dp, Color.White.copy(alpha = 0.38f), shape)
-            .clickable(onClickLabel = "Return to video call with $name", role = Role.Button) { ctx.startActivity(Intent(ctx, CallActivity::class.java)) }) {
+            .clickable(onClickLabel = stringResource(R.string.call_strip_return_video, name), role = Role.Button) { ctx.startActivity(Intent(ctx, CallActivity::class.java)) }) {
             RemoteVideo(app, app.calls, Modifier.fillMaxSize())
             if (frozen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)))
         }

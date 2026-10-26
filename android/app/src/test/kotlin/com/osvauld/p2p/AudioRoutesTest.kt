@@ -51,7 +51,7 @@ class AudioRoutesTest {
         assertTrue(Routes.unnamedBluetooth(RouteState(ear, listOf(ear, bt.copy(name = "")))))
         assertFalse(Routes.unnamedBluetooth(RouteState(bt, listOf(ear, spk, bt))))
         assertFalse(Routes.unnamedBluetooth(RouteState(ear, listOf(ear, spk))))
-        assertEquals("Bluetooth", Routes.label(generic))
+        assertEquals(appString(R.string.call_route_bluetooth), Routes.display(generic))
     }
 
     @Test fun videoCallIsPlacedAsVideoThenAnyCameraOn() {
@@ -86,9 +86,9 @@ class AudioRoutesTest {
     }
 
     @Test fun labels() {
-        assertEquals("Phone", Routes.label(ear))
-        assertEquals("Buds", Routes.label(bt))
-        assertEquals("Bluetooth", Routes.label(bt.copy(name = "")))
-        assertEquals("Headset", Routes.label(wired))
+        assertEquals(appString(R.string.call_route_phone), Routes.display(ear))
+        assertEquals("Buds", Routes.display(bt))
+        assertEquals(appString(R.string.call_route_bluetooth), Routes.display(bt.copy(name = "")))
+        assertEquals(appString(R.string.call_route_headset), Routes.display(wired))
     }
 }

@@ -28,7 +28,7 @@ struct ShellRestoreStep: View {
         if !model.recKey.isEmpty {
             // The core checks the key's checksum: a typo is caught before anything is restored.
             if let phrase = try? recoveryPhraseFromInput(input: model.recKey) { onSubmit(phrase) }
-            else { error = "That key has a typo or is cut short. Paste it again from where you saved it." }
+            else { error = tr("restore_key_typo") }
             return
         }
         let r = model.submitWords()
@@ -46,29 +46,29 @@ struct ShellRestoreStep: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Restore account").shellStyle(.h1).foregroundStyle(tin.ink).accessibilityAddTraits(.isHeader)
+                    Text(tr("restore_title")).shellStyle(.h1).foregroundStyle(tin.ink).accessibilityAddTraits(.isHeader)
                     Text(model.recKey.isEmpty
-                         ? "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
-                         : "Your recovery key is in. It stays on this phone.")
+                         ? tr("restore_lead_words", "24")
+                         : tr("restore_lead_key"))
                         .shellStyle(.lead).foregroundStyle(tin.ink2)
                     ShellNotice(warning, kind: .warn, glyph: .info)
                     if !model.recKey.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Recovery key").font(TinType.caption).foregroundStyle(tin.ink2)
+                            Text(tr("restore_key_label")).font(TinType.caption).foregroundStyle(tin.ink2)
                             Text(model.recKey).font(ShellFont.mono(15)).lineSpacing(6).foregroundStyle(tin.ink).privacySensitive()
-                            ShellGBtn(text: "Use my words instead", kind: .text, fill: false) { model.recKey = ""; error = nil }.offset(x: -20)
+                            ShellGBtn(text: tr("restore_use_words"), kind: .text, fill: false) { model.recKey = ""; error = nil }.offset(x: -20)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(SmoothRoundedRectangle(cornerRadius: 10).fill(tin.sf))
                         .overlay(SmoothRoundedRectangle(cornerRadius: 10).stroke(p.accentSoft, lineWidth: 1))
                     } else {
                         HStack {
-                            ShellGBtn(text: "Paste from clipboard", kind: .text, fill: false) {
-                                if let t = ShellClipboard.text() { setWord(0, t) } else { error = "Couldn\u{2019}t read the clipboard. Paste into the first box instead." }
+                            ShellGBtn(text: tr("restore_paste"), kind: .text, fill: false) {
+                                if let t = ShellClipboard.text() { setWord(0, t) } else { error = tr("restore_paste_failed") }
                             }
                             .offset(x: -20)
                             Spacer(minLength: 0)
-                            Text("\(model.filled) of 24").shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
+                            Text(tr("restore_progress", model.filled, "24")).shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
                         }
                         .offset(y: -4)
                         VStack(spacing: 8) {
@@ -87,7 +87,7 @@ struct ShellRestoreStep: View {
                                 }
                             }
                         }
-                        .accessibilityElement(children: .contain).accessibilityLabel("Recovery phrase words")
+                        .accessibilityElement(children: .contain).accessibilityLabel(tr("restore_words_label"))
                     }
                 }
                 .padding(.horizontal, 24).padding(.vertical, 8)
@@ -114,7 +114,7 @@ struct ShellRestoreStep: View {
                     .accessibilityAddTraits(.updatesFrequently)
             }
             .padding(.horizontal, 24).padding(.top, 8).background(tin.bg)
-            ShellGBtn(text: "Continue", enabled: model.filled > 0 || !model.recKey.isEmpty, action: submit)
+            ShellGBtn(text: tr("restore_continue"), enabled: model.filled > 0 || !model.recKey.isEmpty, action: submit)
                 .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 24)
         }
         .onChange(of: focus) { old, new in
@@ -145,7 +145,7 @@ private struct ShellWordCell: View {
                 .textInputAutocapitalization(.never).autocorrectionDisabled(true).keyboardType(.asciiCapable)
                 .submitLabel(i == 23 ? .done : .next).onSubmit(onNext)
                 .focused(focus, equals: i)
-                .accessibilityLabel("Word \(i + 1)")
+                .accessibilityLabel(tr("restore_word_n", i + 1))
         }
         .padding(.leading, 10).padding(.trailing, 6).frame(maxWidth: .infinity, minHeight: 44)
         .background(SmoothRoundedRectangle(cornerRadius: 10).fill(bad ? tin.erc : tin.sf))

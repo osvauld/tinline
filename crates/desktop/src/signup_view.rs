@@ -16,10 +16,10 @@ use iced::widget::{column, rich_text, span, stack};
 
 const CARD_W: f32 = 600.0;
 
-/// "Mon 19 Oct" (codeUntil in people.svelte.ts), in local time.
+/// "Monday 19 Oct" (codeUntil in people.svelte.ts), in local time.
 pub(super) fn code_until(exp: u64) -> String {
     use chrono::TimeZone;
-    chrono::Local.timestamp_opt(exp as i64, 0).single().map(|d| d.format("%a %-d %b").to_string()).unwrap_or_default()
+    chrono::Local.timestamp_opt(exp as i64, 0).single().map(|d| crate::i18n::date::weekday_date(&d, false)).unwrap_or_default()
 }
 const CARD_H: f32 = 640.0;
 
@@ -88,7 +88,7 @@ pub(super) fn words_key_seg<'a>(t: Tok, as_key: bool, on: impl Fn(bool) -> Msg) 
             .style(move |_: &Theme, _| button::Style { background: on_.then(|| t.raised.into()), border: Border { radius: 9.0.into(), ..Default::default() }, ..Default::default() })
             .on_press(msg)
     };
-    container(row![b("Words", !as_key, on(false)), b("Key", as_key, on(true))].spacing(4)).padding(3)
+    container(row![b(crate::i18n::tr_str("signup_words"), !as_key, on(false)), b(crate::i18n::tr_str("signup_key"), as_key, on(true))].spacing(4)).padding(3)
         .style(move |_: &Theme| container::Style { background: Some(t.surface2.into()), border: Border { radius: 12.0.into(), ..Default::default() }, ..Default::default() })
         .into()
 }
@@ -163,10 +163,6 @@ fn lead<'a>(t: Tok, lines: &[String], center: bool) -> El<'a> {
 }
 
 impl App {
-    fn gate_noun(&self) -> &'static str {
-        "computer"
-    }
-
     /// The whole sign-up gate: canvas, card, header, the step, its footer.
     pub(super) fn signup_view(&self, t: Tok) -> El<'_> {
         let (body, foot) = self.gate_step(t);
@@ -197,9 +193,9 @@ impl App {
         let eye = button(container(pgi(if self.gate.show_pass { "eyeoff" } else { "eye" }, 20.0, t.ink2)).center_x(44).center_y(44))
             .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, None, 22.0)).on_press(g(Gs::ShowPass));
         let err = self.notice.clone().filter(|_| !self.busy);
-        let hint = (err.is_some() || self.busy).then_some("Checking takes a second. It\u{2019}s deliberately slow to stop guessing.");
+        let hint = (err.is_some() || self.busy).then_some(crate::i18n::tr_str("signup_checking_takes_a_second"));
         // The error takes a reserved 18 px line inside the field block; the hint sits in the rest of the cell.
-        let field_ = gfield_r(t, "Passphrase", input, None, err, 1, 52.0);
+        let field_ = gfield_r(t, crate::i18n::tr_str("common_passphrase"), input, None, err, 1, 52.0);
         let field_ = stack![field_, column![Space::new().height(26), row![Space::new().width(Fill), eye].padding(Padding { right: 2.0, ..Padding::ZERO })]];
         // reserve 4.25 lines (18 px each) for the error and the hint
         let msgs = container(tx(hint.unwrap_or(""), 13.0, t.ink2).line_height(lh(18.0))).height(53).width(Fill);
@@ -207,8 +203,8 @@ impl App {
         // while the keyring is being asked and when there is none (the switch is simply not offered), so nothing moves.
         let remember: El = match self.remember_avail {
             Some(true) => container(row![
-                    column![semi("Remember on this computer", 15.0, t.ink).line_height(lh(20.0)),
-                        tx("Skips the passphrase when Tinline starts, using this computer\u{2019}s keyring.", 13.0, t.ink2).line_height(lh(18.0))].spacing(2).width(Fill),
+                    column![semi(crate::i18n::tr_str("common_remember_on_this_computer"), 15.0, t.ink).line_height(lh(20.0)),
+                        tx(crate::i18n::tr_str("common_skips_the_passphrase_when"), 13.0, t.ink2).line_height(lh(18.0))].spacing(2).width(Fill),
                     super::profile_view::pg_switch(t, self.remember, Msg::Remember(!self.remember)),
                 ].spacing(16).align_y(Alignment::Center)).width(Fill).height(56).center_y(56).into(),
             _ => Space::new().width(Fill).height(56).into(),
@@ -227,8 +223,8 @@ impl App {
         };
         // .center.anchor: hangs from a fixed point (min(14dvh, 96)), so a new line never re-centres the rest.
         let body = container(body).padding(Padding { top: 8.0 + 40.0, right: 40.0, bottom: 16.0, left: 40.0 }).height(Fill);
-        let unlock = gbtn(t, if self.busy { "Unlocking\u{2026}" } else { "Unlock" }, B::Primary, true, (!self.busy && !self.pass_in.is_empty()).then_some(Msg::Unlock));
-        let forgot = gbtn(t, "I forgot it", B::Text, false, (!self.busy).then_some(Msg::GoRestore));
+        let unlock = gbtn(t, if self.busy { crate::i18n::tr_str("signup_unlocking") } else { crate::i18n::tr_str("signup_unlock") }, B::Primary, true, (!self.busy && !self.pass_in.is_empty()).then_some(Msg::Unlock));
+        let forgot = gbtn(t, crate::i18n::tr_str("signup_i_forgot_it"), B::Text, false, (!self.busy).then_some(Msg::GoRestore));
         let foot = container(row![Space::new().width(Fill), forgot, unlock].spacing(12).align_y(Alignment::Center))
             .padding(Padding { top: 16.0, right: 40.0, bottom: 32.0, left: 40.0 }).width(Fill);
         let head = container(row![Space::new().width(44).height(44), row![ui::logo(24.0, t), semi("Tinline", 17.0, t.ink).line_height(lh(24.0))].spacing(8).align_y(Alignment::Center), Space::new().width(Fill),
@@ -243,24 +239,24 @@ impl App {
     /// the title, a quiet chevron, a 44 px target (lab A, 2026-10-14).
     fn welcome_title(&self, t: Tok, nick: &str, switcher: bool) -> El<'_> {
         if nick.is_empty() {
-            return bold("Welcome back", 28.0, t.ink).line_height(lh(34.0)).into();
+            return bold(crate::i18n::tr_str("signup_welcome_back"), 28.0, t.ink).line_height(lh(34.0)).into();
         }
         if !switcher {
-            return bold(format!("Welcome back, {nick}"), 28.0, t.ink).line_height(lh(34.0)).into();
+            return bold(crate::i18n::tr_args("signup_welcome_back_2", &[("name", &(nick).to_string())]), 28.0, t.ink).line_height(lh(34.0)).into();
         }
         let who = button(row![bold(nick.to_string(), 28.0, t.ink).line_height(lh(34.0)), pgi("chev", 20.0, t.ink2)].spacing(2).align_y(Alignment::Center))
             .padding([5, 4])
             .style(super::shell_view::wash(t, None, Some(t.surface2), 10.0))
             .on_press_maybe((!self.busy).then_some(g(Gs::OpenAs)));
-        row![bold("Welcome back,", 28.0, t.ink).line_height(lh(34.0)), who].spacing(8).align_y(Alignment::Center).into()
+        row![bold(crate::i18n::tr_str("signup_welcome_back_2"), 28.0, t.ink).line_height(lh(34.0)), who].spacing(8).align_y(Alignment::Center).into()
     }
 
     /// The "Open as" menu: every identity here; the current one ticked. Picking another switches (nothing to lock
     /// yet: we are at login), then this screen asks for that one's passphrase, or it opens right away.
     fn open_as_menu(&self, t: Tok) -> El<'_> {
-        let mut col = column![tx("Open as", 13.0, t.ink2).line_height(lh(18.0))].spacing(2).padding(8).width(300);
+        let mut col = column![tx(crate::i18n::tr_str("signup_open_as"), 13.0, t.ink2).line_height(lh(18.0))].spacing(2).padding(8).width(300);
         for a in &self.accounts {
-            let sub = if a.has_passphrase { "Asks for your passphrase" } else { "Opens right away" };
+            let sub = if a.has_passphrase { crate::i18n::tr_str("signup_asks_for_your_passphrase") } else { crate::i18n::tr_str("signup_opens_right_away") };
             let mut r = row![self.profile_avatar(t, &a.name, &a.did, 32.0), column![semi(a.name.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1).width(Fill)]
                 .spacing(10)
                 .align_y(Alignment::Center);
@@ -271,7 +267,7 @@ impl App {
             col = col.push(button(r).padding([6, 10]).width(Fill).style(super::shell_view::wash(t, a.current.then_some(t.surface), Some(t.surface2), 10.0)).on_press_maybe((!self.busy).then_some(msg)));
         }
         col = col.push(
-            button(row![pgi("plus", 18.0, t.ink2), tx("Add another name", 14.0, t.ink)].spacing(10).align_y(Alignment::Center))
+            button(row![pgi("plus", 18.0, t.ink2), tx(crate::i18n::tr_str("signup_add_another_name"), 14.0, t.ink)].spacing(10).align_y(Alignment::Center))
                 .padding([10, 10])
                 .width(Fill)
                 .style(super::shell_view::wash(t, None, Some(t.surface2), 10.0))
@@ -302,10 +298,10 @@ impl App {
                 segs = segs.push(container(Space::new()).width(14).height(6).style(ui::plain(if i < n { t.accent } else { t.line }, 3.0)));
             }
             // step 0: the count keeps its width (hidden), so "1 of 5" appears in place
-            let count = tx(format!("{n} of {total}"), 13.0, if n == 0 { Color::TRANSPARENT } else { t.ink2 }).line_height(lh(21.0)).width(42);
+            let count = tx(crate::i18n::tr_args("signup_of", &[("count", &(n).to_string()),("total", &(total).to_string())]), 13.0, if n == 0 { Color::TRANSPARENT } else { t.ink2 }).line_height(lh(21.0)).width(42);
             end = end.push(row![segs, count].spacing(10).align_y(Alignment::Center));
         }
-        let (icon, _label) = if t.dark { ("sun", "Switch to light") } else { ("moon", "Switch to dark") };
+        let (icon, _label) = if t.dark { ("sun", crate::i18n::tr_str("signup_switch_to_light")) } else { ("moon", crate::i18n::tr_str("signup_switch_to_dark")) };
         let theme = button(container(pgi(icon, 20.0, t.ink2)).center_x(40).center_y(40))
             .padding(0)
             .width(40)
@@ -323,7 +319,6 @@ impl App {
 
     /// Body (title, lead, content) and footer of the current step.
     fn gate_step(&self, t: Tok) -> (El<'_>, El<'_>) {
-        let noun = self.gate_noun();
         let title = |s: &str| bold(s.to_string(), 28.0, t.ink).line_height(lh(34.0));
         let shell = |head: &str, lead_: Vec<String>, content: Vec<El<'static>>| -> iced::widget::Column<'static, Msg> {
             let mut c = column![title(head)].spacing(16).width(Fill);
@@ -349,17 +344,17 @@ impl App {
             Step::Welcome => {
                 let adding = self.return_to.is_some();
                 let (head, l) = if adding {
-                    ("Add an account", vec!["Create a new account or bring one you already have.".to_string(), format!("Your current account stays on this {noun}.")])
+                    (crate::i18n::tr_str("signup_add_an_account"), vec![crate::i18n::tr_str("signup_create_a_new_account").to_string(), crate::i18n::tr("signup_your_current_account_stays")])
                 } else {
-                    ("A direct line to your people", vec![format!("Tinline connects your {noun} straight to theirs."), "You just need a nickname. Encrypted end to end.".to_string()])
+                    (crate::i18n::tr_str("signup_a_direct_line_to"), vec![crate::i18n::tr("signup_tinline_connects_your_straight"), crate::i18n::tr_str("signup_you_just_need_a").to_string()])
                 };
                 // The line is slack here; on Done it pulls taut ("Your line is open").
                 let hero = container(ui::line_logo(120.0, t, crate::mark::Look::default(), None::<Msg>)).width(Fill).height(Fill).center_x(Fill).center_y(Fill);
-                let warn = column![bold("Not for emergency calls.", 13.0, t.ink2).line_height(lh(18.0)), tx("Use your phone to reach emergency services.", 13.0, t.ink2).line_height(lh(18.0))];
+                let warn = column![bold(crate::i18n::tr_str("signup_not_for_emergency_calls"), 13.0, t.ink2).line_height(lh(18.0)), tx(crate::i18n::tr_str("signup_use_your_phone_to"), 13.0, t.ink2).line_height(lh(18.0))];
                 let body = column![title(head), lead(t, &l, false), hero, warn].spacing(16).width(Fill).height(Fill);
-                let mut b = vec![gbtn(t, "Create my account", B::Primary, true, Some(g(Gs::Start))), gbtn(t, "I have an account", B::Secondary, false, Some(g(Gs::Choose)))];
+                let mut b = vec![gbtn(t, crate::i18n::tr_str("signup_create_my_account"), B::Primary, true, Some(g(Gs::Start))), gbtn(t, crate::i18n::tr_str("signup_i_have_an_account"), B::Secondary, false, Some(g(Gs::Choose)))];
                 if adding {
-                    b.push(button(semi("Cancel", 15.0, t.accent_ink)).padding([14, 16]).height(48).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::CancelNew).into());
+                    b.push(button(semi(crate::i18n::tr_str("common_cancel"), 15.0, t.accent_ink)).padding([14, 16]).height(48).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::CancelNew).into());
                 }
                 (container(body).padding(pad).height(Fill).into(), foot(b))
             }
@@ -387,21 +382,21 @@ impl App {
                     .into()
                 };
                 let opts = column![
-                    opt("qr", "Link my other device", "Scan a code on a device that already has your account. Your contacts and chats come along.".into(), Msg::LinkStartNew),
-                    opt("key", "Restore my account", format!("Type your 24 recovery words. This {noun} starts with an empty contact list."), Msg::ToggleRestore),
+                    opt("qr", crate::i18n::tr_str("signup_link_my_other_device"), crate::i18n::tr_str("signup_scan_a_code_on").into(), Msg::LinkStartNew),
+                    opt("key", crate::i18n::tr_str("signup_restore_my_account"), crate::i18n::tr_args("signup_type_your_24_recovery", &[("words", crate::i18n::WORDS)]), Msg::ToggleRestore),
                 ]
                 .spacing(12);
-                let body = shell("Use your account here", vec![format!("Your account is its recovery phrase, so you can bring it to this {noun} two ways.")], vec![opts.into()]);
+                let body = shell(crate::i18n::tr_str("signup_use_your_account_here"), vec![crate::i18n::tr("signup_your_account_is_its")], vec![opts.into()]);
                 (container(body).padding(pad).into(), Space::new().into())
             }
             Step::Restore => {
                 let gs = &self.gate;
                 // Notice.svelte `warn`: what comes next.
                 let note = container(row![container(pgi("info", 20.0, t.warn_ink)).padding(Padding { top: 1.0, ..Padding::ZERO }),
-                        tx("Next, you\u{2019}ll choose a passphrase for this account.", 13.0, t.warn_ink).line_height(lh(19.0)).width(Fill)].spacing(12))
+                        tx(crate::i18n::tr_str("signup_next_youll_choose_a"), 13.0, t.warn_ink).line_height(lh(19.0)).width(Fill)].spacing(12))
                     .padding([12, 14]).width(Fill).style(ui::plain(t.warn, 14.0));
-                let paste = button(semi("Paste from clipboard", 15.0, t.accent_ink).line_height(lh(20.0))).padding([6, 12]).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(g(Gs::WordsPaste));
-                let tools = row![paste, Space::new().width(Fill), tx(format!("{} of 24", gs.filled()), 13.0, t.ink2)].align_y(Alignment::Center);
+                let paste = button(semi(crate::i18n::tr_str("signup_paste_from_clipboard"), 15.0, t.accent_ink).line_height(lh(20.0))).padding([6, 12]).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(g(Gs::WordsPaste));
+                let tools = row![paste, Space::new().width(Fill), tx(crate::i18n::tr_args("signup_of_24", &[("filled", &gs.filled().to_string()), ("total", crate::i18n::WORDS)]), 13.0, t.ink2)].align_y(Alignment::Center);
                 // .grid: four columns, 8 apart; a cell is the number (11, muted, 20 wide) and the word (15/20 mono).
                 let mut grid = column![].spacing(8);
                 for r in 0..6 {
@@ -426,8 +421,9 @@ impl App {
                 }
                 let bad: Vec<usize> = (0..24).filter(|&i| gs.bad_word(i)).collect();
                 let msg = if let Some(&f) = bad.first() {
-                    format!("Word {}{} {} in the recovery word list. Check the spelling.", f + 1, if bad.len() > 1 { format!(" and {} more", bad.len() - 1) } else { String::new() }, if bad.len() > 1 { "aren\u{2019}t" } else { "isn\u{2019}t" })
-                } else if gs.tried && gs.filled() < 24 { format!("{} words are still missing.", 24 - gs.filled()) } else { self.notice.clone().unwrap_or_default() };
+                    let n = (f + 1).to_string();
+                    if bad.len() > 1 { crate::i18n::tr_count("signup_word_in_the_recovery_more", (bad.len() - 1) as u64, &[("value", &n)]) } else { crate::i18n::tr_args("signup_word_in_the_recovery", &[("value", &n)]) }
+                } else if gs.tried && gs.filled() < 24 { crate::i18n::tr_count("signup_words_are_still_missing", (24 - gs.filled()) as u64, &[]) } else { self.notice.clone().unwrap_or_default() };
                 let sugg: Vec<&'static str> = gs.active.filter(|&i| !crate::app::signup::is_word(&gs.words[i])).map(|i| crate::app::signup::suggest(&gs.words[i], 4)).unwrap_or_default();
                 let mut chips = row![].spacing(8).height(44).align_y(Alignment::Center);
                 for w in sugg {
@@ -438,22 +434,22 @@ impl App {
                 let dock = column![chips, container(semi(msg, 13.0, t.danger).line_height(lh(18.0))).height(18)].spacing(6);
                 if !gs.rec_key.is_empty() {
                     // A pasted recovery key replaces the boxes; "Use my words instead" brings them back.
-                    let card = container(column![tx("Recovery key", 12.0, t.ink2), mono(gs.rec_key.clone(), 15.0, t.ink).line_height(lh(24.0)).wrapping(iced::widget::text::Wrapping::Glyph),
-                            container(gbtn(t, "Use my words instead", B::Text, false, Some(g(Gs::ClearKey))))].spacing(6))
+                    let card = container(column![tx(crate::i18n::tr_str("signup_recovery_key"), 12.0, t.ink2), mono(gs.rec_key.clone(), 15.0, t.ink).line_height(lh(24.0)).wrapping(iced::widget::text::Wrapping::Glyph),
+                            container(gbtn(t, crate::i18n::tr_str("signup_use_my_words_instead"), B::Text, false, Some(g(Gs::ClearKey))))].spacing(6))
                         .padding([14, 16]).width(Fill).style(ui::outlined(t.surface, t.accent_soft, 10.0));
                     let err = container(semi(self.notice.clone().unwrap_or_default(), 13.0, t.danger).line_height(lh(18.0))).height(18);
-                    let head = column![title("Restore account"), lead(t, &[format!("Your recovery key is in. It stays on this {noun}.")], false), note, card, err].spacing(16).width(Fill);
-                    return (container(head).padding(pad).height(Fill).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, Some(g(Gs::RestoreGo)))]));
+                    let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr("signup_your_recovery_key_is")], false), note, card, err].spacing(16).width(Fill);
+                    return (container(head).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, Some(g(Gs::RestoreGo)))]));
                 }
-                let head = column![title("Restore account"), lead(t, &[format!("Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}.")], false), note, tools].spacing(16).width(Fill);
+                let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr_args("signup_type_your_24_words", &[("words", crate::i18n::WORDS)])], false), note, tools].spacing(16).width(Fill);
                 let body = column![head, iced::widget::scrollable(grid).height(Fill).style(ui::scroll_style(t)), dock].spacing(12).width(Fill).height(Fill);
-                (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, (gs.filled() > 0).then_some(g(Gs::RestoreGo)))]))
+                (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, (gs.filled() > 0).then_some(g(Gs::RestoreGo)))]))
             }
             Step::Name => {
                 let ok = !self.name_in.trim().is_empty();
                 let input = text_input("", &self.name_in).id(NAME_ID).on_input(Msg::NameChanged).on_submit(g(Gs::NameGo));
-                let body = shell("What should people call you?", vec!["Only the people you add will see it.".into()], vec![gfield(t, "Your nickname", input, Some("You can change it any time in Settings."), None, 0)]);
-                (container(body).padding(pad).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, ok.then_some(g(Gs::NameGo)))]))
+                let body = shell(crate::i18n::tr_str("signup_what_should_people_call"), vec![crate::i18n::tr_str("signup_only_the_people_you").into()], vec![gfield(t, crate::i18n::tr_str("signup_your_nickname"), input, Some(crate::i18n::tr_str("signup_you_can_change_it")), None, 0)]);
+                (container(body).padding(pad).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, ok.then_some(g(Gs::NameGo)))]))
             }
             Step::Pass => {
                 let s = strength(&self.pass_in);
@@ -464,7 +460,7 @@ impl App {
                     .height(44)
                     .style(super::shell_view::wash(t, None, None, 22.0))
                     .on_press(g(Gs::ShowPass));
-                let field_ = gfield_r(t, "Passphrase", input, None, None, 0, 52.0);
+                let field_ = gfield_r(t, crate::i18n::tr_str("common_passphrase"), input, None, None, 0, 52.0);
                 let field_ = stack![field_, column![Space::new().height(26), row![Space::new().width(Fill), eye].padding(Padding { right: 2.0, ..Padding::ZERO })]];
                 let bar = |i: usize| {
                     let on = s >= i;
@@ -475,7 +471,7 @@ impl App {
                     };
                     container(Space::new()).width(28).height(6).style(ui::plain(if on { c } else { t.line }, 3.0))
                 };
-                let says = ["Any length works. A few random words are easy to remember.", "Short. A few more words make it stronger.", "Fair", "Strong"];
+                let says = [crate::i18n::tr_str("signup_any_length_works_a"), crate::i18n::tr_str("signup_short_a_few_more"), crate::i18n::tr_str("signup_fair"), crate::i18n::tr_str("signup_strong")];
                 // Every line shares one cell (the tallest sets the height): a rating never moves the note below.
                 let mut cell = stack![].width(Fill);
                 for (i, l) in says.iter().enumerate() {
@@ -484,22 +480,22 @@ impl App {
                 let meter = row![container(row![bar(1), bar(2), bar(3)].spacing(4)).padding(Padding { top: 6.0, ..Padding::ZERO }), cell].spacing(10);
                 let col = column![field_, meter].spacing(6);
                 let note = if self.keyring_ok {
-                    "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one.".to_string()
+                    crate::i18n::tr_str("signup_encrypts_your_account_on").to_string()
                 } else {
-                    format!("{} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one.", super::super::NO_KEYRING)
+                    crate::i18n::tr_args("signup_you_type_it_each", &[("value", &(super::super::no_keyring()).to_string())])
                 };
                 let mut content = vec![col.into(), notice_box(t, "lock", note, false)];
                 if let Some(e) = &self.notice {
                     content.push(notice_box(t, "warning", e.clone(), true));
                 }
-                let lead_ = if self.keyring_ok { "Optional. A lock, so only you can open Tinline on this computer." } else { "A lock, so only you can open Tinline on this computer." };
-                let body = shell("Add a passphrase", vec![lead_.into()], content);
+                let lead_ = if self.keyring_ok { crate::i18n::tr_str("signup_optional_a_lock_so") } else { crate::i18n::tr_str("signup_a_lock_so_only") };
+                let body = shell(crate::i18n::tr_str("common_add_a_passphrase"), vec![lead_.into()], content);
                 // Pass.svelte `cta`: the restore flow ends here, so its button says what happens.
-                let cta = if self.gate.restoring { "Restore account" } else { "Continue" };
-                let go = gbtn(t, if busy { "Encrypting\u{2026}" } else { cta }, B::Primary, true, (!busy && !self.pass_in.is_empty()).then_some(g(Gs::PassGo)));
+                let cta = if self.gate.restoring { crate::i18n::tr_str("signup_restore_account") } else { crate::i18n::tr_str("common_continue") };
+                let go = gbtn(t, if busy { crate::i18n::tr_str("signup_encrypting") } else { cta }, B::Primary, true, (!busy && !self.pass_in.is_empty()).then_some(g(Gs::PassGo)));
                 let mut b = vec![go];
                 if self.keyring_ok {
-                    b.push(gbtn(t, "Skip for now", B::Text, false, (!busy).then_some(g(Gs::PassSkip))));
+                    b.push(gbtn(t, crate::i18n::tr_str("signup_skip_for_now"), B::Text, false, (!busy).then_some(g(Gs::PassSkip))));
                 }
                 (container(body).padding(pad).into(), foot(b))
             }
@@ -535,11 +531,11 @@ impl App {
                     container(grid).padding([2, 4]).into()
                 };
                 let body = shell(
-                    if as_key { "Here is your recovery key" } else { "Here are your recovery words" },
+                    if as_key { crate::i18n::tr_str("signup_here_is_your_recovery") } else { crate::i18n::tr_str("signup_here_are_your_recovery") },
                     if as_key {
-                        vec!["Your recovery key is the same as your 24 words, as one line.".into(), "Paste it somewhere safe. A password manager works great.".into()]
+                        vec![crate::i18n::tr_args("signup_your_recovery_key_is_the", &[("words", crate::i18n::WORDS)]).into(), crate::i18n::tr_str("signup_paste_it_somewhere_safe").into()]
                     } else {
-                        vec!["If you ever switch devices, these 24 words bring your account along.".into(), "Save a copy somewhere safe. Paper works great.".into()]
+                        vec![crate::i18n::tr_args("signup_if_you_ever_switch", &[("words", crate::i18n::WORDS)]).into(), crate::i18n::tr_str("signup_save_a_copy_somewhere").into()]
                     },
                     vec![seg, shown],
                 );
@@ -548,11 +544,11 @@ impl App {
                 // words' own checksum.
                 let b = if self.gate.copied {
                     vec![
-                        gbtn(t, if as_key { "I\u{2019}ve saved it" } else { "I\u{2019}ve saved them" }, B::Primary, true, Some(g(Gs::Saved))),
-                        gbtn(t, "Copy again", B::Text, false, Some(g(Gs::CopyWords))),
+                        gbtn(t, if as_key { crate::i18n::tr_str("signup_ive_saved_it") } else { crate::i18n::tr_str("signup_ive_saved_them") }, B::Primary, true, Some(g(Gs::Saved))),
+                        gbtn(t, crate::i18n::tr_str("signup_copy_again"), B::Text, false, Some(g(Gs::CopyWords))),
                     ]
                 } else {
-                    vec![gbtn(t, if as_key { "Copy my key" } else { "Copy my words" }, B::Primary, true, Some(g(Gs::CopyWords))), gbtn(t, if as_key { "I saved it elsewhere" } else { "I wrote them down" }, B::Text, false, Some(g(Gs::Saved)))]
+                    vec![gbtn(t, if as_key { crate::i18n::tr_str("common_copy_my_key") } else { crate::i18n::tr_str("signup_copy_my_words") }, B::Primary, true, Some(g(Gs::CopyWords))), gbtn(t, if as_key { crate::i18n::tr_str("signup_i_saved_it_elsewhere") } else { crate::i18n::tr_str("signup_i_wrote_them_down") }, B::Text, false, Some(g(Gs::Saved)))]
                 };
                 (container(scroll(t, container(body).padding(pad))).height(Fill).into(), foot(b))
             }
@@ -560,7 +556,7 @@ impl App {
                 let input = text_input("", &self.device_in).id(DEVICE_ID).on_input(Msg::DeviceIn).on_submit(Msg::DeviceGo);
                 let err = self.notice.clone();
                 let mut chips = row![].spacing(8);
-                for s in ["Home computer", "Work computer", "Laptop"] {
+                for s in [crate::i18n::tr_str("signup_home_computer"), crate::i18n::tr_str("signup_work_computer"), crate::i18n::tr_str("signup_laptop")] {
                     let on = self.device_in == s;
                     let style = move |_: &Theme, st: button::Status| button::Style {
                         background: Some(iced::Background::Color(if on { t.accent_soft } else if matches!(st, button::Status::Hovered) { t.surface2 } else { Color::TRANSPARENT })),
@@ -577,19 +573,19 @@ impl App {
                     );
                 }
                 let body = shell(
-                    "Name this computer",
-                    vec!["So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.".into()],
-                    vec![gfield(t, "Device name", input, Some("You can rename it later."), err, 0), chips.into()],
+                    crate::i18n::tr_str("common_name_this_computer"),
+                    vec![crate::i18n::tr_str("common_so_you_can_tell").into()],
+                    vec![gfield(t, crate::i18n::tr_str("common_device_name"), input, Some(crate::i18n::tr_str("common_you_can_rename_it")), err, 0), chips.into()],
                 );
                 let ok = !self.device_in.trim().is_empty() && !busy;
-                (container(body).padding(pad).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, ok.then_some(Msg::DeviceGo))]))
+                (container(body).padding(pad).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, ok.then_some(Msg::DeviceGo))]))
             }
             Step::Terms => {
                 let pts: [(&str, &str, &str); 4] = [
-                    ("shield", "Free of ads and tracking.", "Tinline doesn\u{2019}t collect your contacts, calls or location."),
-                    ("lock", "Calls are end-to-end encrypted.", "When a direct line isn\u{2019}t possible, an encrypted relay passes the call along. It can\u{2019}t hear it."),
-                    ("key", "Your account is yours.", "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."),
-                    ("warning", "Not for emergency calls.", ""),
+                    ("shield", crate::i18n::tr_str("signup_free_of_ads_and"), crate::i18n::tr_str("signup_tinline_doesnt_collect_your")),
+                    ("lock", crate::i18n::tr_str("signup_calls_are_end_to"), crate::i18n::tr_str("signup_when_a_direct_line")),
+                    ("key", crate::i18n::tr_str("signup_your_account_is_yours"), crate::i18n::tr_str("signup_it_lives_on_your")),
+                    ("warning", crate::i18n::tr_str("signup_not_for_emergency_calls"), ""),
                 ];
                 let mut list = column![].spacing(14);
                 for (icon, b, r) in pts {
@@ -601,22 +597,24 @@ impl App {
                 }
                 // No checkbox: the next button is the agreement, and this line sits right above it.
                 let link = |s: &'static str, url: &'static str| span::<&'static str, iced::Font>(s).color(t.accent_ink).underline(true).link(url);
-                let agree = rich_text([
-                    span::<&'static str, iced::Font>("By continuing, you agree to the ").color(t.ink2),
-                    link("Terms of Use", URL_TERMS),
-                    span(" and have read the ").color(t.ink2),
-                    link("Privacy Policy", URL_PRIVACY),
-                    span(".").color(t.ink2),
-                ])
+                let agree_spans: Vec<_> = crate::i18n::tr_rich("signup_by_continuing_you_agree", &[])
+                    .into_iter()
+                    .map(|p| match p {
+                        crate::i18n::Piece::Slot(n) if n == "terms" => link(crate::i18n::tr_str("signup_terms_of_use"), URL_TERMS),
+                        crate::i18n::Piece::Slot(n) if n == "privacy" => link(crate::i18n::tr_str("signup_privacy_policy"), URL_PRIVACY),
+                        crate::i18n::Piece::Text(x) | crate::i18n::Piece::Bold(x) | crate::i18n::Piece::Slot(x) => span::<&'static str, iced::Font>(x).color(t.ink2),
+                    })
+                    .collect();
+                let agree = rich_text(agree_spans)
                 .size(13)
                 .line_height(lh(19.0))
                 .on_link_click(|u| g(Gs::Open(u)));
-                let body = column![title("Before you start"), list, Space::new().height(Fill), agree].spacing(16).width(Fill).height(Fill);
-                (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, "I agree", B::Primary, true, Some(g(Gs::Agree)))]))
+                let body = column![title(crate::i18n::tr_str("signup_before_you_start")), list, Space::new().height(Fill), agree].spacing(16).width(Fill).height(Fill);
+                (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("signup_i_agree"), B::Primary, true, Some(g(Gs::Agree)))]))
             }
             Step::Done => {
                 let first = self.name_in.split_whitespace().next().unwrap_or("").to_string();
-                let head = if first.is_empty() { "Your line is open".to_string() } else { format!("Your line is open, {first}") };
+                let head = if first.is_empty() { crate::i18n::tr_str("common_your_line_is_open").to_string() } else { crate::i18n::tr_args("signup_your_line_is_open", &[("name", &(first).to_string())]) };
                 let look = crate::mark::Look {
                     state: if self.gate.taut { crate::mark::MarkState::Taut } else { crate::mark::MarkState::Slack },
                     spring: crate::mark::Spring::line(),
@@ -627,15 +625,15 @@ impl App {
                     row![ic(t, icon, 36.0, 20.0), column![bold(b, 15.0, t.ink).line_height(lh(19.0)), tx(r, 13.0, t.ink2).line_height(lh(19.0))].width(Fill)].spacing(14).into()
                 };
                 let tips = column![
-                    tip("devices", "Two devices are better than one", "Link another device when you can, so losing one never locks you out."),
-                    tip("users", "This computer can host your groups", "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."),
+                    tip("devices", crate::i18n::tr_str("signup_two_devices_are_better"), crate::i18n::tr_str("signup_link_another_device_when")),
+                    tip("users", crate::i18n::tr_str("signup_this_computer_can_host"), crate::i18n::tr_str("signup_groups_are_hosted_on")),
                 ]
                 .spacing(12)
                 .width(420);
                 let body = column![
                     hero,
                     bold(head, 28.0, t.ink).line_height(lh(34.0)),
-                    lead(t, &["Scan their code or share yours, and you can call each other.".to_string()], true),
+                    lead(t, &[crate::i18n::tr_str("signup_scan_their_code_or").to_string()], true),
                     container(tips).padding(Padding { top: 8.0, ..Padding::ZERO }),
                 ]
                 .spacing(16)
@@ -643,7 +641,7 @@ impl App {
                 .width(Fill);
                 (
                     container(body).padding(pad).width(Fill).height(Fill).center_y(Fill).into(),
-                    foot(vec![gbtn(t, "Add my first contact", B::Primary, true, Some(g(Gs::AddFirst))), gbtn(t, "Not now", B::Text, false, Some(g(Gs::NotNow)))]),
+                    foot(vec![gbtn(t, crate::i18n::tr_str("signup_add_my_first_contact"), B::Primary, true, Some(g(Gs::AddFirst))), gbtn(t, crate::i18n::tr_str("common_not_now"), B::Text, false, Some(g(Gs::NotNow)))]),
                 )
             }
         }
@@ -672,14 +670,14 @@ impl App {
         let (head, line, act, msg) = match people.as_slice() {
             // Waiting for my first request to be accepted (EmptyLine.svelte, `pp.sent`).
             [] if !self.requests_out.is_empty() => (
-                "Your line is ready",
-                format!("Your request to {} is waiting. Your line opens when they accept.", super::super::signup::first_name(&self.requests_out[0].name)),
-                "Add another contact".to_string(),
+                crate::i18n::tr_str("signup_your_line_is_ready"),
+                crate::i18n::tr_args("signup_your_request_to_is", &[("value", &(super::super::signup::first_name(&self.requests_out[0].name)).to_string())]),
+                crate::i18n::tr_str("signup_add_another_contact").to_string(),
                 Msg::OpenAdd,
             ),
-            [] => ("Your line is ready", "Add someone you\u{2019}d like to talk to, and you can message and call each other.".to_string(), "Add my first contact".to_string(), Msg::OpenAdd),
-            [one] => ("Your line is open", format!("Say hello to {} whenever you like.", first(one)), format!("Message {}", first(one)), Msg::Select(one.did.clone())),
-            _ => ("Your line is open", "Pick someone and say hello whenever you like.".to_string(), "Start a chat".to_string(), Msg::ShellSearch(super::super::shell_search::Action::NewChat(true))),
+            [] => (crate::i18n::tr_str("signup_your_line_is_ready"), crate::i18n::tr_str("signup_add_someone_youd_like").to_string(), crate::i18n::tr_str("signup_add_my_first_contact").to_string(), Msg::OpenAdd),
+            [one] => (crate::i18n::tr_str("common_your_line_is_open"), crate::i18n::tr_args("signup_say_hello_to_whenever", &[("value", &(first(one)).to_string())]), crate::i18n::tr_args("signup_message_2", &[("value", &(first(one)).to_string())]), Msg::Select(one.did.clone())),
+            _ => (crate::i18n::tr_str("common_your_line_is_open"), crate::i18n::tr_str("signup_pick_someone_and_say").to_string(), crate::i18n::tr_str("signup_start_a_chat").to_string(), Msg::ShellSearch(super::super::shell_search::Action::NewChat(true))),
         };
         let look = crate::mark::Look {
             state: if people.is_empty() { crate::mark::MarkState::Slack } else { crate::mark::MarkState::Taut },
@@ -807,18 +805,18 @@ impl App {
             let f = first(&i.name);
             let state = if i.joined { crate::mark::MarkState::Taut } else { crate::mark::MarkState::Ringing };
             let chip_ = container(
-                row![pgi("userplus", 14.0, t.accent_ink), semi(if i.theirs { "Accepted your request" } else { "Has your code" }, 13.0, t.accent_ink).line_height(lh(20.0))]
+                row![pgi("userplus", 14.0, t.accent_ink), semi(if i.theirs { crate::i18n::tr_str("signup_accepted_your_request") } else { crate::i18n::tr_str("signup_has_your_code") }, 13.0, t.accent_ink).line_height(lh(20.0))]
                     .spacing(6)
                     .align_y(Alignment::Center),
             )
             .padding([3, 10])
             .style(ui::plain(t.accent_soft, 13.0));
             let line = if !i.joined {
-                format!("{f} wants to add you as a contact. Accepting lets you message and call each other.")
+                crate::i18n::tr_args("signup_wants_to_add_you", &[("name", &(f).to_string())])
             } else if i.theirs {
-                format!("{f} accepted. Your line to {f} is open. Say hello.")
+                crate::i18n::tr_args("signup_accepted_your_line_to", &[("name", &(f).to_string())])
             } else {
-                format!("Your line to {f} is open. Say hello.")
+                crate::i18n::tr_args("signup_your_line_to_is", &[("name", &(f).to_string())])
             };
             let face = column![
                 join(&i.name, &i.did, state),
@@ -829,43 +827,43 @@ impl App {
             .spacing(8)
             .align_x(Alignment::Center);
             let btns = if i.joined {
-                vec![quiet_btn("Done".into(), Some(close.clone())), fixed(format!("Message {f}"), Some(g(Gs::AcIncomingMessage)))]
+                vec![quiet_btn(crate::i18n::tr_str("common_done").into(), Some(close.clone())), fixed(crate::i18n::tr_args("signup_message", &[("name", &(f).to_string())]), Some(g(Gs::AcIncomingMessage)))]
             } else {
                 let off = self.add_ui.answering;
-                vec![quiet_btn("Not now".into(), (!off).then(|| g(Gs::AcNotNow))), fixed("Accept".into(), (!off).then(|| g(Gs::AcAccept)))]
+                vec![quiet_btn(crate::i18n::tr_str("common_not_now").into(), (!off).then(|| g(Gs::AcNotNow))), fixed(crate::i18n::tr_str("common_accept").into(), (!off).then(|| g(Gs::AcAccept)))]
             };
             (container(face).width(Fill).center_x(Fill).into(), buttons(btns))
         } else if let Some(p) = &self.add_ui.found {
             let f = first(&p.name);
             let blocked = p.known && self.blocks.blocked_by_me(&p.did);
             let (line, btns): (String, Vec<El>) = match &self.add_phase {
-                AddPhase::Added(_) => (format!("Your line to {f} is open. Say hello."), vec![quiet_btn("Done".into(), Some(close.clone())), fixed(format!("Message {f}"), Some(g(Gs::AcMessage)))]),
-                AddPhase::Requested => (format!("Request sent. Your line opens when {f} accepts."), vec![fixed("Done".into(), Some(close.clone()))]),
-                _ if blocked => (format!("You blocked {f}. Unblock them in Privacy before adding them again."), vec![quiet_btn("Close".into(), Some(close.clone())), fixed("Open profile".into(), Some(g(Gs::AcProfile)))]),
-                _ if p.known => (format!("{f} is already in your contacts."), vec![quiet_btn("Close".into(), Some(close.clone())), fixed("Open profile".into(), Some(g(Gs::AcProfile)))]),
+                AddPhase::Added(_) => (crate::i18n::tr_args("signup_your_line_to_is", &[("name", &(f).to_string())]), vec![quiet_btn(crate::i18n::tr_str("common_done").into(), Some(close.clone())), fixed(crate::i18n::tr_args("signup_message", &[("name", &(f).to_string())]), Some(g(Gs::AcMessage)))]),
+                AddPhase::Requested => (crate::i18n::tr_args("common_request_sent_your_line", &[("name", &(f).to_string())]), vec![fixed(crate::i18n::tr_str("common_done").into(), Some(close.clone()))]),
+                _ if blocked => (crate::i18n::tr_args("signup_you_blocked_unblock_them", &[("name", &(f).to_string())]), vec![quiet_btn(crate::i18n::tr_str("common_close").into(), Some(close.clone())), fixed(crate::i18n::tr_str("signup_open_profile").into(), Some(g(Gs::AcProfile)))]),
+                _ if p.known => (crate::i18n::tr_args("signup_is_already_in_your", &[("name", &(f).to_string())]), vec![quiet_btn(crate::i18n::tr_str("common_close").into(), Some(close.clone())), fixed(crate::i18n::tr_str("signup_open_profile").into(), Some(g(Gs::AcProfile)))]),
                 AddPhase::Connecting(at) => {
                     let slow = at.elapsed() >= Duration::from_millis(2500);
-                    let l = if slow { format!("Still trying. {f}\u{2019}s Tinline needs to be open and online for this.") } else { format!("Reaching {f}\u{2019}s Tinline\u{2026}") };
-                    (l, vec![quiet_btn("Back".into(), None), fixed("Adding\u{2026}".into(), None)])
+                    let l = if slow { crate::i18n::tr_args("signup_still_trying_s_tinline", &[("name", &(f).to_string())]) } else { crate::i18n::tr_args("signup_reaching_s_tinline", &[("name", &(f).to_string())]) };
+                    (l, vec![quiet_btn(crate::i18n::tr_str("common_back").into(), None), fixed(crate::i18n::tr_str("signup_adding").into(), None)])
                 }
                 AddPhase::Failed(r) => {
-                    let back = quiet_btn("Back".into(), Some(g(Gs::AcBack)));
+                    let back = quiet_btn(crate::i18n::tr_str("common_back").into(), Some(g(Gs::AcBack)));
                     match r {
                         Reach::Refused => (
-                            format!("{f}\u{2019}s code isn\u{2019}t valid any more. They may have made a new one, so ask {f} for their newest code."),
-                            vec![back, fixed("Paste a new code".into(), Some(g(Gs::AcBack)))],
+                            crate::i18n::tr_args("signup_s_code_isnt_valid", &[("name", &(f).to_string())]),
+                            vec![back, fixed(crate::i18n::tr_str("signup_paste_a_new_code").into(), Some(g(Gs::AcBack)))],
                         ),
-                        Reach::Blocked => (format!("You can\u{2019}t add {f} right now. They\u{2019}ve chosen not to be in touch here."), vec![back, fixed("Close".into(), Some(close.clone()))]),
-                        Reach::Offline => ("You\u{2019}re offline. Once you\u{2019}re connected, try again.".into(), vec![back, fixed("Try again".into(), Some(g(Gs::AcAdd)))]),
+                        Reach::Blocked => (crate::i18n::tr_args("signup_you_cant_add_right", &[("name", &(f).to_string())]), vec![back, fixed(crate::i18n::tr_str("common_close").into(), Some(close.clone()))]),
+                        Reach::Offline => (crate::i18n::tr_str("signup_youre_offline_once_youre").into(), vec![back, fixed(crate::i18n::tr_str("common_try_again").into(), Some(g(Gs::AcAdd)))]),
                         Reach::Timeout | Reach::Other(_) => (
-                            format!("Couldn\u{2019}t reach {f}\u{2019}s Tinline. It needs to be open and online, so try again when {f}\u{2019}s around."),
-                            vec![back, fixed("Try again".into(), Some(g(Gs::AcAdd)))],
+                            crate::i18n::tr_args("signup_couldnt_reach_s_tinline", &[("name", &(f).to_string())]),
+                            vec![back, fixed(crate::i18n::tr_str("common_try_again").into(), Some(g(Gs::AcAdd)))],
                         ),
                     }
                 }
                 AddPhase::Idle => (
-                    format!("Is this the {f} you expected? If you\u{2019}re not sure, check with them first."),
-                    vec![quiet_btn("Back".into(), Some(g(Gs::AcBack))), fixed(format!("Add {f}"), Some(g(Gs::AcAdd)))],
+                    crate::i18n::tr_args("signup_is_this_the_you", &[("name", &(f).to_string())]),
+                    vec![quiet_btn(crate::i18n::tr_str("common_back").into(), Some(g(Gs::AcBack))), fixed(crate::i18n::tr_args("signup_add", &[("name", &(f).to_string())]), Some(g(Gs::AcAdd)))],
                 ),
             };
             // slack (recognised) → ringing while the dial runs and while the request waits → taut.
@@ -887,53 +885,53 @@ impl App {
         } else if self.add_ui.tab == AddTab::Qr {
             let qr: El = match &self.qr {
                 Some(q) => container(canvas(QrView(q)).width(Length::Fixed(260.0)).height(Length::Fixed(260.0))).padding(10).style(ui::plain(Color::WHITE, 12.0)).into(),
-                None => container(tx("Preparing your code\u{2026}", 13.0, t.ink2)).width(280).height(280).center_x(280).center_y(280).style(ui::plain(t.surface2, 12.0)).into(),
+                None => container(tx(crate::i18n::tr_str("signup_preparing_your_code"), 13.0, t.ink2)).width(280).height(280).center_x(280).center_y(280).style(ui::plain(t.surface2, 12.0)).into(),
             };
-            let mine = column![container(qr).width(296).height(296).center_x(296).center_y(296), why("Let them scan this with Tinline.".into(), true)].spacing(10).align_x(Alignment::Center);
-            (container(mine).width(Fill).center_x(Fill).into(), row![Space::new().width(Fill), quiet_btn("Close".into(), Some(close.clone()))].into())
+            let mine = column![container(qr).width(296).height(296).center_x(296).center_y(296), why(crate::i18n::tr_str("signup_let_them_scan_this").into(), true)].spacing(10).align_x(Alignment::Center);
+            (container(mine).width(Fill).center_x(Fill).into(), row![Space::new().width(Fill), quiet_btn(crate::i18n::tr_str("common_close").into(), Some(close.clone()))].into())
         } else {
             let copied = self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_millis(1600));
-            let code = self.ticket.clone().unwrap_or_else(|| "Preparing your code\u{2026}".into());
+            let code = self.ticket.clone().unwrap_or_else(|| crate::i18n::tr_str("signup_preparing_your_code").into());
             let code = crate::fit::ellipsize(&code, ui::MONO, 12.0, 400.0 - 24.0);
             let code = container(mono(code, 12.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).padding([8, 12]).width(Fill).clip(true).style(ui::plain(t.surface2, 12.0));
             // "New code" sits on the label's line (a text button, same height), so it never moves anything.
-            let renew = button(semi("New code", 13.0, t.accent_ink).line_height(lh(21.0)))
+            let renew = button(semi(crate::i18n::tr_str("common_new_code"), 13.0, t.accent_ink).line_height(lh(21.0)))
                 .padding(0)
                 .style(super::shell_view::wash(t, None, None, 4.0))
                 .on_press_maybe(self.ticket.as_ref().map(|_| g(Gs::AcNewCode)));
             let mine = column![
-                row![semi("Your code", 13.0, t.ink).line_height(lh(21.0)), Space::new().width(Fill), renew].align_y(Alignment::Center),
+                row![semi(crate::i18n::tr_str("signup_your_code"), 13.0, t.ink).line_height(lh(21.0)), Space::new().width(Fill), renew].align_y(Alignment::Center),
                 // Reusable for 7 days (core `my_code`); the date is the code's own `exp`, local time.
                 why(match self.ticket_exp {
-                    Some(exp) => format!("Send it to anyone you\u{2019}d like to talk to, in any app. It works until {}.", code_until(exp)),
-                    None => "Send it to anyone you\u{2019}d like to talk to, in any app.".into(),
+                    Some(exp) => crate::i18n::tr_args("signup_send_it_to_anyone_youd", &[("value", &(code_until(exp)).to_string())]),
+                    None => crate::i18n::tr_str("signup_send_it_to_anyone").into(),
                 }, false),
                 code,
-                pill_btn(if copied { "Copied".into() } else { "Copy my code".into() }, true, self.ticket.as_ref().map(|_| g(Gs::AcCopy))),
+                pill_btn(if copied { crate::i18n::tr_str("signup_copied").into() } else { crate::i18n::tr_str("signup_copy_my_code").into() }, true, self.ticket.as_ref().map(|_| g(Gs::AcCopy))),
             ]
             .spacing(8);
             let rule = || container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0));
             let or = row![rule(), tx("or", 13.0, t.ink2).line_height(lh(21.0)), rule()].spacing(10).align_y(Alignment::Center);
             // Hints are not errors: muted ink, never red (VOICE.md).
             let theirs = column![
-                semi("Their code", 13.0, t.ink).line_height(lh(21.0)),
-                pill_btn("Paste their code".into(), false, Some(g(Gs::AcPaste))),
+                semi(crate::i18n::tr_str("signup_their_code"), 13.0, t.ink).line_height(lh(21.0)),
+                pill_btn(crate::i18n::tr_str("signup_paste_their_code").into(), false, Some(g(Gs::AcPaste))),
                 container(why(self.add_ui.hint.clone(), false)).height(38),
             ]
             .spacing(8);
-            (column![mine, or, theirs].spacing(12).into(), row![Space::new().width(Fill), quiet_btn("Close".into(), Some(close.clone()))].into())
+            (column![mine, or, theirs].spacing(12).into(), row![Space::new().width(Fill), quiet_btn(crate::i18n::tr_str("common_close").into(), Some(close.clone()))].into())
         };
         let title = match &self.add_ui.incoming {
-            Some(i) if !i.joined => "Contact request",
-            Some(_) => "New contact",
-            None => "Add contact",
+            Some(i) if !i.joined => crate::i18n::tr_str("signup_contact_request"),
+            Some(_) => crate::i18n::tr_str("signup_new_contact"),
+            None => crate::i18n::tr_str("common_add_contact"),
         };
         // `.tabs.gone`: hidden but keeping its height, so the sheet doesn't jump when it turns
         // into a request.
         let tabs: El = if self.add_ui.incoming.is_some() {
             Space::new().width(Fill).height(32).into()
         } else {
-            row![chip("Code", AddTab::Code), chip("QR", AddTab::Qr)].spacing(8).into()
+            row![chip(crate::i18n::tr_str("signup_code"), AddTab::Code), chip(crate::i18n::tr_str("signup_qr"), AddTab::Qr)].spacing(8).into()
         };
         let content = column![
             bold(title, 17.0, t.ink).line_height(lh(24.0)),

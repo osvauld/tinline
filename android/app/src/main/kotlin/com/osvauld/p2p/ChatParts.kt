@@ -1,5 +1,7 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -82,7 +84,7 @@ class BubbleMeta(val time: String, val edited: Boolean = false, val receipt: Met
 @Composable
 fun PgMeta(meta: BubbleMeta, color: Color, modifier: Modifier = Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (meta.edited) Text("edited", style = MetaText, color = color, maxLines = 1)
+        if (meta.edited) Text(stringResource(R.string.chat_edited), style = MetaText, color = color, maxLines = 1)
         Text(meta.time, style = MetaText, color = color, maxLines = 1)
         // The tick keeps one slot (two ticks wide) whatever the state, so a status change never narrows the bubble.
         meta.receipt?.let { r ->
@@ -202,7 +204,7 @@ fun PgQuote(who: String?, whoColor: Color, text: String, onClick: (() -> Unit)?)
     val shape = SmoothCornerShape(12.dp)
     Column(
         Modifier.padding(top = 2.dp, bottom = 6.dp).heightIn(min = 44.dp).clip(shape).background(c.sf2).startBar(c.accentFill, 3.dp)
-            .let { if (onClick != null) it.clickable(role = Role.Button, onClickLabel = "Jump to message", onClick = onClick) else it }
+            .let { if (onClick != null) it.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_jump_to_message), onClick = onClick) else it }
             .padding(start = 13.dp, end = 10.dp, top = 5.dp, bottom = 6.dp),
     ) {
         if (who != null) Text(who, style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold), color = whoColor, maxLines = 1)
@@ -232,7 +234,7 @@ fun PgDayPill(label: String, modifier: Modifier = Modifier) {
 fun PgUnreadDivider(n: Int, modifier: Modifier = Modifier) {
     val c = Tin.c
     val line = c.accentInk.copy(alpha = .35f)
-    val label = "$n new ${if (n == 1) "message" else "messages"}"
+    val label = pluralStringResource(R.plurals.chat_new_messages, n, n)
     Row(modifier.fillMaxWidth().padding(top = 12.dp, bottom = 6.dp).semantics(mergeDescendants = true) { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.weight(1f).height(1.dp).background(line))
@@ -282,7 +284,7 @@ fun PgComposer(
             Spacer(Modifier.width(50.dp))
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (onAttach != null) PgIconBtn(Pg.Clip, "Attach a file", onAttach, tint = c.ink2, enabled = !editing, dimAlpha = .38f)
+            if (onAttach != null) PgIconBtn(Pg.Clip, stringResource(R.string.chat_attach_file), onAttach, tint = c.ink2, enabled = !editing, dimAlpha = .38f)
             if (field != null) field(Modifier.weight(1f)) else PgField(draft, onDraft, placeholder, focus, Modifier.weight(1f).onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyDown && (e.key == Key.Enter || e.key == Key.NumPadEnter) && (e.isCtrlPressed || e.isMetaPressed)) { if (draft.isNotBlank()) onSend(); true }
                 else if (e.type == KeyEventType.KeyDown && e.key == Key.Escape && ctx != null) { onCancelCtx(); true } else false
@@ -296,11 +298,12 @@ fun PgComposer(
 @Composable
 fun PgSendButton(editing: Boolean, empty: Boolean, onSend: () -> Unit) {
     val c = Tin.c
+    val sendLabel = stringResource(if (editing) R.string.chat_save_edit else R.string.chat_send)
     // The same 48 dp slot as the mic button it replaces, so the composer row keeps its height on the first letter.
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         Box(
             Modifier.size(44.dp).alpha(if (empty) .38f else 1f).clip(CircleShape).background(c.accentFill)
-                .let { if (empty) it.semantics { contentDescription = if (editing) "Save edit" else "Send" } else it.pgPress(onSend, if (editing) "Save edit" else "Send") },
+                .let { if (empty) it.semantics { contentDescription = sendLabel } else it.pgPress(onSend, sendLabel) },
             contentAlignment = Alignment.Center,
         ) {
             Icon(if (editing) Pg.Check else Pg.Send, null, tint = c.onAccentFill, modifier = Modifier.size(20.dp).padding(end = if (editing) 0.dp else 2.dp))

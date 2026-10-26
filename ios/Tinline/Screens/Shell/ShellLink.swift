@@ -184,36 +184,36 @@ private struct ShellNewDeviceLink: View {
         let p = ShellPalette(tin)
         let canBack: Bool = { switch ui { case .idle, .showing, .failed: return true; default: return false } }()
         VStack(spacing: 0) {
-            ShellGateHead(onBack: canBack ? onBack : nil, progress: progress, label: "Link to your account")
+            ShellGateHead(onBack: canBack ? onBack : nil, progress: progress, label: tr("link_gate_label"))
             switch ui {
             case .code(let code, let peer):
-                ShellGateStep("Same code on both?", lead: "Check that \(ShellText.ifBlank(peer, "your other device")) shows this code, then approve there.",
+                ShellGateStep(tr("link_same_code"), lead: ShellText.isBlank(peer) ? tr("link_same_code_lead_unnamed") : tr("link_same_code_lead", peer),
                               center: true, anchor: true, content: {
                     ShellBigCode(code: code)
-                    ShellNotice("Different code, or you didn\u{2019}t start this? Cancel. Someone else may have scanned the QR.", kind: .warn)
-                    ShellWaitingLine(text: "Waiting for approval\u{2026}")
-                }, foot: { ShellGBtn(text: "Cancel", kind: .secondary, action: onCancel) })
+                    ShellNotice(tr("link_diff_code"), kind: .warn)
+                    ShellWaitingLine(text: tr("link_waiting"))
+                }, foot: { ShellGBtn(text: tr("link_cancel"), kind: .secondary, action: onCancel) })
             case .approving, .connecting, .done:
-                ShellGateStep("Linking\u{2026}", lead: "Receiving your account. Keep both devices open.", center: true, anchor: true, content: {
+                ShellGateStep(tr("link_linking"), lead: tr("link_receiving"), center: true, anchor: true, content: {
                     ShellSpinner(size: 40, color: p.accent, stroke: 4).padding(.vertical, 40)
                 }, foot: { EmptyView() })
             case .failed(let reason, let detail):
-                ShellGateStep("Couldn\u{2019}t link", center: true, anchor: true, content: {
+                ShellGateStep(tr("link_failed"), center: true, anchor: true, content: {
                     ShellNotice(ShellText.linkFail(reason, detail), kind: .error)
                 }, foot: {
-                    ShellGBtn(text: "Try again", action: onRetry)
-                    ShellGBtn(text: "Not now", kind: .text, action: onBack)
+                    ShellGBtn(text: tr("link_try_again"), action: onRetry)
+                    ShellGBtn(text: tr("link_not_now"), kind: .text, action: onBack)
                 })
             case .showing, .idle:
                 let showing: (String, Int64)? = { if case .showing(let q, let e) = ui { return (q, e) }; return nil }()
-                ShellGateStep("Link to your account", lead: "On a device that already has your account, open Settings \u{203A} Link a device and scan this.",
+                ShellGateStep(tr("link_gate_label"), lead: tr("link_qr_lead"),
                               center: true, anchor: true, content: {
                     ShellQrPanel(qr: showing?.0, expiresAt: showing?.1 ?? 0)
-                    Text("Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device.")
+                    Text(tr("link_qr_warn"))
                         .shellStyle(.sub).foregroundStyle(tin.ink2).multilineTextAlignment(.center).frame(maxWidth: 300)
                 }, foot: {
-                    ShellGBtn(text: "New code", kind: .text, enabled: showing != nil, action: onNew)
-                    ShellGBtn(text: "Scan instead", kind: .text, action: onScanInstead)
+                    ShellGBtn(text: tr("link_new_code"), kind: .text, enabled: showing != nil, action: onNew)
+                    ShellGBtn(text: tr("link_scan_instead"), kind: .text, action: onScanInstead)
                 })
             }
         }
@@ -235,7 +235,7 @@ struct ShellQrPanel: View {
                 if let qr, let img = ShellQrImage.make(qr) {
                     Image(uiImage: img).interpolation(.none).resizable().scaledToFit()
                         .clipShape(SmoothRoundedRectangle(cornerRadius: 12)).opacity(expired ? 0.18 : 1)
-                        .accessibilityLabel("QR code to link this device")
+                        .accessibilityLabel(tr("link_qr_label"))
                 } else {
                     ShellSpinner(size: 28, color: Color(hex: 0x0B6B5B), stroke: 3)
                 }
@@ -243,8 +243,8 @@ struct ShellQrPanel: View {
             .frame(width: 208, height: 208).padding(12)
             .background(SmoothRoundedRectangle(cornerRadius: 20).fill(Color.white))
             .overlay(SmoothRoundedRectangle(cornerRadius: 20).stroke(tin.ln, lineWidth: 1))
-            Text(qr == nil ? "Preparing your code\u{2026}" : expired ? "Expired. Make a new code."
-                 : "Expires in \(left / 60000):\(String(format: "%02d", left / 1000 % 60)) \u{00B7} works once")
+            Text(qr == nil ? tr("link_preparing") : expired ? tr("link_expired")
+                 : tr("link_expires", String(left / 60000), String(format: "%02d", left / 1000 % 60)))
                 .shellStyle(.sub).monospacedDigit().foregroundStyle(expired ? tin.er : tin.ink2)
         }
         .task(id: qr) {
@@ -266,7 +266,7 @@ struct ShellBigCode: View {
     var body: some View {
         Text(code).font(ShellFont.mono(44, weight == .bold ? .medium : weight)).fontWeight(weight).monospacedDigit().tracking(44 * 0.12)
             .foregroundStyle(tin.ink).frame(maxWidth: .infinity).padding(.vertical, 8)
-            .accessibilityLabel("Link code \(code.map(String.init).joined(separator: " "))")
+            .accessibilityLabel(tr("link_code_label", code.map(String.init).joined(separator: " ")))
     }
 }
 
@@ -316,51 +316,50 @@ private struct ShellExistingDeviceLink: View {
     }
 
     var body: some View {
-        ShellPfPage(title: "Link a new device", onBack: { onCancel(); onClose() }) {
+        ShellPfPage(title: tr("link_new_title"), onBack: { onCancel(); onClose() }) {
             VStack(alignment: .leading, spacing: 12) {
                 switch key {
                 case "scan": ShellLinkScanStep(note: note, onScan: onScan, onShow: onShow, onTyped: onTyped, onClearNote: onClearNote)
                 case "show":
-                    ShellPageH1(text: "Show this code to your new device")
-                    Text("On the new device choose \u{201C}Link to a device\u{201D}, then \u{201C}Scan instead\u{201D}, and point it at this code.")
+                    ShellPageH1(text: tr("link_show_title"))
+                    Text(tr("link_show_body"))
                         .shellStyle(.sub19).foregroundStyle(tin.ink2)
                     let s: (String, Int64)? = { if case .showing(let q, let e) = links.ui { return (q, e) }; return nil }()
                     ShellQrPanel(qr: s?.0, expiresAt: s?.1 ?? 0).frame(maxWidth: .infinity)
-                    ShellActs { ShellPBtn(text: "Back", variant: .quiet, action: onCancel); ShellPBtn(text: "New code", action: onNew) }
+                    ShellActs { ShellPBtn(text: tr("link_back"), variant: .quiet, action: onCancel); ShellPBtn(text: tr("link_new_code"), action: onNew) }
                 case "verify":
                     if case .code(let code, let peer) = links.ui {
-                        let who = ShellText.ifBlank(peer, "The new device")
-                        ShellPageH1(text: "Do the codes match?")
-                        (Text(who).bold() + Text(" wants to join your account. It should be showing the same six digits as below."))
+                        ShellPageH1(text: tr("link_match_title"))
+                        Text(ShellText.isBlank(peer) ? trRich("link_match_body_unnamed") : trRich("link_match_body", peer))
                             .shellStyle(.body).foregroundStyle(tin.ink)
                         ShellBigCode(code: code, weight: .bold)
-                        Text("Compare them yourself. If they differ, someone else may have scanned the code first.").shellStyle(.sub19).foregroundStyle(tin.ink2)
-                        ShellActs { ShellPBtn(text: "They don\u{2019}t match", action: onCancel); ShellPBtn(text: "They match", variant: .primary) { matched = true } }
+                        Text(tr("link_match_warn")).shellStyle(.sub19).foregroundStyle(tin.ink2)
+                        ShellActs { ShellPBtn(text: tr("link_no_match"), action: onCancel); ShellPBtn(text: tr("link_match"), variant: .primary) { matched = true } }
                     }
                 case "auth":
-                    if case .code(_, let peer) = links.ui { ShellApproveStep(links: links, who: ShellText.ifBlank(peer, "the new device"), onCancel: onCancel) }
+                    if case .code(_, let peer) = links.ui { ShellApproveStep(links: links, who: peer, onCancel: onCancel) }
                 case "transfer":
                     let connecting = links.ui == .connecting
-                    let peer: String = { if case .approving(_, let p) = links.ui, !p.isEmpty { return p }; return "the new device" }()
-                    ShellPageH1(text: connecting ? "Connecting\u{2026}" : "Linking \(peer)")
+                    let peer: String = { if case .approving(_, let p) = links.ui { return p }; return "" }()
+                    ShellPageH1(text: connecting ? tr("link_connecting") : ShellText.isBlank(peer) ? tr("link_linking_peer_unnamed") : tr("link_linking_peer", peer))
                     HStack(spacing: 12) {
                         ShellSpinner(size: 14, color: ShellPalette(tin).accent).frame(width: 24, height: 24)
-                        Text(connecting ? "Reaching the other device" : "Sending your account").shellStyle(.body).foregroundStyle(tin.ink)
+                        Text(connecting ? tr("link_reaching") : tr("link_sending")).shellStyle(.body).foregroundStyle(tin.ink)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Working").shellStyle(.sub).foregroundStyle(tin.ink2)
+                        Text(tr("link_working")).shellStyle(.sub).foregroundStyle(tin.ink2)
                     }
                     .frame(minHeight: 48)
-                    Text("Keep both devices open until this finishes.").shellStyle(.sub19).foregroundStyle(tin.ink2)
-                    if connecting { ShellActs { ShellPBtn(text: "Cancel", variant: .quiet, action: onCancel) } }
+                    Text(tr("link_keep_open")).shellStyle(.sub19).foregroundStyle(tin.ink2)
+                    if connecting { ShellActs { ShellPBtn(text: tr("link_cancel"), variant: .quiet, action: onCancel) } }
                 case "done":
-                    let peer: String = { if case .done(_, _, let p) = links.ui, !p.isEmpty { return p }; return "The new device" }()
-                    ShellResultBlock(glyph: .check, ok: true, title: "\(peer) is linked",
-                                     text: "It syncs when both devices are online at the same time. Contacts you haven\u{2019}t blocked get your updated device list when they\u{2019}re next online.")
-                    ShellActs { ShellPBtn(text: "Done", variant: .primary, action: onClose) }
+                    let peer: String = { if case .done(_, _, let p) = links.ui { return p }; return "" }()
+                    ShellResultBlock(glyph: .check, ok: true, title: ShellText.isBlank(peer) ? tr("link_done_title_unnamed") : tr("link_done_title", peer),
+                                     text: tr("link_done_body"))
+                    ShellActs { ShellPBtn(text: tr("link_done"), variant: .primary, action: onClose) }
                 default:
                     if case .failed(let reason, let detail) = links.ui {
-                        ShellResultBlock(glyph: .info, ok: false, title: "Couldn\u{2019}t link", text: ShellText.linkFail(reason, detail))
-                        ShellActs { ShellPBtn(text: "Close", variant: .quiet, action: onClose); ShellPBtn(text: "Try again", variant: .primary, action: onRetry) }
+                        ShellResultBlock(glyph: .info, ok: false, title: tr("link_failed"), text: ShellText.linkFail(reason, detail))
+                        ShellActs { ShellPBtn(text: tr("link_close"), variant: .quiet, action: onClose); ShellPBtn(text: tr("link_try_again"), variant: .primary, action: onRetry) }
                     }
                 }
             }
@@ -399,30 +398,30 @@ private struct ShellLinkScanStep: View {
 
     var body: some View {
         let p = ShellPalette(tin)
-        ShellPageH1(text: "Scan the code on your new device")
+        ShellPageH1(text: tr("link_scan_title"))
         VStack(alignment: .leading, spacing: 4) {
-            (Text("1.  On the new device, open Tinline and choose ") + Text("Link to a device").foregroundColor(tin.ink).fontWeight(.semibold) + Text("."))
+            Text(trRich("link_scan_step1") { s, r in s[r].foregroundColor = tin.ink; s[r].font = ShellFont.of(.sub19, weight: .semibold) })
                 .shellStyle(.sub19).foregroundStyle(tin.ink2)
-            Text("2.  It shows a QR code and a short code. They work for 5 minutes, once.").shellStyle(.sub19).foregroundStyle(tin.ink2)
+            Text(tr("link_scan_step2")).shellStyle(.sub19).foregroundStyle(tin.ink2)
         }
         .padding(.leading, 4)
         VStack(spacing: 14) {
             ShellIcon(glyph: .camera, size: 30, color: Color(hex: 0x9DB0AA))
-            ShellPBtn(text: "Scan QR code", variant: .primary, action: onScan)
+            ShellPBtn(text: tr("link_scan_qr"), variant: .primary, action: onScan)
         }
         .frame(width: 220, height: 220).background(SmoothRoundedRectangle(cornerRadius: 20).fill(Color(hex: 0x0E1513)))
         .frame(maxWidth: .infinity)
         VStack(alignment: .leading, spacing: 6) {
-            Text("Or type the code").shellStyle(.sub, weight: .semibold).foregroundStyle(tin.ink)
+            Text(tr("link_or_type")).shellStyle(.sub, weight: .semibold).foregroundStyle(tin.ink)
             HStack(spacing: 8) {
                 ShellPassField(label: "", text: $text, secret: false, mono: true, placeholder: "OSVL1:\u{2026}", msgLines: 0,
                                onDone: { if !text.trimmingCharacters(in: .whitespaces).isEmpty { onTyped(text) } })
                     .onChange(of: text) { _, _ in onClearNote() }
-                ShellPBtn(text: "Continue", enabled: !text.trimmingCharacters(in: .whitespaces).isEmpty) { onTyped(text) }
+                ShellPBtn(text: tr("link_continue"), enabled: !text.trimmingCharacters(in: .whitespaces).isEmpty) { onTyped(text) }
             }
             Text(note ?? "").shellStyle(.sub19).foregroundStyle(tin.er).frame(maxWidth: .infinity, minHeight: 38, alignment: .topLeading)
         }
-        ShellPBtn(text: "Show a QR code here instead", variant: .quiet, colorOverride: p.accentInk, action: onShow)
+        ShellPBtn(text: tr("link_show_instead"), variant: .quiet, colorOverride: p.accentInk, action: onShow)
     }
 }
 
@@ -441,7 +440,7 @@ private struct ShellApproveStep: View {
         busy = true; error = ""
         Task {
             do { try await links.approve(passphrase: hasPass == true ? pass : nil); pass = "" }
-            catch { self.error = ShellText.isWrongPassphrase(error) ? "That passphrase isn\u{2019}t right." : ShellText.friendly(error) }
+            catch { self.error = ShellText.isWrongPassphrase(error) ? tr("link_wrong_pass") : ShellText.friendly(error) }
             busy = false
         }
     }
@@ -450,27 +449,27 @@ private struct ShellApproveStep: View {
         if hasPass == true { approve(); return }
         let auth = ShellWiring.deviceAuth
         if !auth.available { approve(); return }
-        Task { if await auth.ask(reason: "Link a new device") { approve() } else { error = "Screen lock check cancelled" } }
+        Task { if await auth.ask(reason: tr("link_new_title")) { approve() } else { error = tr("link_lock_cancelled") } }
     }
 
     var body: some View {
-        ShellPageH1(text: "Approve \(who)?")
+        ShellPageH1(text: ShellText.isBlank(who) ? tr("link_approve_title_unnamed") : tr("link_approve_title", who))
         HStack(alignment: .top, spacing: 10) {
             ShellIcon(glyph: .warning, size: 18, color: tin.onWarn).padding(.top, 1)
-            (Text("Approving sends your ") + Text("recovery phrase").bold() + Text(" to \(who). It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."))
+            Text(ShellText.isBlank(who) ? trRich("link_approve_body_unnamed") : trRich("link_approve_body", who))
                 .font(ShellFont.of(.body)).lineSpacing(2).foregroundStyle(tin.onWarn)
         }
         .padding(12).background(SmoothRoundedRectangle(cornerRadius: 12).fill(tin.warn))
         if hasPass == true {
-            ShellPassField(label: "Your passphrase", text: $pass, error: error, enabled: !busy, autofocus: true,
+            ShellPassField(label: tr("link_your_pass"), text: $pass, error: error, enabled: !busy, autofocus: true,
                            onDone: { if !pass.isEmpty && !busy { go() } })
                 .onChange(of: pass) { _, _ in error = "" }
         } else if !error.isEmpty {
             Text(error).shellStyle(.sub19).foregroundStyle(tin.er)
         }
         ShellActs {
-            ShellPBtn(text: "Don\u{2019}t link", variant: .quiet, enabled: !busy, action: onCancel)
-            ShellPBtn(text: busy ? "Approving\u{2026}" : "Approve", variant: .primary, enabled: !busy && hasPass != nil && (hasPass == false || !pass.isEmpty), action: go)
+            ShellPBtn(text: tr("link_dont"), variant: .quiet, enabled: !busy, action: onCancel)
+            ShellPBtn(text: busy ? tr("link_approving") : tr("link_approve"), variant: .primary, enabled: !busy && hasPass != nil && (hasPass == false || !pass.isEmpty), action: go)
         }
         .task {
             guard let core = app.core else { return }
@@ -513,18 +512,18 @@ private struct ShellLinkScanScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ShellTopBar(title: newDevice ? "Scan instead" : "Scan the code", onBack: onBack) {
-                if granted { ShellIconButton(glyph: torch ? .torch : .torchoff, label: "Torch", size: 48, iconSize: 24) { torch.toggle() } }
+            ShellTopBar(title: newDevice ? tr("link_scan_instead") : tr("link_scan_code"), onBack: onBack) {
+                if granted { ShellIconButton(glyph: torch ? .torch : .torchoff, label: tr("link_torch"), size: 48, iconSize: 24) { torch.toggle() } }
             }
             ZStack {
-                ShellWiring.qrScanner.view(prompt: newDevice ? "Point at the code on your other device" : "Point the camera at the QR code on your new device",
+                ShellWiring.qrScanner.view(prompt: newDevice ? tr("link_point_other") : tr("link_point_new"),
                                            torch: torch, onGranted: { granted = $0 }, onText: onText)
                     .id(nonce)
                 if let note {
                     VStack(spacing: 12) {
                         ShellIcon(glyph: .warning, size: 32, color: Color(hex: 0xF2B8B5))
                         Text(note).shellStyle(.body).foregroundStyle(.white).multilineTextAlignment(.center)
-                        ShellPBtn(text: "Scan again", variant: .primary, action: onRetry)
+                        ShellPBtn(text: tr("link_scan_again"), variant: .primary, action: onRetry)
                     }
                     .padding(20).background(SmoothRoundedRectangle(cornerRadius: 20).fill(Color(.sRGB, red: 0x10 / 255, green: 0x16 / 255, blue: 0x14 / 255, opacity: 0.9)))
                     .padding(24)
@@ -532,9 +531,9 @@ private struct ShellLinkScanScreen: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity).padding(.top, 8)
             VStack(spacing: 8) {
-                Text("The code works once and expires in 5 minutes.").shellStyle(.sub).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
+                Text(tr("link_code_once")).shellStyle(.sub).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                if !newDevice { ShellGBtn(text: "Show a QR code here instead", kind: .text, action: onShow) }
+                if !newDevice { ShellGBtn(text: tr("link_show_instead"), kind: .text, action: onShow) }
             }
             .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 24)
         }
@@ -553,14 +552,14 @@ struct ShellUnlinkedScreen: View {
     var body: some View {
         ShellPage {
             ShellGateHead(onBack: nil, progress: nil)
-            ShellGateStep("This phone was unlinked",
-                          lead: "\(ShellText.ifBlank(name, "Your account")) was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected.",
+            ShellGateStep(tr("link_unlinked_title"),
+                          lead: ShellText.isBlank(name) ? tr("link_unlinked_lead_unnamed") : tr("link_unlinked_lead", name),
                           center: true, anchor: true,
                           hero: { ShellIconDisc(glyph: .off, size: 72, iconSize: 32, danger: true).padding(.top, 12) },
                           content: { EmptyView() },
                           foot: {
-                              ShellGBtn(text: "OK", action: onOk)
-                              ShellGBtn(text: "Link it again", kind: .text, action: onLinkAgain)
+                              ShellGBtn(text: tr("link_ok"), action: onOk)
+                              ShellGBtn(text: tr("link_again"), kind: .text, action: onLinkAgain)
                           })
         }
     }

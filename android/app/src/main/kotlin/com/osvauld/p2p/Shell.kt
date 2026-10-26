@@ -1,5 +1,7 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.CubicBezierEasing
@@ -86,7 +88,7 @@ object RingHead {
     data class Ring(
         val did: String, val name: String,
         /** "Incoming call", "Incoming video call", or "Calling during your call". */
-        val sub: String = "Incoming call",
+        val sub: String = appString(R.string.shell_incoming_call),
         /** Call waiting: the buttons are Decline and End & answer. */
         val waiting: Boolean = false,
         val onOpen: () -> Unit = {}, val onDecline: () -> Unit = {}, val onAnswer: () -> Unit = {},
@@ -123,10 +125,10 @@ fun HomeAppBar(look: MarkLook, showSearch: Boolean, onSearch: () -> Unit, onSett
         ) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TinMark(28.dp, live = true, state = look.state, sway = look.sway, dim = look.dim, description = look.label)
-                Text("Tinline", style = TinType.titleL.copy(fontSize = 19.sp, lineHeight = 21.sp), color = c.ink)
+                Text(stringResource(R.string.app_name), style = TinType.titleL.copy(fontSize = 19.sp, lineHeight = 21.sp), color = c.ink)
             }
-            if (showSearch) PgIconButton(PgIcons.Search, "Search", onSearch, enabled = ring == null)
-            PgIconButton(PgIcons.Gear, "Settings", onSettings, enabled = ring == null)
+            if (showSearch) PgIconButton(PgIcons.Search, stringResource(R.string.common_search), onSearch, enabled = ring == null)
+            PgIconButton(PgIcons.Gear, stringResource(R.string.shell_settings), onSettings, enabled = ring == null)
         }
         // The last ring stays drawn while it fades out.
         var last by remember { mutableStateOf(ring) }
@@ -140,10 +142,12 @@ fun HomeAppBar(look: MarkLook, showSearch: Boolean, onSearch: () -> Unit, onSett
 @Composable
 fun RingHeadRow(r: RingHead.Ring, modifier: Modifier, avatar: Dp) {
     val c = Tin.c
-    Row(modifier.background(c.bg).semantics(mergeDescendants = false) { contentDescription = if (r.waiting) "${r.name} is calling during your call" else "${r.sub} from ${r.name}" },
+    val callDesc = if (r.waiting) stringResource(R.string.shell_ring_waiting_desc, r.name) else stringResource(R.string.shell_ring_desc, r.sub, r.name)
+    val openLabel = stringResource(R.string.shell_ring_open, r.name)
+    Row(modifier.background(c.bg).semantics(mergeDescendants = false) { contentDescription = callDesc },
         verticalAlignment = Alignment.CenterVertically) {
         Row(
-            Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button, onClickLabel = "Open call from ${r.name}", onClick = r.onOpen),
+            Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button, onClickLabel = openLabel, onClick = r.onOpen),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Avatar(r.name, r.did, avatar)
@@ -152,8 +156,8 @@ fun RingHeadRow(r: RingHead.Ring, modifier: Modifier, avatar: Dp) {
                 Text(r.sub, style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 15.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        RingBtn(PgIcons.Phone, "Decline", c.dangerBtn, Color.White, hang = true, onClick = r.onDecline)
-        RingBtn(PgIcons.Phone, if (r.waiting) "End and answer" else "Answer", c.accent, c.onAccent, hang = false, onClick = r.onAnswer)
+        RingBtn(PgIcons.Phone, stringResource(R.string.common_decline), c.dangerBtn, Color.White, hang = true, onClick = r.onDecline)
+        RingBtn(PgIcons.Phone, if (r.waiting) stringResource(R.string.shell_end_and_answer) else stringResource(R.string.common_answer), c.accent, c.onAccent, hang = false, onClick = r.onAnswer)
     }
 }
 
@@ -200,17 +204,18 @@ fun TabTitle(text: String) {
 @Composable
 fun SearchDock(addLabel: String, onSearch: () -> Unit, onAdd: () -> Unit) {
     val c = Tin.c
+    val searchLabel = stringResource(R.string.common_search)
     Row(
         Modifier.fillMaxWidth().background(c.bg).padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             Modifier.weight(1f).height(48.dp).pressable(onSearch, RoundedCornerShape(24.dp), wash = c.hairline, rest = c.sf2)
-                .semantics(mergeDescendants = true) { contentDescription = "Search" }.padding(horizontal = 16.dp),
+                .semantics(mergeDescendants = true) { contentDescription = searchLabel }.padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(PgIcons.Search, null, tint = c.ink2, modifier = Modifier.size(20.dp))
-            Text("Search", style = TinFs.body, color = c.ink2)
+            Text(searchLabel, style = TinFs.body, color = c.ink2)
         }
         Box(
             Modifier.size(48.dp).pressable(onAdd, CircleShape, wash = c.accentSoft, rest = c.accentSoft).semantics { contentDescription = addLabel },
@@ -238,9 +243,10 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
                     val p by animateFloatAsState(if (on) 1f else 0f, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "ind")
                     val fg by animateColorAsState(if (on) c.accentInk else c.ink2, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "tabfg")
                     val badge = when (t) { HomeTab.Chats -> chatBadge; HomeTab.Groups -> groupBadge; HomeTab.Contacts -> contactBadge; else -> 0 }
+                    val badgeDesc = if (badge <= 0) "" else if (t == HomeTab.Contacts) pluralStringResource(R.plurals.shell_badge_waiting, badge, badge) else pluralStringResource(R.plurals.shell_badge_unread, badge, badge)
                     Column(
                         Modifier.weight(1f).heightIn(min = 56.dp).pressable({ onTab(t) }, RoundedCornerShape(0.dp), wash = Color.Transparent, role = Role.Tab)
-                            .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = if (t == HomeTab.Contacts) "$badge waiting" else "$badge unread" },
+                            .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = badgeDesc },
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Box(Modifier.padding(top = 5.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {
@@ -248,14 +254,20 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
                             Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
                             if (badge > 0) CountBadge(badge, Modifier.align(Alignment.TopEnd).offset(x = (-4).dp, y = (-4).dp))
                         }
-                        Text(t.title, style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold), color = fg)
+                        // One line in every language: a long word (Malayalam "Contacts") shrinks to fit instead of wrapping and growing the bar.
+                        Text(t.title, style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold), color = fg,
+                            maxLines = 1, softWrap = false,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp))
                     }
                 }
         }
     }
 }
 
-val HomeTab.title: String get() = when (this) { HomeTab.Chats -> "Chats"; HomeTab.Groups -> "Groups"; HomeTab.Calls -> "Calls"; HomeTab.Contacts -> "Contacts" }
+val HomeTab.title: String get() = when (this) {
+    HomeTab.Chats -> appString(R.string.shell_tab_chats); HomeTab.Groups -> appString(R.string.shell_tab_groups)
+    HomeTab.Calls -> appString(R.string.shell_tab_calls); HomeTab.Contacts -> appString(R.string.shell_tab_contacts)
+}
 
 /** `.t-badge`: 18 tall, min 18 wide, padding 0 5, radius 9, --accent; muted = a hairline ring in --muted. */
 @Composable

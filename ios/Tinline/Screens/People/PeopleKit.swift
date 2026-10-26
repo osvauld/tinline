@@ -345,7 +345,7 @@ struct PeopleSwitch: View {
             .peopleAnimation(PeopleMotion.switch, value: checked)
         }
         .buttonStyle(.plain).disabled(!enabled)
-        .accessibilityLabel(label).accessibilityValue(checked ? "On" : "Off").accessibilityAddTraits(.isButton)
+        .accessibilityLabel(label).accessibilityValue(checked ? tr("people_switch_on") : tr("people_switch_off")).accessibilityAddTraits(.isButton)
     }
 }
 
@@ -373,7 +373,7 @@ struct PeopleChip: View {
             .peopleAnimation(PeopleMotion.switch, value: pressed)
         }
         .buttonStyle(PeoplePressStyle())
-        .accessibilityValue(pressed ? "Selected" : "")
+        .accessibilityValue(pressed ? tr("people_chip_selected") : "")
     }
 }
 
@@ -457,7 +457,7 @@ struct PeopleGateField: View {
                 .peopleStyle(mono ? .mono : .body, size: mono ? 15 : nil, lineHeight: mono ? 21 : nil).foregroundStyle(c.ink).tint(c.peopleAccentInk)
                 .padding(.leading, 14).padding(.trailing, secret ? 4 : 14).frame(maxWidth: .infinity, minHeight: 48)
                 if secret {
-                    PeopleIconButton(icon: shown ? .eyeoff : .eye, label: shown ? "Hide \(label.lowercased())" : "Show \(label.lowercased())",
+                    PeopleIconButton(icon: shown ? .eyeoff : .eye, label: shown ? tr("people_field_hide", label.lowercased()) : tr("people_field_show", label.lowercased()),
                                      tint: c.ink2, iconSize: 20) { shown.toggle(); focused = true }
                 }
             }
@@ -480,7 +480,7 @@ struct PeopleGateField: View {
 struct PeopleField: View {
     @Environment(\.tin) private var c
     @Binding var text: String
-    var label = "Passphrase"
+    var label = tr("people_passphrase")
     var error = ""
     var hint = ""
     var enabled = true
@@ -506,7 +506,7 @@ struct PeopleField: View {
                 .peopleStyle(mono ? .mono : .body).tracking(mono ? 0.04 * 15 : 0).foregroundStyle(c.ink).tint(c.peopleAccentInk)
                 .padding(.leading, 14).padding(.trailing, secret ? 0 : 14).frame(maxWidth: .infinity, minHeight: 44)
                 if secret {
-                    PeopleIconButton(icon: shown ? .eyeoff : .eye, label: shown ? "Hide passphrase" : "Show passphrase", tint: c.ink2, iconSize: 20) {
+                    PeopleIconButton(icon: shown ? .eyeoff : .eye, label: shown ? tr("people_passphrase_hide") : tr("people_passphrase_show"), tint: c.ink2, iconSize: 20) {
                         shown.toggle(); focused = true
                     }
                 }
@@ -578,7 +578,7 @@ struct PeopleGateHead: View {
 
     // Light/dark right in sign-up (Gate.svelte): the first screens are where someone decides if this feels like theirs.
     private var theme: some View {
-        PeopleIconButton(icon: c.dark ? .sun : .moon, label: c.dark ? "Switch to light" : "Switch to dark", tint: c.ink2, size: 40, iconSize: 20) {
+        PeopleIconButton(icon: c.dark ? .sun : .moon, label: c.dark ? tr("people_theme_light") : tr("people_theme_dark"), tint: c.ink2, size: 40, iconSize: 20) {
             onToggleTheme?()
         }
         .offset(x: 10).opacity(onToggleTheme == nil ? 0 : 1).disabled(onToggleTheme == nil)
@@ -589,7 +589,7 @@ struct PeopleGateHead: View {
             HStack { Spacer(); theme }.frame(minHeight: 40).padding(.leading, 8).padding(.trailing, 20)
         } else {
             HStack(spacing: 12) {
-                ZStack { if let onBack { PeopleIconButton(icon: .back, label: "Back", action: onBack) } }.frame(width: 44)
+                ZStack { if let onBack { PeopleIconButton(icon: .back, label: tr("people_back"), action: onBack) } }.frame(width: 44)
                 Spacer(minLength: 0)
                 if let progress {
                     HStack(spacing: 10) {
@@ -600,11 +600,11 @@ struct PeopleGateHead: View {
                             }
                         }
                         // step 0 (Welcome, Choose): the count keeps its width, hidden, so "1 of 6" appears in place
-                        Text("\(progress.step) of \(progress.total)").peopleStyle(.sub, tnum: true).foregroundStyle(c.ink2)
+                        Text(tr("people_step_of", String(progress.step), String(progress.total))).peopleStyle(.sub, tnum: true).foregroundStyle(c.ink2)
                             .frame(minWidth: 42, alignment: .trailing).opacity(progress.step == 0 ? 0 : 1)
                     }
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Setup progress, step \(progress.step) of \(progress.total)" + (stepLabel.isEmpty ? "" : ": \(stepLabel)"))
+                    .accessibilityLabel(stepLabel.isEmpty ? tr("people_step_a11y", String(progress.step), String(progress.total)) : tr("people_step_a11y_label", String(progress.step), String(progress.total), stepLabel))
                 }
                 theme
             }
@@ -724,7 +724,7 @@ struct PeopleTopBar<Actions: View>: View {
     init(title: String? = nil, onBack: (() -> Void)? = nil, @ViewBuilder actions: () -> Actions) { self.title = title; self.onBack = onBack; self.actions = actions() }
     var body: some View {
         HStack(spacing: 0) {
-            if let onBack { PeopleIconButton(icon: .back, label: "Back", action: onBack) } else { Spacer().frame(width: 16) }
+            if let onBack { PeopleIconButton(icon: .back, label: tr("people_back"), action: onBack) } else { Spacer().frame(width: 16) }
             Text(title ?? "").peopleStyle(.title, size: 20, lineHeight: 26).foregroundStyle(c.ink).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
             actions
         }
@@ -752,7 +752,7 @@ struct PeopleBar<Actions: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
-                PeopleIconButton(icon: .back, label: "Back", action: onBack)
+                PeopleIconButton(icon: .back, label: tr("people_back"), action: onBack)
                 Text(title).peopleStyle(.barTitle).foregroundStyle(c.ink).lineLimit(1).accessibilityAddTraits(.isHeader).frame(maxWidth: .infinity, alignment: .leading)
                 actions
             }

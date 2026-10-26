@@ -54,11 +54,16 @@ final class ProfileModelTests: XCTestCase {
         XCTAssertEqual(effectiveAvailability(nil), Avail(available: true))
     }
 
-    func testUntilLabelSaysTodayTomorrowOrWeekday() {
+    func testBusyUntilSaysTodayTomorrowOrWeekday() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         let now: Int64 = 1_791_640_200_000   // 2026-10-10 13:50 UTC
-        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 3_600_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "14:50")
-        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "tomorrow 13:50")
-        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 3 * 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "Tuesday 13:50")
+        let en = Locale(identifier: "en_US")
+        let clock = { (ms: Int64) -> String in
+            let f = DateFormatter(); f.locale = en; f.calendar = cal; f.timeZone = cal.timeZone; f.dateStyle = .none; f.timeStyle = .short
+            return f.string(from: Date(timeIntervalSince1970: Double(ms) / 1000))
+        }
+        XCTAssertEqual(PeopleProfileInfo.busyUntil(atMs: now + 3_600_000, nowMs: now, calendar: cal, locale: en), "Busy until " + clock(now + 3_600_000))
+        XCTAssertEqual(PeopleProfileInfo.busyUntil(atMs: now + 86_400_000, nowMs: now, calendar: cal, locale: en), "Busy until tomorrow " + clock(now + 86_400_000))
+        XCTAssertEqual(PeopleProfileInfo.busyUntil(atMs: now + 3 * 86_400_000, nowMs: now, calendar: cal, locale: en), "Busy until Tuesday " + clock(now + 3 * 86_400_000))
     }
 }

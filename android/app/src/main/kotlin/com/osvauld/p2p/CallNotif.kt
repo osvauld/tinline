@@ -65,7 +65,7 @@ object CallNotif {
         val g = app.groupCalls
         val here = g.here.value
         return derive(
-            of(u), u?.info?.peerName?.ifBlank { null } ?: "Call",
+            of(u), u?.info?.peerName?.ifBlank { null } ?: appString(R.string.call_notif_fallback_title),
             here?.inCall == true, here?.hosting == true, g.callName(),
             g.preparedAtMs, System.currentTimeMillis(),
         )

@@ -330,7 +330,7 @@ struct GroupsBadge: View {
                 .padding(.horizontal, 5).frame(minWidth: 18, minHeight: 18)
                 .background { if !muted { RoundedRectangle(cornerRadius: 9).fill(tin.grpAccent) } }
                 .overlay { if muted { RoundedRectangle(cornerRadius: 9).strokeBorder(tin.ln, lineWidth: 1) } }
-                .accessibilityLabel("\(count) unread")
+                .accessibilityLabel(trn("group_unread_badge_desc", count))
         }
     }
 }
@@ -559,7 +559,7 @@ struct GroupsCallLine: View {
 struct GroupsJoinChip: View {
     @Environment(\.tin) private var tin
     var body: some View {
-        Text("Join").font(.custom("Figtree", size: 11, relativeTo: .caption2).weight(.bold)).foregroundStyle(tin.grpOnAccent)
+        Text(tr("group_join")).font(.custom("Figtree", size: 11, relativeTo: .caption2).weight(.bold)).foregroundStyle(tin.grpOnAccent)
             .padding(.horizontal, 11).padding(.vertical, 2).background(tin.grpAccent, in: RoundedRectangle(cornerRadius: 12))
             .accessibilityHidden(true)
     }
@@ -598,7 +598,7 @@ struct GroupsFlagMeter: View {
                     .animation(GroupsMotion.enterAnim(reduced), value: filled)
             }
         }
-        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? "\(filled) of \(total) flags")
+        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? trn("group_flags_count_desc", filled, String(total)))
     }
     private func color(_ i: Int) -> Color {
         if i < filled { return tin.grpDangerBtn }
@@ -696,8 +696,8 @@ enum GroupsTime {
     /// Day pill in a conversation: "Today", "Yesterday", else "Thursday 8 Oct" (with the year when it isn't this year).
     static func dayLabel(_ ms: UInt64, _ nowMs: UInt64) -> String {
         let n = daysAgo(ms, nowMs)
-        if n <= 0 { return "Today" }
-        if n == 1 { return "Yesterday" }
+        if n <= 0 { return tr("group_today") }
+        if n == 1 { return tr("group_yesterday") }
         let sameYear = cal.component(.year, from: date(ms)) == cal.component(.year, from: date(nowMs))
         return format(sameYear ? "EEEE d MMM" : "EEEE d MMM yyyy", ms)
     }
@@ -706,18 +706,21 @@ enum GroupsTime {
     static func dayOnly(_ ms: UInt64) -> String { format("d MMM", ms) }
 
     /// "Oct 10, 14:02"
-    static func whenFull(_ ms: UInt64) -> String { format("MMM d, HH:mm", ms) }
+    static func whenFull(_ ms: UInt64) -> String { tr("group_when_date", format("MMMd", ms), clock(ms)) }
 
     /// "Yesterday, 03:12" / "Today, 09:00" / "Oct 3, 10:00"
     static func dayAndTime(_ ms: UInt64, _ nowMs: UInt64) -> String {
-        (0...1).contains(daysAgo(ms, nowMs)) ? "\(dayLabel(ms, nowMs)), \(clock(ms))" : whenFull(ms)
+        switch daysAgo(ms, nowMs) {
+        case ...0: return tr("group_when_today", clock(ms))
+        case 1: return tr("group_when_yesterday", clock(ms))
+        default: return whenFull(ms)
+        }
     }
 
     private static func format(_ pattern: String, _ ms: UInt64) -> String {
         let f = DateFormatter()
         f.locale = .current
         f.setLocalizedDateFormatFromTemplate(pattern)
-        if pattern.hasSuffix("HH:mm") { f.dateFormat = pattern }
         return f.string(from: date(ms))
     }
 }

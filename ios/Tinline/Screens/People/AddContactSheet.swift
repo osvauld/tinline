@@ -67,11 +67,11 @@ struct AddContactSheet: View {
 
     var body: some View {
         let inc = people.incoming
-        PeopleDialogBody(title: inc == nil ? "Add contact" : inc!.joined ? "New contact" : "Contact request") {
+        PeopleDialogBody(title: inc == nil ? tr("people_add_title") : inc!.joined ? tr("people_add_title_new") : tr("people_add_title_request")) {
             // `.tabs.gone`: hidden but keeping its height, so the sheet doesn't jump when it becomes a request.
             HStack(spacing: 8) {
-                PeopleChip(text: "Code", pressed: !qrTab) { if inc == nil { qrTab = false; scanning = false; reset() } }
-                PeopleChip(text: "QR", pressed: qrTab) { if inc == nil { qrTab = true; reset() } }
+                PeopleChip(text: tr("people_add_tab_code"), pressed: !qrTab) { if inc == nil { qrTab = false; scanning = false; reset() } }
+                PeopleChip(text: tr("people_add_tab_qr"), pressed: qrTab) { if inc == nil { qrTab = true; reset() } }
             }
             .padding(.top, 8).opacity(inc != nil ? 0 : 1)
 
@@ -119,7 +119,7 @@ struct AddContactSheet: View {
         VStack(spacing: 8) {
             ZStack {
                 if scanning {
-                    PeopleQRCameraView(label: "Point at their Tinline code.") { t in
+                    PeopleQRCameraView(label: tr("people_add_point_camera")) { t in
                         // A final camera callback can arrive after the photo picker replaces it.
                         if scanning && qrTab && !readingImage && people.incoming == nil { scanning = false; look(t, .camera) }
                     }
@@ -128,19 +128,19 @@ struct AddContactSheet: View {
                     ZStack {
                         SmoothRoundedRectangle(cornerRadius: 12).fill(Color.white)
                         if let t = myCode, let img = PeopleQR.image(t) {
-                            Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(6).accessibilityLabel("Your QR code")
-                        } else { Text("Preparing your code\u{2026}").peopleStyle(.sub).foregroundStyle(Color(hex: 0x4D5853)) }
+                            Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(6).accessibilityLabel(tr("people_add_my_qr_a11y"))
+                        } else { Text(tr("people_add_preparing")).peopleStyle(.sub).foregroundStyle(Color(hex: 0x4D5853)) }
                     }
                     .frame(width: 260, height: 260)
                 }
             }
             .frame(width: 260, height: 260)
-            Text(readingImage ? "Reading image\u{2026}" : !hint.isEmpty ? hint : scanning ? "Point at their Tinline code." : "Let them scan this with Tinline.")
+            Text(readingImage ? tr("people_add_reading_image") : !hint.isEmpty ? hint : scanning ? tr("people_add_point_camera") : tr("people_add_let_scan"))
                 .peopleStyle(.sub19).foregroundStyle(c.ink2).multilineTextAlignment(.center).lineLimit(2)
                 .frame(maxWidth: .infinity, minHeight: 38, maxHeight: 38).accessibilityAddTraits(.updatesFrequently)
             HStack(spacing: 8) {
-                PeopleButton(scanning ? "Show my code" : "Scan their code", enabled: !readingImage, padH: 12, fill: true) { reset(); scanning.toggle() }
-                PeopleButton("Choose image", enabled: !readingImage, padH: 12, fill: true) { reset(); scanning = false; photoOpen = true }
+                PeopleButton(scanning ? tr("people_add_show_mine") : tr("people_add_scan_theirs"), enabled: !readingImage, padH: 12, fill: true) { reset(); scanning.toggle() }
+                PeopleButton(tr("people_add_choose_image"), enabled: !readingImage, padH: 12, fill: true) { reset(); scanning = false; photoOpen = true }
             }
         }
     }
@@ -150,36 +150,36 @@ struct AddContactSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 // "New code" sits on the label's line (a text button, same height), so it never moves anything.
                 HStack {
-                    Text("Your code").peopleStyle(.sub, weight: .bold, lineHeight: 21).foregroundStyle(c.ink)
+                    Text(tr("people_add_your_code")).peopleStyle(.sub, weight: .bold, lineHeight: 21).foregroundStyle(c.ink)
                     Spacer(minLength: 0)
                     Button {
                         guard let node = people.node else { return }
                         Task { _ = await Task.detached { try? node.resetTicket() }.value; myCode = nil; codeVersion += 1 }
-                    } label: { Text("New code").peopleStyle(.sub, weight: .semibold, lineHeight: 21).foregroundStyle(c.peopleAccentInk) }
+                    } label: { Text(tr("people_add_new_code")).peopleStyle(.sub, weight: .semibold, lineHeight: 21).foregroundStyle(c.peopleAccentInk) }
                 }
                 // Reusable for 7 days (core my_code); the date is the code's own exp.
-                Text(myCodeExp.map { "Send it to anyone you\u{2019}d like to talk to, in any app. It works until \(codeUntil($0))." }
-                     ?? "Send it to anyone you\u{2019}d like to talk to, in any app.")
+                Text(myCodeExp.map { tr("people_add_send_until", codeUntil($0)) }
+                     ?? tr("people_add_send"))
                     .peopleStyle(.sub19).foregroundStyle(c.ink2)
-                Text(myCode ?? "Preparing your code\u{2026}").peopleStyle(.mono, size: 12, lineHeight: 18).foregroundStyle(c.ink2).lineLimit(1).truncationMode(.tail)
+                Text(myCode ?? tr("people_add_preparing")).peopleStyle(.mono, size: 12, lineHeight: 18).foregroundStyle(c.ink2).lineLimit(1).truncationMode(.tail)
                     .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 12, style: .circular).fill(c.sf2))
                 // the bare code only (OSVC2:...)
                 HStack(spacing: 8) {
-                    PeopleButton(copied ? "Copied" : "Copy my code", variant: .primary, enabled: myCode != nil, padH: 12, fill: true) {
+                    PeopleButton(copied ? tr("people_copied") : tr("people_add_copy_mine"), variant: .primary, enabled: myCode != nil, padH: 12, fill: true) {
                         if let m = myCode { PeopleClipboard.copy(m); copied = true }
                     }
-                    PeopleButton("Share", icon: .share, enabled: myCode != nil, padH: 12, fill: true, action: share)
+                    PeopleButton(tr("people_share"), icon: .share, enabled: myCode != nil, padH: 12, fill: true, action: share)
                 }
             }
             HStack(spacing: 10) {
                 Rectangle().fill(c.ln).frame(height: 1)
-                Text("or").peopleStyle(.sub).foregroundStyle(c.ink2)
+                Text(tr("people_add_or")).peopleStyle(.sub).foregroundStyle(c.ink2)
                 Rectangle().fill(c.ln).frame(height: 1)
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("Their code").peopleStyle(.sub, weight: .bold, lineHeight: 21).foregroundStyle(c.ink)
-                PeopleButton("Paste their code", fill: true) { look(PeopleClipboard.text, .code) }
+                Text(tr("people_add_their_code")).peopleStyle(.sub, weight: .bold, lineHeight: 21).foregroundStyle(c.ink)
+                PeopleButton(tr("people_add_paste_theirs"), fill: true) { look(PeopleClipboard.text, .code) }
                 // Hints are not errors: muted, polite (never red, never an alert).
                 Text(hint).peopleStyle(.sub19).foregroundStyle(c.ink2).frame(maxWidth: .infinity, minHeight: 38, alignment: .topLeading)
                     .accessibilityAddTraits(.updatesFrequently)
@@ -191,33 +191,33 @@ struct AddContactSheet: View {
         let p = found
         PeopleActs(top: 2) {
             if let i, !i.joined {
-                PeopleButton("Not now", variant: .quiet, enabled: !answering, action: onClose)
-                PeopleButton("Accept", variant: .primary, enabled: !answering, minWidth: 132) { accept(i.did) }
+                PeopleButton(tr("people_not_now"), variant: .quiet, enabled: !answering, action: onClose)
+                PeopleButton(tr("people_accept"), variant: .primary, enabled: !answering, minWidth: 132) { accept(i.did) }
             } else if let i {
-                PeopleButton("Done", variant: .quiet, action: onClose)
-                PeopleButton("Message", variant: .primary, minWidth: 132) { onMessage(i.did) }
+                PeopleButton(tr("people_done"), variant: .quiet, action: onClose)
+                PeopleButton(tr("people_message"), variant: .primary, minWidth: 132) { onMessage(i.did) }
             } else if let p {
-                if requested && !added { PeopleButton("Done", variant: .primary, minWidth: 132, action: onClose) }
+                if requested && !added { PeopleButton(tr("people_done"), variant: .primary, minWidth: 132, action: onClose) }
                 else if added {
-                    PeopleButton("Done", variant: .quiet, action: onClose)
-                    PeopleButton("Message", variant: .primary) { onMessage(p.did) }
+                    PeopleButton(tr("people_done"), variant: .quiet, action: onClose)
+                    PeopleButton(tr("people_message"), variant: .primary) { onMessage(p.did) }
                 } else if p.known {
-                    PeopleButton("Close", variant: .quiet, action: onClose)
-                    PeopleButton("Open profile", variant: .primary) { onProfile(p.did) }
+                    PeopleButton(tr("people_close"), variant: .quiet, action: onClose)
+                    PeopleButton(tr("people_add_open_profile"), variant: .primary) { onProfile(p.did) }
                 } else if fail == .refused {
-                    PeopleButton("Back", variant: .quiet) { reset() }
-                    PeopleButton("Paste a new code", variant: .primary) { reset() }
+                    PeopleButton(tr("people_back"), variant: .quiet) { reset() }
+                    PeopleButton(tr("people_add_paste_new"), variant: .primary) { reset() }
                 } else if fail == .blocked {
-                    PeopleButton("Back", variant: .quiet) { reset() }
-                    PeopleButton("Close", variant: .primary, minWidth: 132, action: onClose)
+                    PeopleButton(tr("people_back"), variant: .quiet) { reset() }
+                    PeopleButton(tr("people_close"), variant: .primary, minWidth: 132, action: onClose)
                 } else {
-                    PeopleButton("Back", variant: .quiet, enabled: !adding) { reset() }
+                    PeopleButton(tr("people_back"), variant: .quiet, enabled: !adding) { reset() }
                     // Keep the action short; the complete username is shown in the preview.
-                    PeopleButton(adding ? "Adding\u{2026}" : fail != nil ? "Try again" : "Add contact", variant: .primary, enabled: !adding, minWidth: 132, action: add)
+                    PeopleButton(adding ? tr("people_add_adding") : fail != nil ? tr("people_add_try_again") : tr("people_add_title"), variant: .primary, enabled: !adding, minWidth: 132, action: add)
                 }
             } else {
-                if qrTab && !scanning { PeopleButton("Share", icon: .share, enabled: myCode != nil && !readingImage, action: share) }
-                PeopleButton("Close", variant: .quiet, action: onClose)
+                if qrTab && !scanning { PeopleButton(tr("people_share"), icon: .share, enabled: myCode != nil && !readingImage, action: share) }
+                PeopleButton(tr("people_close"), variant: .quiet, action: onClose)
             }
         }
     }
@@ -237,7 +237,7 @@ struct AddContactSheet: View {
         reset()
         let generation = inputGeneration
         guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            hint = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."; return
+            hint = tr("people_add_hint_empty_clipboard"); return
         }
         guard let node = people.node else { return }
         Task {
@@ -246,9 +246,9 @@ struct AddContactSheet: View {
             if generation != inputGeneration || people.incoming != nil { return }
             switch p {
             case .found(let card): found = card; source = how
-            case .own: hint = "That\u{2019}s your own code. Send it to them, and paste theirs here."
-            case .expired(let name, _, _): hint = "That code from \(name) has expired. Ask them for a fresh one."
-            default: hint = "That doesn\u{2019}t look like a Tinline code. Could they copy it again for you?"
+            case .own: hint = tr("people_add_hint_own_code")
+            case .expired(let name, _, _): hint = tr("people_add_hint_expired", name)
+            default: hint = tr("people_add_hint_not_code")
             }
         }
     }
@@ -263,9 +263,9 @@ struct AddContactSheet: View {
             guard generation == inputGeneration, qrTab, people.incoming == nil else { return }
             switch result {
             case .decoded(let t): look(t, .image)
-            case .noQr: hint = "No QR found. Try a clearer image."
-            case .multiple: hint = "More than one QR. Crop to the one you want."
-            case .unreadable: hint = "Couldn\u{2019}t read that image. Choose another."
+            case .noQr: hint = tr("people_add_hint_no_qr")
+            case .multiple: hint = tr("people_add_hint_many_qr")
+            case .unreadable: hint = tr("people_add_hint_unreadable")
             }
         }
     }
@@ -335,7 +335,7 @@ private struct PeopleLineJoin: View {
         HStack(spacing: 6) {
             TinAvatar(did: meDid, size: 56)
             TinMark(size: 64, state: markState, live: true, sway: Sway(period: 1.2, amp: 6),
-                    description: state == .taut ? "Connected" : state == .ringing ? "Connecting" : "Not connected yet",
+                    description: state == .taut ? tr("people_line_connected") : state == .ringing ? tr("people_line_connecting") : tr("people_line_not_connected"),
                     spring: .line, lineColor: true)
             TinAvatar(did: did, size: 56)
         }
@@ -387,25 +387,25 @@ private struct PeopleFound: View {
         // slack (recognised) -> ringing while the dial runs and while the request waits -> taut.
         let state: PeopleLineState = added || known ? .taut : adding || requested ? .ringing : .slack
         let why: String = {
-            if blocked { return "You blocked \(first). Unblock them in Privacy before adding them again." }
-            if known { return "\(first) is already in your contacts." }
-            if added { return "Your line to \(first) is open. Say hello." }
-            if requested { return "Request sent. Your line opens when \(first) accepts." }
-            if adding { return slow ? "Still trying. \(first)\u{2019}s Tinline needs to be open and online for this." : "Reaching \(first)\u{2019}s Tinline\u{2026}" }
+            if blocked { return tr("people_add_why_blocked", first) }
+            if known { return tr("people_add_why_known", first) }
+            if added { return tr("people_add_why_added", first) }
+            if requested { return tr("people_add_why_requested", first) }
+            if adding { return slow ? tr("people_add_why_slow", first) : tr("people_add_why_reaching", first) }
             switch fail {
-            case .timeout?: return "Couldn\u{2019}t reach \(first)\u{2019}s Tinline. It needs to be open and online, so try again when \(first)\u{2019}s around."
-            case .refused?: return "\(first)\u{2019}s code isn\u{2019}t valid any more. They may have made a new one, so ask \(first) for their newest code."
-            case .blocked?: return "You can\u{2019}t add \(first) right now. They\u{2019}ve chosen not to be in touch here."
-            case .offline?: return "You\u{2019}re offline. Once you\u{2019}re connected, try again."
-            case nil: return "Is this \(first)? If you\u{2019}re not sure, check with them first."
+            case .timeout?: return tr("people_add_why_timeout", first)
+            case .refused?: return tr("people_add_why_refused", first)
+            case .blocked?: return tr("people_add_why_blocked_by", first)
+            case .offline?: return tr("people_add_why_offline")
+            case nil: return tr("people_add_why_confirm", first)
             }
         }()
         VStack(spacing: 8) {
             PeopleLineJoin(meDid: meDid, did: peek.did, state: state)
             Text(peek.name).peopleStyle(.title, size: 20, lineHeight: 26).foregroundStyle(c.ink)
             switch source {
-            case .camera: PeopleStateChip(icon: .scan, text: "Read with camera")
-            case .image: PeopleStateChip(icon: .image, text: "Read from image")
+            case .camera: PeopleStateChip(icon: .scan, text: tr("people_add_read_camera"))
+            case .image: PeopleStateChip(icon: .image, text: tr("people_add_read_image"))
             case .code: EmptyView()
             }
             PeopleWhy(text: why)
@@ -423,10 +423,10 @@ private struct PeopleIncoming: View {
         VStack(spacing: 8) {
             PeopleLineJoin(meDid: meDid, did: incoming.did, state: incoming.joined ? .taut : .ringing)
             Text(incoming.name).peopleStyle(.title, size: 20, lineHeight: 26).foregroundStyle(c.ink)
-            PeopleStateChip(icon: .userPlus, text: incoming.theirs ? "Accepted your request" : "Has your code")
-            PeopleWhy(text: !incoming.joined ? "\(f) wants to add you as a contact. Accepting lets you message and call each other."
-                      : incoming.theirs ? "\(f) accepted. Your line to \(f) is open. Say hello."
-                      : "Your line to \(f) is open. Say hello.")
+            PeopleStateChip(icon: .userPlus, text: incoming.theirs ? tr("people_add_accepted_you") : tr("people_add_has_your_code"))
+            PeopleWhy(text: !incoming.joined ? tr("people_add_inc_wants", f)
+                      : incoming.theirs ? tr("people_add_inc_accepted", f)
+                      : tr("people_add_inc_open", f))
         }
     }
 }

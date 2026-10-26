@@ -1,5 +1,7 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -220,9 +222,10 @@ fun GBadge(count: Int, muted: Boolean = false) {
     if (count <= 0) return
     val c = Tin.c
     val shape = RoundedCornerShape(9.dp)
+    val unreadDesc = pluralStringResource(R.plurals.groupsc_unread, count, count)
     Box(
         Modifier.heightIn(min = 18.dp).widthIn(min = 18.dp).clip(shape).let { if (muted) it.border(1.dp, c.ln, shape) else it.background(c.accentFill) }
-            .padding(horizontal = 5.dp).semantics { contentDescription = "$count unread" },
+            .padding(horizontal = 5.dp).semantics { contentDescription = unreadDesc },
         contentAlignment = Alignment.Center,
     ) {
         Text(if (count > 99) "99+" else "$count", style = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHeight = 11.sp,
@@ -419,7 +422,7 @@ fun GCallLine(text: String) {
 fun GJoinChip() {
     val c = Tin.c
     Box(Modifier.clip(RoundedCornerShape(12.dp)).background(c.accentFill).padding(horizontal = 11.dp, vertical = 2.dp)) {
-        Text("Join", style = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold), color = c.onAccent)
+        Text(stringResource(R.string.common_join), style = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold), color = c.onAccent)
     }
 }
 

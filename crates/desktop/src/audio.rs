@@ -301,7 +301,7 @@ impl<D> Slot<D> {
             self.name = None;
             self.next_try = Instant::now();
             if !self.notified {
-                notice(format!("{} disconnected, switching to the system default", self.label));
+                notice(crate::i18n::tr_args("audio_disconnected_switching_to_the", &[("label", &(self.label).to_string())]));
                 self.notified = true;
             }
         }
@@ -310,14 +310,14 @@ impl<D> Slot<D> {
                 Ok(d) => {
                     self.dev = Some(d);
                     if self.notified {
-                        notice(format!("{} is back", self.label));
+                        notice(crate::i18n::tr_args("audio_is_back", &[("label", &(self.label).to_string())]));
                         self.notified = false;
                     }
                 }
                 Err(e) => {
                     eprintln!("{}: {e}", self.label);
                     if !self.notified {
-                        notice(format!("{} unavailable: {e}", self.label));
+                        notice(crate::i18n::tr_args("audio_unavailable", &[("label", &(self.label).to_string()),("error", &(e).to_string())]));
                         self.notified = true;
                     }
                     self.next_try = Instant::now() + REOPEN_EVERY;
@@ -377,7 +377,7 @@ fn run_call(
         Ok(p) => p,
         Err(e) => {
             eprintln!("audio processing unavailable: {e:?}");
-            notice("Echo cancellation is unavailable".into());
+            notice(crate::i18n::tr_str("audio_echo_cancellation_is_unavailable").into());
             return;
         }
     };
@@ -390,8 +390,8 @@ fn run_call(
     // Test knob: skip the cleaning to check the device path on its own.
     let bypass = crate::test_env("P2P_NO_APM").is_some();
 
-    let mut mic = Slot::<Mic>::new("Microphone", in_dev);
-    let mut spk = Slot::<Spk>::new("Speaker", out_dev);
+    let mut mic = Slot::<Mic>::new(crate::i18n::tr_str("common_microphone"), in_dev);
+    let mut spk = Slot::<Spk>::new(crate::i18n::tr_str("common_speaker"), out_dev);
     let mut pcm: Vec<f32> = Vec::with_capacity(RATE as usize);
     let mut frame = vec![0.0f32; FRAME];
     let mut played: Vec<f32> = Vec::with_capacity(FRAME);
@@ -467,7 +467,7 @@ pub fn start_loop(out_dev: Option<String>, kind: &'static str, gain: f64) -> Ses
             }
             let Some(cycle) = crate::cues::call(kind, palette(), gain) else { return };
             let quiet: Notice = Arc::new(|_| {});
-            let mut spk = Slot::<Spk>::new("Speaker", out_dev);
+            let mut spk = Slot::<Spk>::new(crate::i18n::tr_str("common_speaker"), out_dev);
             let mut i = 0usize;
             while !flag.load(Ordering::Relaxed) {
                 spk.maintain(|s| s.failed.load(Ordering::Relaxed), open_spk, &quiet);

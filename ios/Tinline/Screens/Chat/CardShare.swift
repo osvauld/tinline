@@ -77,12 +77,12 @@ struct ChatCardButton: View {
 /// Copy button that says "Copied" with a check for two seconds.
 struct ChatCopyButton: View {
     let text: String?
-    var label = "Copy"
+    var label = tr("chat_card_copy")
     var style: ChatCardButtonStyle = .outlined
     @State private var copied = false
 
     var body: some View {
-        ChatCardButton(title: copied ? "Copied" : label, glyph: copied ? .check : .copy, style: style, enabled: text != nil) {
+        ChatCardButton(title: copied ? tr("chat_card_copied") : label, glyph: copied ? .check : .copy, style: style, enabled: text != nil) {
             if let text { UIPasteboard.general.string = text; copied = true }
         }
         .task(id: copied) { if copied { try? await Task.sleep(nanoseconds: 2_000_000_000); copied = false } }
@@ -108,7 +108,7 @@ struct ChatMyCodeBlock: View {
                     SmoothRoundedRectangle(cornerRadius: 14).fill(.white)
                     if let t = ticket, let img = ChatQR.image(t, px: 720, fg: UIColor(red: 0x17 / 255, green: 0x20 / 255, blue: 0x1D / 255, alpha: 1)) {
                         Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(10)
-                            .accessibilityLabel("QR code of your contact card")
+                            .accessibilityLabel(tr("chat_card_qr_label"))
                         // The mark in the middle: a white tile, the accent square, the mark in its own colours.
                         ZStack {
                             SmoothRoundedRectangle(cornerRadius: 10).fill(.white).frame(width: 40, height: 40)
@@ -116,12 +116,12 @@ struct ChatMyCodeBlock: View {
                             TinMark(size: 26, can: .white, string: Color(hex: 0xE8B04A), mouth: Color(hex: 0x0B6B5B))
                         }
                     } else {
-                        Text(err ?? "Preparing your code…").font(TinType.bodyM).foregroundStyle(Color(hex: 0x4D5853))
+                        Text(err ?? tr("chat_card_preparing")).font(TinType.bodyM).foregroundStyle(Color(hex: 0x4D5853))
                             .multilineTextAlignment(.center).padding(16)
                     }
                 }
                 .frame(width: qr, height: qr)
-                Text("Works once. Making a new code cancels this one.").font(TinType.bodyM).foregroundStyle(tin.ink2)
+                Text(tr("chat_card_once")).font(TinType.bodyM).foregroundStyle(tin.ink2)
                     .multilineTextAlignment(.center).frame(maxWidth: 300)
             }
             .padding(20).frame(maxWidth: .infinity)
@@ -129,17 +129,17 @@ struct ChatMyCodeBlock: View {
             .overlay(SmoothRoundedRectangle(cornerRadius: 24).stroke(tin.ln, lineWidth: 1))
             HStack(spacing: 10) {
                 if let t = ticket {
-                    ShareLink(item: t, subject: Text("Share contact card")) {
-                        HStack(spacing: 8) { ChatIcon(glyph: .share, size: 18, color: tin.onPrc); Text("Share").font(TinType.button).foregroundStyle(tin.onPrc) }
+                    ShareLink(item: t, subject: Text(tr("chat_card_share_subject"))) {
+                        HStack(spacing: 8) { ChatIcon(glyph: .share, size: 18, color: tin.onPrc); Text(tr("chat_card_share")).font(TinType.button).foregroundStyle(tin.onPrc) }
                             .frame(maxWidth: .infinity).frame(height: 48).background(tin.prc, in: Capsule())
                     }
                 } else {
-                    ChatCardButton(title: "Share", glyph: .share, style: .tonal, enabled: false) {}
+                    ChatCardButton(title: tr("chat_card_share"), glyph: .share, style: .tonal, enabled: false) {}
                 }
                 ChatCopyButton(text: ticket)
             }
             if showNewCode {
-                ChatCardButton(title: "New code", glyph: .retry, style: .text, fill: false) {
+                ChatCardButton(title: tr("chat_card_new_code"), glyph: .retry, style: .text, fill: false) {
                     let node = node
                     Task {
                         _ = await Task.detached { try? node?.resetTicket() }.value
@@ -186,18 +186,18 @@ struct ChatCardPrompts: View {
                     HStack(spacing: 12) {
                         TinAvatar(did: p.did, size: 44)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(p.known ? "Chat with \(p.name.isEmpty ? "them" : p.name)?" : "Add \(p.name.isEmpty ? "this contact" : p.name)?")
+                            Text(p.known ? (p.name.isEmpty ? tr("chat_card_chat_with_unnamed") : tr("chat_card_chat_with", p.name)) : (p.name.isEmpty ? tr("chat_card_add_name_unnamed") : tr("chat_card_add_name", p.name)))
                                 .font(TinType.bodyL.weight(.bold)).foregroundStyle(tin.ink).lineLimit(1)
-                            Text(p.known ? "They are already in your contacts." : "Tinline found their card.")
+                            Text(p.known ? tr("chat_card_known_sub") : tr("chat_card_found_sub"))
                                 .font(TinType.bodyM).foregroundStyle(tin.ink2)
                         }
                         Spacer(minLength: 0)
-                        ChatCardButton(title: "Not now", style: .text, height: 44, fill: false) {
+                        ChatCardButton(title: tr("chat_card_not_now"), style: .text, height: 44, fill: false) {
                             dismissed = cardHash(p.ticket)
                             UserDefaults.standard.set(dismissed, forKey: "card_prompt.dismissed")
                             prompt = nil
                         }
-                        ChatCardButton(title: p.known ? "Open" : "Add", height: 44, fill: false) {
+                        ChatCardButton(title: p.known ? tr("chat_card_open") : tr("chat_card_add"), height: 44, fill: false) {
                             prompt = nil
                             if p.known { onChat(p) } else { onAdd(p) }
                         }

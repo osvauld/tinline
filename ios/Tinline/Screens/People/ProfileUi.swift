@@ -19,7 +19,7 @@ struct PeopleSavedTag: View {
     var body: some View {
         HStack(spacing: 3) {
             PeopleIconView(icon: .check, size: 13, color: c.peopleAccentInk)
-            Text(offline ? "Saved \u{00B7} syncs when connected" : "Saved").peopleStyle(.sub, weight: .semibold)
+            Text(offline ? tr("people_ui_saved_offline") : tr("people_ui_saved")).peopleStyle(.sub, weight: .semibold)
                 .foregroundStyle(c.peopleAccentInk).lineLimit(1).fixedSize()
         }
         .opacity(shown || reduced ? 1 : 0)
@@ -82,7 +82,7 @@ struct PeopleFieldRow: View {
     var readonly = false
     var limit = 0
     var offline = false
-    var empty = "Not set"
+    var empty = tr("people_ui_not_set")
     var note = ""
     var onSave: ((String) async -> String?)? = nil
     var onRemove: (() async -> String?)? = nil
@@ -158,15 +158,15 @@ struct PeopleFieldRow: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading).accessibilityAddTraits(.updatesFrequently)
                 HStack(spacing: 8) {
-                    if optional && !isNull { PeopleButton("Remove", variant: .dangerQuiet, action: drop) }
+                    if optional && !isNull { PeopleButton(tr("people_remove"), variant: .dangerQuiet, action: drop) }
                     Spacer(minLength: 0)
-                    PeopleButton("Cancel", variant: .quiet, action: cancel)
-                    PeopleButton("Save", variant: .primary, action: save)
+                    PeopleButton(tr("people_cancel"), variant: .quiet, action: cancel)
+                    PeopleButton(tr("people_save"), variant: .primary, action: save)
                 }
             }
             .padding(.leading, 16).padding(.trailing, 16).padding(.top, 14).padding(.bottom, 12)
             if near {
-                Text("\(bytes) of \(limit) bytes").peopleStyle(.sub, tnum: true).foregroundStyle(bytes > limit ? c.peopleDanger : c.ink2)
+                Text(tr("people_ui_bytes", String(bytes), String(limit))).peopleStyle(.sub, tnum: true).foregroundStyle(bytes > limit ? c.peopleDanger : c.ink2)
                     .lineLimit(1).fixedSize().padding(.top, 14).padding(.trailing, 16)
             }
         }
@@ -174,13 +174,13 @@ struct PeopleFieldRow: View {
 
     private var remover: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Remove \u{201C}\(label)\u{201D} from your profile?").peopleStyle(.body, weight: .semibold).foregroundStyle(c.ink)
-            Text("It disappears from your profile. Earlier versions can remain in synced history.").peopleStyle(.sub19).foregroundStyle(c.ink2)
+            Text(tr("people_ui_remove_title", label)).peopleStyle(.body, weight: .semibold).foregroundStyle(c.ink)
+            Text(tr("people_ui_remove_note")).peopleStyle(.sub19).foregroundStyle(c.ink2)
             if !error.isEmpty { Text(error).peopleStyle(.sub).foregroundStyle(c.peopleDanger).accessibilityAddTraits(.updatesFrequently) }
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
-                PeopleButton("Cancel", variant: .quiet, action: cancel)
-                PeopleButton("Remove", variant: .danger, action: drop)
+                PeopleButton(tr("people_cancel"), variant: .quiet, action: cancel)
+                PeopleButton(tr("people_remove"), variant: .danger, action: drop)
             }
         }
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 12)
@@ -206,14 +206,14 @@ struct PeopleFieldRow: View {
             .frame(minHeight: !editable && label.isEmpty ? 0 : 64, alignment: editable ? .leading : .topLeading)
             if editable {
                 Button(action: edit) { content.contentShape(Rectangle()) }.buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore).accessibilityLabel("\(label): \(text.isEmpty ? empty : text). Edit")
+                    .accessibilityElement(children: .ignore).accessibilityLabel(tr("people_ui_row_a11y", label, text.isEmpty ? empty : text))
                     .accessibilityAddTraits(.isButton)
             } else { content }
-            if let url, let onOpen { toolButton(.link, 20, "Open \(label): \(PeopleProfileInfo.shortUrl(url))") { onOpen(url) } }
+            if let url, let onOpen { toolButton(.link, 20, tr("people_ui_open_a11y", label, PeopleProfileInfo.shortUrl(url))) { onOpen(url) } }
             if editable {
                 toolButton(.edit, 18, nil, alpha: 0.8) { edit() }.padding(.trailing, 6).padding(.leading, url != nil && onOpen != nil ? -8 : 0)
             }
-            if removable { toolButton(.trash, 20, "Remove \(label)") { error = ""; mode = .remove } }
+            if removable { toolButton(.trash, 20, tr("people_ui_remove_a11y", label)) { error = ""; mode = .remove } }
         }
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -241,7 +241,7 @@ struct PeopleProfileValue: View {
     private func show(_ x: PeopleJSON) -> String {
         switch x {
         case .null: return "\u{2014}"
-        case .bool(let b): return b ? "Yes" : "No"
+        case .bool(let b): return b ? tr("people_yes") : tr("people_no")
         case .number(let n): return n
         case .string(let s): return s
         default: return x.text

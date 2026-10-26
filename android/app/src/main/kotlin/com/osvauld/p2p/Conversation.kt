@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -345,7 +346,7 @@ fun ConversationScreen(
         scope.launch(Dispatchers.IO) {
             runCatching { source.sendFile(peerDid, file.path, mime, null) }
                 .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.animateScrollToItem(0) } }
-                .onFailure { withContext(Dispatchers.Main) { toast("Couldn’t send that file.") } }
+                .onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_send_file_failed)) } }
             file.parentFile?.takeIf { it.parentFile?.name == "chat_out" }?.deleteRecursively()
         }
     }
@@ -354,12 +355,12 @@ fun ConversationScreen(
         scope.launch(Dispatchers.IO) {
             runCatching { ChatMedia.copyIn(ctx, uri) }
                 .onSuccess { (f, mime) -> sendFile(f, mime) }
-                .onFailure { withContext(Dispatchers.Main) { toast("Couldn’t read that file.") } }
+                .onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_read_file_failed)) } }
         }
     }
     fun download(m: Message) {
         requested.add(m.id)
-        scope.launch(Dispatchers.IO) { runCatching { source.download(peerDid, m.id) }.onFailure { withContext(Dispatchers.Main) { requested.remove(m.id); toast("Couldn’t start the download.") } } }
+        scope.launch(Dispatchers.IO) { runCatching { source.download(peerDid, m.id) }.onFailure { withContext(Dispatchers.Main) { requested.remove(m.id); toast(ctx.getString(R.string.conv_download_failed)) } } }
     }
     fun cancel(m: Message) {
         requested.remove(m.id)
@@ -369,7 +370,7 @@ fun ConversationScreen(
         val a = m.attachment ?: return
         scope.launch(Dispatchers.IO) {
             val ok = runCatching { ChatMedia.saveToPhone(ctx, ChatMedia.decrypt(ctx, source, m), a.name, a.mime) }.getOrDefault(false)
-            withContext(Dispatchers.Main) { toast(if (ok) "Saved to your phone" else "Couldn’t save that file.") }
+            withContext(Dispatchers.Main) { toast(ctx.getString(if (ok) R.string.conv_saved_to_phone else R.string.conv_save_failed)) }
         }
     }
 
@@ -381,7 +382,7 @@ fun ConversationScreen(
             OpenKind.PDF, OpenKind.TEXT -> docViewer = m.id
             OpenKind.EXTERNAL -> scope.launch(Dispatchers.IO) {
                 val ok = runCatching { FileOpen.openExternally(ctx, ChatMedia.decrypt(ctx, source, m), plan.mime) }.getOrDefault(false)
-                if (!ok) withContext(Dispatchers.Main) { toast("No app on this phone opens .${FileOpen.extOf(a.name)} files — Save it instead") }
+                if (!ok) withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_no_app_opens, FileOpen.extOf(a.name))) }
             }
         }
     }
@@ -396,9 +397,9 @@ fun ConversationScreen(
     fun launchCamera() {
         val (f, uri) = ChatMedia.cameraTarget(ctx)
         cameraFile = f
-        try { camera.launch(uri) } catch (e: Exception) { toast("No camera available.") }
+        try { camera.launch(uri) } catch (e: Exception) { toast(ctx.getString(R.string.conv_no_camera)) }
     }
-    val cameraPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) launchCamera() else toast("Allow the camera to take photos.") }
+    val cameraPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) launchCamera() else toast(ctx.getString(R.string.conv_allow_camera)) }
 
     val byId = remember(msgs.toList()) { msgs.associateBy { it.id } }
     Box(Modifier.fillMaxSize()) {
@@ -442,24 +443,24 @@ fun ConversationScreen(
                     ) {
                         Icon(PgIcons.Clock, null, tint = c.ink2)
                         Column(Modifier.weight(1f)) {
-                            Text("Older messages are on $first’s phone", style = TinType.bodyM.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
-                            Text("This phone keeps them from when you started using it. Earlier days load when you’re both online.", Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2)
+                            Text(stringResource(R.string.conv_older_title, first), style = TinType.bodyM.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
+                            Text(stringResource(R.string.conv_older_body), Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2)
                         }
                     }
                 }
             }
             if ((!online || link == Link.Offline) && composerState == ComposerState.Open) PgStrip(
-                if (!online) "You’re offline. Messages send when you’re back online." else "$first is offline. Messages send when you’re both online.", Pg.Off, modifier = Modifier.align(Alignment.TopCenter),
+                if (!online) stringResource(R.string.conv_offline_self) else stringResource(R.string.conv_offline_peer, first), Pg.Off, modifier = Modifier.align(Alignment.TopCenter),
             )
             }
             if (composerState != ComposerState.Open) BlockedFooter(name, composerState, onUnblock, onAddContact)
             else Composer(
                 // Typing is the wake point (consent-based links, 2026-10-17): the core dials them ahead of the send.
-                draft, { if (it.isNotEmpty() && it != draft && !isSelf) source.typing(peerDid); draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner("Replying to ${if (it.outgoing) "yourself" else first}", ChatNotifier.previewOf(it)) },
-                editing?.let { byId[it] }?.let { ComposerBanner("Editing message", it.text) },
+                draft, { if (it.isNotEmpty() && it != draft && !isSelf) source.typing(peerDid); draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner(if (it.outgoing) ctx.getString(R.string.conv_replying_self) else ctx.getString(R.string.conv_replying_to, first), ChatNotifier.previewOf(it)) },
+                editing?.let { byId[it] }?.let { ComposerBanner(ctx.getString(R.string.conv_editing), it.text) },
                 onCancelBanner = { savedDraft.cancel() },
                 onAttach = { attachOpen = true }, onSend = ::send,
-                onVoice = { path, ms, wave -> scope.launch(Dispatchers.IO) { runCatching { source.sendVoice(peerDid, path, ms, wave) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t send that voice message.") } } } },
+                onVoice = { path, ms, wave -> scope.launch(Dispatchers.IO) { runCatching { source.sendVoice(peerDid, path, ms, wave) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_voice_send_failed)) } } } },
             )
         }
         val dm = docViewer?.let { byId[it] }
@@ -475,11 +476,11 @@ fun ConversationScreen(
     if (am != null) ActionsSheet(
         am, first, isSelf, receipts[am.id], name, onDismiss = { actionsFor = null },
         onReply = { actionsFor = null; savedDraft.beginReply(am.id) },
-        onCopy = { actionsFor = null; scope.launch { clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("message", am.text))) }; toast("Copied") },
+        onCopy = { actionsFor = null; scope.launch { clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("message", am.text))) }; toast(ctx.getString(R.string.common_copied)) },
         onEdit = { actionsFor = null; savedDraft.beginEdit(am.id, am.text) },
         onDelete = {
             actionsFor = null
-            scope.launch(Dispatchers.IO) { runCatching { source.delete(peerDid, am.id) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); loadReceipt(m.id) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t delete that message.") } } }
+            scope.launch(Dispatchers.IO) { runCatching { source.delete(peerDid, am.id) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); loadReceipt(m.id) } }.onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_delete_failed)) } } }
         },
         onSave = { actionsFor = null; saveToPhone(am) },
     )
@@ -500,23 +501,24 @@ fun ConversationScreen(
 private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok, onFind: () -> Unit = {}, onInfo: (() -> Unit)? = null, online: Boolean = true, onVideo: (() -> Unit)? = null) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().height(56.dp).background(c.sf).padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        PgIconBtn(Pg.Back, "Back to chats", onBack)
+        PgIconBtn(Pg.Back, stringResource(R.string.conv_back_to_chats), onBack)
         val status = when {
-            isSelf -> SELF_SUB
-            blockState == ComposerState.BlockedByMe -> "Blocked"
-            blockState == ComposerState.BlockedMe -> "Blocked you"
-            blockState == ComposerState.NotContact -> "Not in your contacts"
-            !online -> "Waiting for connection"
+            isSelf -> selfSub()
+            blockState == ComposerState.BlockedByMe -> stringResource(R.string.common_blocked)
+            blockState == ComposerState.BlockedMe -> stringResource(R.string.conv_blocked_you)
+            blockState == ComposerState.NotContact -> stringResource(R.string.conv_not_contact)
+            !online -> stringResource(R.string.conv_waiting_connection)
             // Presence is shown only while they're active with me (consent-based, 2026-10-17): otherwise it's unknown,
             // so no word rather than a false "Offline". The line keeps its height (no layout shift).
-            link == Link.Connected || link == Link.Relayed -> "Online" + if (callGate == CallGate.NotAllowed) " · messages only" else ""
-            callGate == CallGate.NotAllowed -> "Messages only"
+            link == Link.Connected || link == Link.Relayed -> stringResource(if (callGate == CallGate.NotAllowed) R.string.conv_online_messages_only else R.string.conv_online)
+            callGate == CallGate.NotAllowed -> stringResource(R.string.conv_messages_only)
             else -> ""
         }
+        val headerDesc = if (status.isNotEmpty()) stringResource(R.string.conv_header_desc_status, name, status) else stringResource(R.string.conv_header_desc, name)
         val statusColor = if (blockState == ComposerState.BlockedByMe || blockState == ComposerState.BlockedMe) c.er else c.ink2
         Row(Modifier.weight(1f).heightIn(min = 44.dp).clip(SmoothCornerShape(12.dp)).then(if (onInfo != null) Modifier.clickable(onClick = onInfo) else Modifier)
             .padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$name. ${if (status.isNotEmpty()) "$status. " else ""}Chat details" },
+            .semantics(mergeDescendants = true) { contentDescription = headerDesc },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Avatar(name, peerDid, 36.dp)
             Column(Modifier.weight(1f)) {
@@ -532,13 +534,13 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
                 it.info.peerDid == peerDid && !(it.info.incoming && it.state is uniffi.p2pcore.CallState.Ringing) && it.state !is uniffi.p2pcore.CallState.Ended }
             val ctx = androidx.compose.ui.platform.LocalContext.current
             if (live != null) Box(Modifier.size(44.dp).clip(CircleShape).background(c.accentSoft)) {
-                PgIconBtn(Pg.Phone, "Return to call", { ctx.startActivity(android.content.Intent(ctx, CallActivity::class.java)) }, tint = c.accentInk)
+                PgIconBtn(Pg.Phone, stringResource(R.string.conv_return_to_call), { ctx.startActivity(android.content.Intent(ctx, CallActivity::class.java)) }, tint = c.accentInk)
             }
-            else Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Phone, if (ok) "Call" else "Can’t call $first", onCall) }
-            if (onVideo != null) Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Video, if (ok) "Video call" else "Can’t call $first", if (ok) onVideo else onCall) }
+            else Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Phone, if (ok) stringResource(R.string.common_call) else stringResource(R.string.conv_cant_call, first), onCall) }
+            if (onVideo != null) Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Video, if (ok) stringResource(R.string.conv_video_call) else stringResource(R.string.conv_cant_call, first), if (ok) onVideo else onCall) }
         }
-        PgIconBtn(Pg.Search, "Find in this chat", onFind)
-        if (onInfo != null) PgIconBtn(Pg.Info, "Chat details", onInfo)
+        PgIconBtn(Pg.Search, stringResource(R.string.conv_find_in_chat), onFind)
+        if (onInfo != null) PgIconBtn(Pg.Info, stringResource(R.string.conv_chat_details), onInfo)
     }
 }
 
@@ -549,16 +551,17 @@ private fun CallPill(r: uniffi.p2pcore.CallRecord, enabled: Boolean, onCall: () 
     val answered = r.durationSecs > 0u
     val d = r.durationSecs.toLong()
     val text = when {
-        answered -> "${if (r.video) "Video" else "Voice"} call · ${d / 60}:${"%02d".format(d % 60)}"
-        r.incoming -> "${if (r.reason == "declined_local") "Declined" else "Missed"} ${if (r.video) "video" else "voice"} call"
-        else -> when (r.reason) { "no_answer" -> "No answer"; "declined" -> "Declined"; "cancelled", "hangup_local" -> "Cancelled call"; else -> "Call failed" }
+        answered -> stringResource(if (r.video) R.string.conv_call_video_duration else R.string.conv_call_voice_duration, "${d / 60}:${"%02d".format(d % 60)}")
+        r.incoming -> stringResource(if (r.reason == "declined_local") { if (r.video) R.string.conv_call_declined_video else R.string.conv_call_declined_voice } else { if (r.video) R.string.conv_call_missed_video else R.string.conv_call_missed_voice })
+        else -> when (r.reason) { "no_answer" -> stringResource(R.string.conv_call_no_answer); "declined" -> stringResource(R.string.conv_call_declined); "cancelled", "hangup_local" -> stringResource(R.string.conv_call_cancelled); else -> stringResource(R.string.conv_call_failed) }
     }
     val bad = !answered && r.incoming && r.reason != "declined_local"
     val time = java.time.Instant.ofEpochSecond(r.startedAt.toLong()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+    val pillDesc = stringResource(R.string.conv_call_pill_desc, text, time)
     Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = if (r.incoming) Arrangement.Start else Arrangement.End) {
         Row(Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp))
             .clickable(enabled = enabled, onClick = onCall).padding(horizontal = 12.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$text, $time. Call back" },
+            .semantics(mergeDescendants = true) { contentDescription = pillDesc },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(if (r.video) Pg.Video else Pg.Phone, null, Modifier.size(16.dp), tint = if (bad) c.er else c.ink2)
             Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold), color = if (bad) c.er else c.ink, maxLines = 1)
@@ -577,7 +580,7 @@ private fun Composer(
     val c = Tin.c
     val voice = rememberVoiceRecState { r -> onVoice(r.path, r.durationMs, r.waveform) }
     val banner = editBanner ?: replyBanner
-    PgComposer(draft, onDraft, "Message", banner?.let { ComposerCtx(it.title, it.text, if (editing) "Cancel edit" else "Cancel reply") },
+    PgComposer(draft, onDraft, stringResource(R.string.conv_message_hint), banner?.let { ComposerCtx(it.title, it.text, if (editing) stringResource(R.string.conv_cancel_edit) else stringResource(R.string.conv_cancel_reply)) },
         editing, onCancelBanner, onSend, onAttach,
         field = if (voice.recording) { modifier -> VoiceRecordingBar(voice, modifier) } else null,
         trailing = { VoiceMicButton(voice) },
@@ -619,13 +622,13 @@ private fun Bubble(
     BoxWithConstraints(Modifier.fillMaxWidth().padding(top = gapAbove(pos)).then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
         // Up to 82% of the screen (capped for tablets), so text is not wrapped into a narrow column.
         val bubbleMaxWidth = minOf(maxWidth * .78f, 560.dp)
-        if (drag > 0f) Icon(PgIcons.Reply, "Reply", tint = c.pr,
+        if (drag > 0f) Icon(PgIcons.Reply, stringResource(R.string.conv_reply), tint = c.pr,
             modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
             Column(
                 Modifier.widthIn(max = bubbleMaxWidth).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
             ) {
-                Text(if (out) "You deleted this message" else "$first deleted this message", style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp, fontStyle = FontStyle.Italic), color = c.ink2)
+                Text(if (out) stringResource(R.string.conv_you_deleted) else stringResource(R.string.conv_they_deleted, first), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp, fontStyle = FontStyle.Italic), color = c.ink2)
                 Meta(msClock(m.at.toLong()), null, c.ink2, null)
             }
             return@BoxWithConstraints
@@ -638,7 +641,7 @@ private fun Bubble(
                 Modifier.widthIn(max = bubbleMaxWidth).combinedClickable(onClick = {}, onLongClick = onLong)
                     .let { if (selected) it.border(2.dp, c.accentInk, shape) else it },
                 emoji = m.replyTo == null && uniffi.present.emojiIsBig(m.text), held = selected,
-                quote = m.replyTo?.let { rid -> { val q = byId[rid]; PgQuote(if (q == null) null else if (q.outgoing) "You" else first, c.accentInk, q?.let(ChatNotifier::previewOf) ?: "Original message unavailable", null) } },
+                quote = m.replyTo?.let { rid -> { val q = byId[rid]; PgQuote(if (q == null) null else if (q.outgoing) stringResource(R.string.common_you) else first, c.accentInk, q?.let(ChatNotifier::previewOf) ?: stringResource(R.string.conv_original_unavailable), null) } },
             )
             return@BoxWithConstraints
         }
@@ -662,8 +665,8 @@ private fun Bubble(
                         .background(if (out) Color.White.copy(alpha = .22f) else c.bg)
                         .drawLeftBar(c.pr).padding(start = 12.dp, top = 7.dp, end = 10.dp, bottom = 7.dp),
                 ) {
-                    Text(if (q == null) "Earlier message" else if (q.outgoing) "You" else first, style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.pr)
-                    Text(q?.let { ChatNotifier.previewOf(it) } ?: "Message unavailable",
+                    Text(if (q == null) stringResource(R.string.conv_earlier_message) else if (q.outgoing) stringResource(R.string.common_you) else first, style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.pr)
+                    Text(q?.let { ChatNotifier.previewOf(it) } ?: stringResource(R.string.conv_message_unavailable),
                         style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp),
                         color = fg.copy(alpha = .8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -676,10 +679,10 @@ private fun Bubble(
             val at = msClock(m.at.toLong())
             val sendingPct = if (out && prog != null && prog.second > 0) (prog.first * 100 / prog.second).toInt() else null
             val label = when {
-                notDelivered != null -> "$notDelivered · $at"
-                sendingPct != null && !photo -> "Sending $sendingPct% · $at"
-                tick == Tick.Clock -> "Waiting · $at"
-                m.editedAt != null -> "edited · $at"
+                notDelivered != null -> stringResource(R.string.conv_meta_status, notDelivered, at)
+                sendingPct != null && !photo -> stringResource(R.string.conv_meta_sending, sendingPct, at)
+                tick == Tick.Clock -> stringResource(R.string.conv_meta_waiting, at)
+                m.editedAt != null -> stringResource(R.string.conv_meta_edited, at)
                 else -> at
             }
             val metaColor = if (notDelivered != null) c.tickBadText else if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
@@ -809,21 +812,21 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, pos: BubblePos, fi
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .18f)))
                 Ring {
                     CircularProgressIndicator({ frac }, Modifier.size(48.dp), color = Color.White, trackColor = Color.White.copy(alpha = .28f), strokeWidth = 3.dp)
-                    Icon(PgIcons.X, if (out) "Cancel sending" else "Cancel download", Modifier.size(18.dp), tint = Color.White)
+                    Icon(PgIcons.X, if (out) stringResource(R.string.conv_cancel_sending) else stringResource(R.string.conv_cancel_download), Modifier.size(18.dp), tint = Color.White)
                 }
             }
             a.state == TransferState.REMOTE && !out -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PhotoChip("Photo · ${sizeText(a.size.toLong())}")
+                PhotoChip(stringResource(R.string.conv_photo_size, sizeText(a.size.toLong())))
                 Row(Modifier.clip(RoundedCornerShape(18.dp)).background(c.accent).clickable(role = Role.Button, onClick = onDownload).padding(horizontal = 16.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(PgIcons.Chev, null, Modifier.size(16.dp), tint = c.onAccent)
-                    Text("Download", style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.onAccent)
+                    Text(stringResource(R.string.conv_download), style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.onAccent)
                 }
             }
-            a.state == TransferState.FAILED -> Ring { Icon(PgIcons.Retry, "Retry download", tint = Color.White) }
+            a.state == TransferState.FAILED -> Ring { Icon(PgIcons.Retry, stringResource(R.string.conv_retry_download), tint = Color.White) }
             bmp == null && ready && pv == null -> Icon(PgIcons.Image, null, tint = c.ink2)
         }
-        if (waiting && !busy) Box(Modifier.align(Alignment.BottomStart).padding(8.dp)) { PhotoChip("Sends when $first is online") }
+        if (waiting && !busy) Box(Modifier.align(Alignment.BottomStart).padding(8.dp)) { PhotoChip(stringResource(R.string.conv_sends_when_online, first)) }
     }
 }
 
@@ -849,13 +852,13 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
     val paused = link == Link.Offline
     val canOpen = FileOpen.plan(a.name, a.mime).kind != OpenKind.NONE
     val sub = when {
-        ready && canOpen -> "$size · ${typeLabel(a)} · tap to open"
-        ready -> "$size · ${typeLabel(a)} · tap to save"
-        a.state == TransferState.DOWNLOADING && !paused -> "Downloading · ${sizeText((frac ?: 0f).times(a.size.toLong()).toLong())} of $size"
-        (a.state == TransferState.DOWNLOADING || asked) && paused -> "$size · paused — waiting for $first to come online"
-        asked -> "$size · starting…"
-        a.state == TransferState.FAILED -> "$size · couldn’t download — tap to retry"
-        else -> "$size · not downloaded"
+        ready && canOpen -> stringResource(R.string.conv_file_tap_open, size, typeLabel(a))
+        ready -> stringResource(R.string.conv_file_tap_save, size, typeLabel(a))
+        a.state == TransferState.DOWNLOADING && !paused -> stringResource(R.string.conv_file_downloading, sizeText((frac ?: 0f).times(a.size.toLong()).toLong()), size)
+        (a.state == TransferState.DOWNLOADING || asked) && paused -> stringResource(R.string.conv_file_paused, size, first)
+        asked -> stringResource(R.string.conv_file_starting, size)
+        a.state == TransferState.FAILED -> stringResource(R.string.conv_file_failed, size)
+        else -> stringResource(R.string.conv_file_not_downloaded, size)
     }
     val canDownload = !ready && (a.state == TransferState.REMOTE || a.state == TransferState.FAILED) && !asked
     Row(
@@ -872,9 +875,9 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
                 Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().background(c.pr))
             }
         }
-        if (canDownload && a.state == TransferState.REMOTE) IconBtn(PgIcons.Download, "Download ${a.name}", onDownload, tint = c.pr)
-        if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(PgIcons.X, "Cancel download of ${a.name}", onCancel, tint = c.ink2)
-        if (ready && canOpen) IconBtn(PgIcons.Save, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
+        if (canDownload && a.state == TransferState.REMOTE) IconBtn(PgIcons.Download, stringResource(R.string.conv_download_name, a.name), onDownload, tint = c.pr)
+        if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(PgIcons.X, stringResource(R.string.conv_cancel_download_name, a.name), onCancel, tint = c.ink2)
+        if (ready && canOpen) IconBtn(PgIcons.Save, stringResource(R.string.conv_save_name_to_phone, a.name), onSave, tint = if (out) c.onPrc else c.ink2)
     }
 }
 
@@ -889,27 +892,26 @@ private fun ActionsSheet(
     TinSheet(onDismiss) {
         // Only the core's signed receipts say "on" or "read on" their device; a signature is the device's claim, not a person's attention.
         Hint(
-            if (isSelf) "Saved $at · on your devices" else if (!m.outgoing) "Received $at" else when (receipt?.tick) {
-                ReceiptTick.READ -> "Sent $at · read on $first’s device"
-                ReceiptTick.DELIVERED -> "Sent $at · on $first’s device"
-                ReceiptTick.ONLY_HERE -> "Sent $at · only on this phone so far"
-                else -> "Sent $at · waiting for $first’s device to confirm"
+            if (isSelf) stringResource(R.string.conv_info_saved, at) else if (!m.outgoing) stringResource(R.string.conv_info_received, at) else when (receipt?.tick) {
+                ReceiptTick.READ -> stringResource(R.string.conv_info_sent_read, at, first)
+                ReceiptTick.DELIVERED -> stringResource(R.string.conv_info_sent_delivered, at, first)
+                ReceiptTick.ONLY_HERE -> stringResource(R.string.conv_info_sent_only_here, at)
+                else -> stringResource(R.string.conv_info_sent_waiting, at, first)
             },
             Modifier.padding(start = 8.dp, bottom = if (m.outgoing && !isSelf && receipt?.recipients?.any { it.proofs.isNotEmpty() } == true) 2.dp else 8.dp),
         )
         if (m.outgoing && !isSelf) receipt?.recipients?.forEach { r ->
             r.proofs.forEach { p ->
-                val what = if (p.kind == ReceiptProofKind.READ) "Read" else "Delivered"
-                Hint("$what · signed by ${firstName(name)} · device ${p.signerDevice.take(8)}", Modifier.padding(start = 8.dp, bottom = 2.dp))
+                Hint(stringResource(if (p.kind == ReceiptProofKind.READ) R.string.conv_proof_read else R.string.conv_proof_delivered, firstName(name), p.signerDevice.take(8)), Modifier.padding(start = 8.dp, bottom = 2.dp))
             }
         }
         if (m.outgoing && !isSelf && receipt?.recipients?.any { it.proofs.isNotEmpty() } == true) Spacer(Modifier.height(6.dp))
-        SheetAction(PgIcons.Reply, "Reply", onClick = onReply)
-        if (m.text.isNotBlank()) SheetAction(PgIcons.Copy, "Copy text", onClick = onCopy)
-        if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(PgIcons.Save, "Save to phone", onClick = onSave)
-        if (m.outgoing && m.attachment == null) SheetAction(PgIcons.Edit, "Edit", onClick = onEdit)
-        if (m.outgoing) SheetAction(PgIcons.Trash, if (isSelf) "Delete on all your devices" else "Delete for both of you", color = c.er, onClick = onDelete)
-        if (m.outgoing) Hint(if (isSelf) "Edits and deletes reach your other devices when they’re online." else "Edits and deletes reach $first’s phone the next time you’re both online.", Modifier.padding(start = 8.dp, top = 8.dp))
+        SheetAction(PgIcons.Reply, stringResource(R.string.conv_reply), onClick = onReply)
+        if (m.text.isNotBlank()) SheetAction(PgIcons.Copy, stringResource(R.string.conv_copy_text), onClick = onCopy)
+        if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(PgIcons.Save, stringResource(R.string.conv_save_to_phone), onClick = onSave)
+        if (m.outgoing && m.attachment == null) SheetAction(PgIcons.Edit, stringResource(R.string.conv_edit), onClick = onEdit)
+        if (m.outgoing) SheetAction(PgIcons.Trash, stringResource(if (isSelf) R.string.conv_delete_self else R.string.conv_delete_both), color = c.er, onClick = onDelete)
+        if (m.outgoing) Hint(if (isSelf) stringResource(R.string.conv_edits_reach_self) else stringResource(R.string.conv_edits_reach_peer, first), Modifier.padding(start = 8.dp, top = 8.dp))
     }
 }
 
@@ -928,9 +930,9 @@ private fun SheetAction(icon: ImageVector, label: String, color: Color = Tin.c.i
 private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, onPhotos: () -> Unit, onCamera: () -> Unit, onFile: () -> Unit) {
     val c = Tin.c
     TinSheet(onDismiss) {
-        Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
+        Text(if (isSelf) stringResource(R.string.conv_attach_title_self) else stringResource(R.string.conv_attach_title, first), Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(Triple(PgIcons.Image, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
+            listOf(Triple(PgIcons.Image, stringResource(R.string.conv_attach_photos), onPhotos), Triple(PgIcons.Camera, stringResource(R.string.conv_attach_camera), onCamera), Triple(PgIcons.File, stringResource(R.string.conv_attach_file), onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
@@ -939,7 +941,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
         }
         Row(Modifier.padding(start = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
             Icon(PgIcons.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
-            Hint(if (isSelf) "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each." else "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
+            Hint(if (isSelf) stringResource(R.string.conv_attach_hint_self) else stringResource(R.string.conv_attach_hint))
         }
     }
 }
@@ -956,20 +958,20 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
     }
     Column(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            IconBtn(PgIcons.X, "Close", onClose, tint = Color.White)
+            IconBtn(PgIcons.X, stringResource(R.string.common_close), onClose, tint = Color.White)
             Column(Modifier.weight(1f)) {
-                Text(if (m.outgoing) "You" else name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
+                Text(if (m.outgoing) stringResource(R.string.common_you) else name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                 Text(viewerWhen(m.at.toLong(), System.currentTimeMillis()), style = TinType.caption, color = Color(0xFFA6B2AD))
             }
-            IconBtn(PgIcons.Share, "Share", onShare, tint = Color.White)
-            IconBtn(PgIcons.Save, "Save to phone", onSave, tint = Color.White)
+            IconBtn(PgIcons.Share, stringResource(R.string.common_share), onShare, tint = Color.White)
+            IconBtn(PgIcons.Save, stringResource(R.string.conv_save_to_phone), onSave, tint = Color.White)
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             bmp?.let { Image(it, m.attachment?.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
         }
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
             Icon(PgIcons.Lock, null, tint = Color(0xFFA6B2AD), modifier = Modifier.size(18.dp))
-            Text("Kept encrypted inside Tinline. “Save to phone” copies it to your gallery, where other apps can see it.", style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Color(0xFFA6B2AD))
+            Text(stringResource(R.string.conv_viewer_note), style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Color(0xFFA6B2AD))
         }
     }
 }
@@ -996,7 +998,7 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
         Box(
             Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
             contentAlignment = Alignment.Center,
-        ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
+        ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, stringResource(if (remote) R.string.conv_voice_download else R.string.conv_voice_loading), tint = c.onPr) }
         Text(uniffi.present.clockMs(a.durationMs.toUInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
     }
 }
@@ -1010,7 +1012,7 @@ private fun BlockNote(name: String, v: BlockView) {
     val f = firstName(name)
     val blockedMeAt = v.blockedMeAtSecs
     if (v.blockedByMe) Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-        Text("You blocked $f" + (v.blockedAtSecs?.let { " · ${BlockCopy.date(it)}" } ?: ""),
+        Text(v.blockedAtSecs?.let { stringResource(R.string.conv_you_blocked_date, f, BlockCopy.date(it)) } ?: stringResource(R.string.conv_you_blocked, f),
             Modifier.clip(RoundedCornerShape(50)).background(c.sf2).padding(horizontal = 12.dp, vertical = 4.dp),
             style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
     } else if (blockedMeAt != null) Column(
@@ -1019,7 +1021,7 @@ private fun BlockNote(name: String, v: BlockView) {
     ) {
         Text(uniffi.present.blockedYouTitle(name), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.onErc)
         Text(uniffi.present.blockedYouBody(name), style = TinType.bodyM, color = c.onErc)
-        Text("Signed by $f · ${BlockCopy.date(blockedMeAt)}", style = TinType.caption, color = c.onErc.copy(alpha = .8f))
+        Text(stringResource(R.string.conv_signed_by, f, BlockCopy.date(blockedMeAt)), style = TinType.caption, color = c.onErc.copy(alpha = .8f))
     }
 }
 
@@ -1041,8 +1043,8 @@ private fun BlockedFooter(name: String, state: ComposerState, onUnblock: () -> U
             Modifier.weight(1f), style = TinType.bodyM, color = c.ink2,
         )
         when (state) {
-            ComposerState.BlockedByMe -> TinButton("Unblock", onUnblock, fill = false, height = 44.dp)
-            ComposerState.NotContact -> TinButton("Add", onAddContact, style = BtnStyle.Tonal, fill = false, height = 44.dp)
+            ComposerState.BlockedByMe -> TinButton(stringResource(R.string.conv_unblock), onUnblock, fill = false, height = 44.dp)
+            ComposerState.NotContact -> TinButton(stringResource(R.string.conv_add), onAddContact, style = BtnStyle.Tonal, fill = false, height = 44.dp)
             else -> {}
         }
     }

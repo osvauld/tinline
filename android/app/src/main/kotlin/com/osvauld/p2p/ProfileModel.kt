@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.annotation.StringRes
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
@@ -29,42 +30,43 @@ object ProfileRules {
     private val BIDI = Regex("[\\u202a-\\u202e\\u2066-\\u2069]")
     private val TEXT_CONTROL = Regex("[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]")
 
-    fun checkName(raw: String, what: String = "name"): String? {
+    fun checkName(raw: String): String? {
         val s = raw.trim()
         return when {
-            s.isEmpty() -> "The $what can’t be empty."
-            CONTROL.containsMatchIn(s) || BIDI.containsMatchIn(s) -> "The $what can’t contain control or text-direction characters."
-            utf8(s) > NAME_LIMIT -> "That $what is too long. Up to $NAME_LIMIT bytes; some characters take more than one."
+            s.isEmpty() -> appString(R.string.profile_err_name_empty)
+            CONTROL.containsMatchIn(s) || BIDI.containsMatchIn(s) -> appString(R.string.profile_err_name_chars)
+            utf8(s) > NAME_LIMIT -> appString(R.string.profile_err_name_long, NAME_LIMIT.toString())
             else -> null
         }
     }
-    fun checkText(s: String, what: String): String? = when {
-        utf8(s) > TEXT_LIMIT -> "That is too long for $what: up to $TEXT_LIMIT bytes, and some characters take more than one."
-        TEXT_CONTROL.containsMatchIn(s) || BIDI.containsMatchIn(s) -> what.replaceFirstChar { it.uppercase() } + " can’t contain control or text-direction characters."
+    /** [isStatus]: the field is "status", otherwise "about". */
+    fun checkText(s: String, isStatus: Boolean): String? = when {
+        utf8(s) > TEXT_LIMIT -> appString(if (isStatus) R.string.profile_err_status_long else R.string.profile_err_about_long, TEXT_LIMIT.toString())
+        TEXT_CONTROL.containsMatchIn(s) || BIDI.containsMatchIn(s) -> appString(if (isStatus) R.string.profile_err_status_chars else R.string.profile_err_about_chars)
         else -> null
     }
     fun checkKey(key: String): String? = when {
-        key.isBlank() -> "Give the information a name."
-        CONTROL.containsMatchIn(key) || utf8(key) > KEY_LIMIT -> "That name can’t be used. Keep it short, without control characters."
+        key.isBlank() -> appString(R.string.profile_err_key_blank)
+        CONTROL.containsMatchIn(key) || utf8(key) > KEY_LIMIT -> appString(R.string.profile_err_key_bad)
         else -> null
     }
     /** profile.ts checkValue: per value 16 KiB, 64 fields, 64 KiB in all. [json] is the value's JSON text. */
     fun checkValue(key: String, json: String, fields: JSONObject): String? {
         val size = utf8(json)
-        if (size > VALUE_LIMIT) return "That is too long. Each piece of information can be up to 16 KiB."
+        if (size > VALUE_LIMIT) return appString(R.string.profile_err_value_long, VALUE_LIMIT / 1024)
         val others = fields.keys().asSequence().filter { it != key }.toList()
-        if (others.size >= FIELDS && !fields.has(key)) return "You’ve reached 64 pieces of information. Remove one to add another."
+        if (others.size >= FIELDS && !fields.has(key)) return appString(R.string.profile_err_fields_full, FIELDS)
         val total = others.sumOf { utf8(it) + utf8(jsonOf(fields.opt(it))) } + utf8(key) + size
-        if (total > ALL_LIMIT) return "Your profile is full. Remove some information to add more."
+        if (total > ALL_LIMIT) return appString(R.string.profile_err_profile_full)
         return null
     }
     /** The full pre-check for `setField(key, value)`, in profile.ts's order. Null value = remove. */
     fun checkField(key: String, value: String?, fields: JSONObject): String? {
         checkKey(key)?.let { return it }
         if (key == "name") return value?.let { checkName(it) }
-        if (key == "picture") return "Use the picture controls for that."
-        if (value == null) return if (key == "availability") "Availability can be changed but not removed." else null
-        if (key == "status" || key == "about") checkText(value, if (key == "status") "a status" else "about")?.let { return it }
+        if (key == "picture") return appString(R.string.profile_err_use_picture_controls)
+        if (value == null) return if (key == "availability") appString(R.string.profile_err_availability_remove) else null
+        if (key == "status" || key == "about") checkText(value, key == "status")?.let { return it }
         return checkValue(key, JSONObject.quote(value), fields)
     }
 
@@ -77,13 +79,16 @@ object ProfileRules {
 }
 
 /** info.ts KNOWN: keys with their own control. */
-data class KnownField(val label: String, val link: Boolean, val hint: String)
+data class KnownField(@StringRes val labelRes: Int, val link: Boolean, @StringRes val hintRes: Int) {
+    val label: String get() = appString(labelRes)
+    val hint: String get() = appString(hintRes)
+}
 
 object ProfileInfo {
     val KNOWN = linkedMapOf(
-        "pronouns" to KnownField("Pronouns", false, "For example, she/her"),
-        "location" to KnownField("Location", false, "City or region"),
-        "website" to KnownField("Website", true, "https://"),
+        "pronouns" to KnownField(R.string.profile_known_pronouns, false, R.string.profile_known_pronouns_hint),
+        "location" to KnownField(R.string.profile_known_location, false, R.string.profile_known_location_hint),
+        "website" to KnownField(R.string.profile_known_website, true, R.string.profile_known_website_hint),
     )
     /** "work-title" / "work_title" -> "Work title". The stored key is never changed. */
     fun humanize(key: String): String {
@@ -126,24 +131,26 @@ object ProfileInfo {
         val hm = "%02d:%02d".format(a.hour, a.minute)
         return when (a.toLocalDate()) {
             today -> hm
-            today.plusDays(1) -> "tomorrow $hm"
-            else -> "${a.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())} $hm"
+            today.plusDays(1) -> appString(R.string.profile_until_tomorrow, hm)
+            else -> a.format(localFormatter("EEEEHm", "EEEE HH:mm"))
         }
     }
 }
 
 /** profile.ts BUSY_CHOICES; `until` in milliseconds (null = no end time). */
-data class BusyChoice(val id: String, val label: String, val until: (Long) -> Long?)
+data class BusyChoice(val id: String, @StringRes val labelRes: Int, val until: (Long) -> Long?) {
+    val label: String get() = appString(labelRes)
+}
 
 val BUSY_CHOICES = listOf(
-    BusyChoice("30m", "30 minutes") { it + 30 * 60_000L },
-    BusyChoice("1h", "1 hour") { it + 3_600_000L },
-    BusyChoice("4h", "4 hours") { it + 4 * 3_600_000L },
-    BusyChoice("tom", "Tomorrow morning") { now ->
+    BusyChoice("30m", R.string.profile_busy_30m) { it + 30 * 60_000L },
+    BusyChoice("1h", R.string.profile_busy_1h) { it + 3_600_000L },
+    BusyChoice("4h", R.string.profile_busy_4h) { it + 4 * 3_600_000L },
+    BusyChoice("tom", R.string.profile_busy_tomorrow) { now ->
         val z = ZoneId.systemDefault()
         LocalDate.ofInstant(Instant.ofEpochMilli(now), z).plusDays(1).atTime(8, 0).atZone(z).toInstant().toEpochMilli()
     },
-    BusyChoice("open", "No end time") { null },
+    BusyChoice("open", R.string.profile_busy_open) { null },
 )
 
 /** The availability field ({available, until?} with until in unix seconds) at this moment: a passed deadline is Available again. */
@@ -157,6 +164,3 @@ fun effectiveAvailability(fields: JSONObject?, nowMs: Long = System.currentTimeM
     return Avail(false, until)
 }
 
-/** copy.ts, verbatim. */
-const val PICTURE_HELP = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
-const val FIELD_HELP = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."

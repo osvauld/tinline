@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,7 +75,7 @@ private sealed interface ProfileLayer {
 }
 
 @Composable
-fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Unit, preview: MyProfilePreview? = null, title: String = "My profile") {
+fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Unit, preview: MyProfilePreview? = null, title: String = stringResource(R.string.profile_my_profile)) {
     val c = Tin.c
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -87,6 +88,11 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
     val offline = !online
     val hasOther = extras.any { it !in ProfileInfo.KNOWN }
     val name = view?.text("name")?.takeIf { it.isNotBlank() } ?: fallbackName
+    val badLinkMsg = stringResource(R.string.profile_err_bad_link)
+    val tooDetailedMsg = stringResource(R.string.profile_err_too_detailed)
+    val pictureUpdatedMsg = stringResource(R.string.profile_announce_updated)
+    val pictureRemovedMsg = stringResource(R.string.profile_announce_removed)
+    val pictureDesc = stringResource(R.string.profile_picture_desc)
 
     var layer by remember(me) { mutableStateOf<ProfileLayer?>(when {
         preview?.picked != null -> ProfileLayer.Picture(preview.picked)
@@ -124,7 +130,7 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
     }
     fun saveLink(key: String): suspend (String) -> String? = { v ->
         if (v.trim().isEmpty()) setField(store, fields, key, null, ::op)
-        else ProfileInfo.normaliseLink(v)?.let { setField(store, fields, key, it, ::op) } ?: "Enter a web address that starts with http:// or https://."
+        else ProfileInfo.normaliseLink(v)?.let { setField(store, fields, key, it, ::op) } ?: badLinkMsg
     }
     fun drop(key: String): suspend () -> String? = { setField(store, fields, key, null, ::op) }
 
@@ -136,40 +142,40 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
                 FloatingError(picError) { picError = "" }
             }
             AnimatedVisibility(picError.isEmpty() && pending > 0, enter = fadeIn(tween(ms)), exit = fadeOut(tween(ms))) {
-                Box(Modifier.widthIn(max = 520.dp)) { PfStrip("Saved on this device. Will sync when you’re connected.", PgIcons.Clock, floating = true) }
+                Box(Modifier.widthIn(max = 520.dp)) { PfStrip(stringResource(R.string.profile_saved_pending), PgIcons.Clock, floating = true) }
             }
         }
         Text(announce, Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite }, color = Color.Transparent)
     }) {
         // hero
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 4.dp).semantics { contentDescription = "Picture" },
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 4.dp).semantics { contentDescription = pictureDesc },
             horizontalAlignment = Alignment.CenterHorizontally) {
             ViewablePgAvatar(name, 0, 112.dp, person = me)
             Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (hasPic) {
-                    PBtn("Change photo", ::pick, icon = PgIcons.Camera, minWidth = 140.dp)
-                    PBtn("Remove", { removeError = ""; layer = ProfileLayer.Remove }, minWidth = 140.dp)
-                } else PBtn("Add photo", ::pick, icon = PgIcons.Camera, minWidth = 140.dp)
+                    PBtn(stringResource(R.string.profile_change_photo), ::pick, icon = PgIcons.Camera, minWidth = 140.dp)
+                    PBtn(stringResource(R.string.common_remove), { removeError = ""; layer = ProfileLayer.Remove }, minWidth = 140.dp)
+                } else PBtn(stringResource(R.string.profile_add_photo), ::pick, icon = PgIcons.Camera, minWidth = 140.dp)
             }
         }
 
-        PfSec("Profile") {
+        PfSec(stringResource(R.string.profile_section_profile)) {
             PfCard {
-                row { key(me, "name") { FieldRow("Name", name, limit = ProfileRules.NAME_LIMIT, offline = offline, placeholder = "Your name", startEditing = preview?.editField == "name",
+                row { key(me, "name") { FieldRow(stringResource(R.string.profile_field_name), name, limit = ProfileRules.NAME_LIMIT, offline = offline, placeholder = stringResource(R.string.profile_name_placeholder), startEditing = preview?.editField == "name",
                     onSave = { v -> ProfileRules.checkName(v) ?: op(ProfileOp.SetName(v.trim())) }) } }
-                row { key(me, "status") { FieldRow("Status", fields.opt("status"), optional = true, limit = ProfileRules.TEXT_LIMIT, offline = offline,
-                    empty = "Add a status", placeholder = "What are you up to?", startEditing = preview?.editField == "status", onSave = optionalText("status"), onRemove = drop("status")) } }
-                row { key(me, "about") { FieldRow("About", fields.opt("about"), FieldKind.Multiline, optional = true, limit = ProfileRules.TEXT_LIMIT, offline = offline,
-                    empty = "Add a few words about you", startEditing = preview?.editField == "about", onSave = optionalText("about"), onRemove = drop("about")) } }
+                row { key(me, "status") { FieldRow(stringResource(R.string.profile_field_status), fields.opt("status"), optional = true, limit = ProfileRules.TEXT_LIMIT, offline = offline,
+                    empty = stringResource(R.string.profile_status_empty), placeholder = stringResource(R.string.profile_status_placeholder), startEditing = preview?.editField == "status", onSave = optionalText("status"), onRemove = drop("status")) } }
+                row { key(me, "about") { FieldRow(stringResource(R.string.profile_field_about), fields.opt("about"), FieldKind.Multiline, optional = true, limit = ProfileRules.TEXT_LIMIT, offline = offline,
+                    empty = stringResource(R.string.profile_about_empty), startEditing = preview?.editField == "about", onSave = optionalText("about"), onRemove = drop("about")) } }
             }
         }
 
-        PfSec("Availability") {
+        PfSec(stringResource(R.string.profile_section_availability)) {
             PfCard { row { key(me) { AvailabilityCard(fields, offline) { a, until -> op(ProfileOp.SetAvailable(a, until)) } } } }
-            PfNote("Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online.")
+            PfNote(stringResource(R.string.profile_availability_note))
         }
 
-        PfSec("Additional information") {
+        PfSec(stringResource(R.string.profile_section_additional)) {
             PfCard {
                 extras.forEach { k ->
                     val known = ProfileInfo.KNOWN[k]
@@ -179,41 +185,41 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
                             onSave = if (known?.link == true) saveLink(k) else optionalText(k), onRemove = drop(k), onOpen = { layer = ProfileLayer.Link(it) })
                     } }
                 }
-                act { PfAct("Add information", onClick = { layer = ProfileLayer.Add(null) }, icon = PgIcons.Plus) }
+                act { PfAct(stringResource(R.string.profile_add_information), onClick = { layer = ProfileLayer.Add(null) }, icon = PgIcons.Plus) }
             }
-            PfNote(FIELD_HELP)
-            if (hasOther) PfNote("Some information came from another device or app version. It’s shown as stored and kept when you edit anything else.")
+            PfNote(stringResource(R.string.profile_field_help))
+            if (hasOther) PfNote(stringResource(R.string.profile_other_info_note))
         }
     }
 
     // Layers (one at a time, as the {#if} chain).
-    PgLayer(layer as? ProfileLayer.Picture, { layer = null }, "Choose your picture") { l ->
+    PgLayer(layer as? ProfileLayer.Picture, { layer = null }, stringResource(R.string.profile_layer_choose_picture)) { l ->
         key(l.picked) { PictureFlow(l.picked, hasPic, onClose = { layer = null }) { png ->
-            if (png.size > ImageLimits.OUT_MAX_BYTES) "That picture is too detailed to save. Try a different one."
-            else op(ProfileOp.ReplacePicture(png)).also { if (it == null) { layer = null; announce = "Picture updated" } }
+            if (png.size > ImageLimits.OUT_MAX_BYTES) tooDetailedMsg
+            else op(ProfileOp.ReplacePicture(png)).also { if (it == null) { layer = null; announce = pictureUpdatedMsg } }
         } }
     }
-    PgLayer(layer as? ProfileLayer.Remove, { layer = null }, "Remove your picture") {
+    PgLayer(layer as? ProfileLayer.Remove, { layer = null }, stringResource(R.string.profile_remove_picture_title)) {
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
-            DlgTitle("Remove your picture?")
-            DlgP("Your initials will show instead.", lead = true)
-            DlgP(PICTURE_HELP)
+            DlgTitle(stringResource(R.string.profile_remove_picture_q))
+            DlgP(stringResource(R.string.profile_remove_picture_body), lead = true)
+            DlgP(stringResource(R.string.profile_picture_help))
             if (removeError.isNotEmpty()) PfErr(removeError)
             PfActs {
-                PBtn("Cancel", { layer = null }, variant = PVariant.Quiet)
-                PBtn("Remove picture", {
+                PBtn(stringResource(R.string.common_cancel), { layer = null }, variant = PVariant.Quiet)
+                PBtn(stringResource(R.string.profile_remove_picture_button), {
                     scope.launch {
                         val r = op(ProfileOp.RemovePicture)
-                        if (r == null) { layer = null; removeError = ""; announce = "Picture removed" } else removeError = r
+                        if (r == null) { layer = null; removeError = ""; announce = pictureRemovedMsg } else removeError = r
                     }
                 }, variant = PVariant.Danger)
             }
         }
     }
-    PgLayer(layer as? ProfileLayer.Add, { layer = null }, "Add information") { l ->
+    PgLayer(layer as? ProfileLayer.Add, { layer = null }, stringResource(R.string.profile_add_information)) { l ->
         AddInfo(fields, l.pick, onClose = { layer = null }) { k, v -> setField(store, fields, k, v, ::op) }
     }
-    PgLayer(layer as? ProfileLayer.Link, { layer = null }, "Open link") { l -> OpenLink(l.url) { layer = null } }
+    PgLayer(layer as? ProfileLayer.Link, { layer = null }, stringResource(R.string.profile_open_link_layer)) { l -> OpenLink(l.url) { layer = null } }
 }
 
 /** profile.ts setField: the playground's checks first (same messages), then `set_profile_field(key, json?)`. */
@@ -235,7 +241,7 @@ private fun FloatingError(text: String, onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(text, Modifier.weight(1f), style = PgType.sub19, color = c.danger)
-        PgIconBtn(PgIcons.X, "Dismiss", onDismiss, tint = c.danger, iconSize = 18.dp)
+        PgIconBtn(PgIcons.X, stringResource(R.string.profile_dismiss), onDismiss, tint = c.danger, iconSize = 18.dp)
     }
 }
 
@@ -254,15 +260,18 @@ fun AvailabilityCard(fields: JSONObject, offline: Boolean, save: suspend (availa
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val av = effectiveAvailability(fields, now)
     LaunchedEffect(av) { av.untilMs?.let { delay((it - System.currentTimeMillis()).coerceAtLeast(0) + 50); now = System.currentTimeMillis() } }
+    val howLongDesc = stringResource(R.string.profile_busy_how_long)
     var choice by remember { mutableStateOf("1h") }
     var error by remember { mutableStateOf("") }
     var saved by remember { mutableIntStateOf(0) }
     LaunchedEffect(saved) { if (saved > 0) { delay(SAVED_MS); saved = 0 } }
     val active = if (av.available) null else if (av.untilMs == null) "open" else choice
-    val line = if (av.available) "Available" else av.untilMs?.let { "Busy until ${ProfileInfo.untilLabel(it)}" } ?: "Busy until you change it"
+    val line = if (av.available) stringResource(R.string.profile_available)
+        else av.untilMs?.let { stringResource(R.string.profile_busy_until, ProfileInfo.untilLabel(it)) } ?: stringResource(R.string.profile_busy_until_open)
+    val pastMsg = stringResource(R.string.profile_err_time_passed)
 
     fun apply(available: Boolean, untilMs: Long?) {
-        if (!available && untilMs != null && untilMs <= System.currentTimeMillis()) { error = "Choose a time that hasn’t passed yet."; return }
+        if (!available && untilMs != null && untilMs <= System.currentTimeMillis()) { error = pastMsg; return }
         scope.launch {
             val r = save(available, untilMs?.let { it / 1000 })
             if (r != null) error = r else { error = ""; saved++; now = System.currentTimeMillis() }
@@ -271,9 +280,9 @@ fun AvailabilityCard(fields: JSONObject, offline: Boolean, save: suspend (availa
     fun setBusy(id: String) { choice = id; apply(false, BUSY_CHOICES.first { it.id == id }.until(System.currentTimeMillis())) }
 
     Column(Modifier.fillMaxWidth().padding(16.dp, 14.dp, 16.dp, 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        PgSegmented(listOf("Available", "Busy"), if (av.available) 0 else 1, { i ->
+        PgSegmented(listOf(stringResource(R.string.profile_available), stringResource(R.string.profile_busy)), if (av.available) 0 else 1, { i ->
             if (i == 0) apply(true, null) else if (av.available) setBusy(choice)
-        }, label = "Availability")
+        }, label = stringResource(R.string.profile_section_availability))
         Row(Modifier.fillMaxWidth().height(19.dp).semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (error.isNotEmpty()) Text(error, Modifier.weight(1f, fill = false), style = PgType.sub19, color = c.danger,
@@ -283,7 +292,7 @@ fun AvailabilityCard(fields: JSONObject, offline: Boolean, save: suspend (availa
             if (saved > 0) { Spacer(Modifier.weight(1f)); SavedTag(offline) }
         }
         if (!av.available) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.semantics { contentDescription = "For how long" }) {
+            modifier = Modifier.semantics { contentDescription = howLongDesc }) {
             BUSY_CHOICES.forEach { b -> PgChip(b.label, active == b.id, { setBusy(b.id) }, minHeight = 36.dp) }
         }
     }
@@ -298,6 +307,10 @@ private fun AddInfo(fields: JSONObject, startPick: String?, onClose: () -> Unit,
     val have = fields.keys().asSequence().toSet()
     val icon = mapOf("pronouns" to PgIcons.Users, "location" to PgIcons.Info, "website" to PgIcons.Link)
     val choices = ProfileInfo.KNOWN.keys.filter { it !in have }
+    val dupMsg = stringResource(R.string.profile_err_name_taken)
+    val needValueMsg = stringResource(R.string.profile_err_need_value)
+    val badLinkMsg = stringResource(R.string.profile_err_bad_link)
+    val kindsDesc = stringResource(R.string.profile_add_kinds_desc)
     var pick by remember { mutableStateOf(startPick) }   // a KNOWN key, or "" for something else
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var v by remember { mutableStateOf(TextFieldValue("")) }
@@ -308,41 +321,41 @@ private fun AddInfo(fields: JSONObject, startPick: String?, onClose: () -> Unit,
     fun submit() {
         if (pick == "") {
             ProfileRules.checkKey(name.text)?.let { error = it; return }
-            if (key in ProfileRules.reserved || key in ProfileInfo.KNOWN || key in have) { error = "You already have information with that name."; return }
+            if (key in ProfileRules.reserved || key in ProfileInfo.KNOWN || key in have) { error = dupMsg; return }
         }
         var value: String? = v.text.trim()
-        if (value.isNullOrEmpty()) { error = "Add something to save."; return }
-        if (link) { value = ProfileInfo.normaliseLink(v.text); if (value == null) { error = "Enter a web address that starts with http:// or https://."; return } }
+        if (value.isNullOrEmpty()) { error = needValueMsg; return }
+        if (link) { value = ProfileInfo.normaliseLink(v.text); if (value == null) { error = badLinkMsg; return } }
         scope.launch { val r = save(key, value); if (r == null) onClose() else error = r }
     }
 
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
         val p = pick
         if (p == null) {
-            DlgTitle("Add information")
-            DlgP("Your contacts will see it on your profile.")
-            Column(Modifier.fillMaxWidth().padding(top = 10.dp).bleedX(12.dp).semantics { contentDescription = "Kinds of information" }) {
+            DlgTitle(stringResource(R.string.profile_add_information))
+            DlgP(stringResource(R.string.profile_add_info_lead))
+            Column(Modifier.fillMaxWidth().padding(top = 10.dp).bleedX(12.dp).semantics { contentDescription = kindsDesc }) {
                 val shape = RoundedCornerShape(14.dp)
                 choices.forEach { k -> PfAct(ProfileInfo.labelOf(k), onClick = { pick = k }, icon = icon[k] ?: PgIcons.Info, padH = 12.dp, shape = shape) }
-                PfAct("Something else", onClick = { pick = "" }, icon = PgIcons.Plus, sub = "Name it yourself", padH = 12.dp, shape = shape)
+                PfAct(stringResource(R.string.profile_something_else), onClick = { pick = "" }, icon = PgIcons.Plus, sub = stringResource(R.string.profile_name_it_yourself), padH = 12.dp, shape = shape)
             }
-            PfActs { PBtn("Cancel", onClose, variant = PVariant.Quiet) }
+            PfActs { PBtn(stringResource(R.string.common_cancel), onClose, variant = PVariant.Quiet) }
         } else {
-            DlgTitle(if (p.isNotEmpty()) ProfileInfo.labelOf(p) else "Something else")
+            DlgTitle(if (p.isNotEmpty()) ProfileInfo.labelOf(p) else stringResource(R.string.profile_something_else))
             Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 val labelStyle = PgType.sub.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                 if (p.isEmpty()) {
-                    Text("What is it called?", Modifier.padding(top = 6.dp), style = labelStyle, color = c.ink2)
-                    PfInput(name, { name = it }, "What is it called?", placeholder = "For example, Favourite tea", focus = true, onSubmit = ::submit)
+                    Text(stringResource(R.string.profile_what_called), Modifier.padding(top = 6.dp), style = labelStyle, color = c.ink2)
+                    PfInput(name, { name = it }, stringResource(R.string.profile_what_called), placeholder = stringResource(R.string.profile_what_called_placeholder), focus = true, onSubmit = ::submit)
                 }
-                Text(if (p.isNotEmpty()) ProfileInfo.labelOf(p) else "Value", Modifier.padding(top = 6.dp), style = labelStyle, color = c.ink2)
-                PfInput(v, { v = it }, if (p.isNotEmpty()) ProfileInfo.labelOf(p) else "Value", placeholder = ProfileInfo.KNOWN[p]?.hint ?: "",
+                Text(if (p.isNotEmpty()) ProfileInfo.labelOf(p) else stringResource(R.string.profile_value), Modifier.padding(top = 6.dp), style = labelStyle, color = c.ink2)
+                PfInput(v, { v = it }, if (p.isNotEmpty()) ProfileInfo.labelOf(p) else stringResource(R.string.profile_value), placeholder = ProfileInfo.KNOWN[p]?.hint ?: "",
                     link = link, focus = p.isNotEmpty(), onSubmit = ::submit, plain = true)
                 if (error.isNotEmpty()) PfErr(error, Modifier.padding(top = 0.dp))
             }
             PfActs {
-                PBtn("Back", { pick = null; error = "" }, variant = PVariant.Quiet)
-                PBtn("Add", ::submit, variant = PVariant.Primary)
+                PBtn(stringResource(R.string.common_back), { pick = null; error = "" }, variant = PVariant.Quiet)
+                PBtn(stringResource(R.string.profile_add), ::submit, variant = PVariant.Primary)
             }
         }
     }
@@ -354,14 +367,14 @@ private fun AddInfo(fields: JSONObject, startPick: String?, onClose: () -> Unit,
 private fun OpenLink(url: String, onClose: () -> Unit) {
     val ctx = LocalContext.current
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
-        DlgTitle("Open this link?")
+        DlgTitle(stringResource(R.string.profile_open_link_q))
         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
             Text(url, Modifier.fillMaxWidth().padding(top = 8.dp), style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 18.sp), color = Tin.c.ink)
         }
-        DlgP("It opens in your browser, outside Tinline. Tinline doesn’t load it for you, and can’t vouch for what’s there.")
+        DlgP(stringResource(R.string.profile_open_link_body))
         PfActs {
-            PBtn("Cancel", onClose, variant = PVariant.Quiet)
-            PBtn("Open link", { openUrl(ctx, url); onClose() }, variant = PVariant.Primary)
+            PBtn(stringResource(R.string.common_cancel), onClose, variant = PVariant.Quiet)
+            PBtn(stringResource(R.string.profile_open_link_button), { openUrl(ctx, url); onClose() }, variant = PVariant.Primary)
         }
     }
 }
@@ -379,22 +392,23 @@ private fun PictureFlow(picked: Picked, replacing: Boolean, onClose: () -> Unit,
     var crop by remember(picked) { mutableStateOf(centred(picked.w, picked.h, VIEW)) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+    val prepareFailedMsg = stringResource(R.string.profile_err_prepare)
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Position your picture", Modifier.fillMaxWidth().padding(bottom = 14.dp).semantics { heading() }, style = PgType.title, color = c.ink)
+        Text(stringResource(R.string.profile_crop_title), Modifier.fillMaxWidth().padding(bottom = 14.dp).semantics { heading() }, style = PgType.title, color = c.ink)
         Cropper(image, picked.w, picked.h, crop) { crop = it }
         Row(Modifier.padding(top = 6.dp).clearAndSetSemantics {}, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             SIZES.forEach { px -> CropPreview(image, picked.w, picked.h, crop, px) }
         }
-        if (replacing) Text(PICTURE_HELP, Modifier.fillMaxWidth().padding(top = 14.dp), style = PgType.sub19, color = c.ink2)
+        if (replacing) Text(stringResource(R.string.profile_picture_help), Modifier.fillMaxWidth().padding(top = 14.dp), style = PgType.sub19, color = c.ink2)
         if (error.isNotEmpty()) PfErr(error)
         PfActs {
-            PBtn("Cancel", onClose, variant = PVariant.Quiet)
-            PBtn("Use photo", {
+            PBtn(stringResource(R.string.common_cancel), onClose, variant = PVariant.Quiet)
+            PBtn(stringResource(R.string.profile_use_photo), {
                 if (!busy) {
                     busy = true; error = ""
                     scope.launch {
                         val r = runCatching { withContext(Dispatchers.Default) { renderSquare(picked, crop, VIEW) } }
-                        error = r.fold({ use(it) ?: "" }, { "Couldn’t prepare that picture. Try a different one." })
+                        error = r.fold({ use(it) ?: "" }, { prepareFailedMsg })
                         busy = false
                     }
                 }
@@ -410,6 +424,7 @@ private fun Cropper(image: ImageBitmap, w: Int, h: Int, crop: Crop, set: (Crop) 
     val cur by rememberUpdatedState(crop)
     fun move(dx: Float, dy: Float) = set(clampCrop(cur.copy(ox = cur.ox + dx, oy = cur.oy + dy), w, h, VIEW))
     fun zoomTo(z: Float) = set(zoomAt(cur, min(4f, max(1f, z)), w, h, VIEW))
+    val cropDesc = stringResource(R.string.profile_crop_title)
     var focused by remember { mutableStateOf(false) }
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Canvas(
@@ -436,7 +451,7 @@ private fun Cropper(image: ImageBitmap, w: Int, h: Int, crop: Crop, set: (Crop) 
                     true
                 }
                 .pointerInput(w, h) { detectDragGestures { ch, d -> ch.consume(); move(d.x / density, d.y / density) } }
-                .semantics { contentDescription = "Position your picture" },
+                .semantics { contentDescription = cropDesc },
         ) {
             val k = density
             val s = coverScale(w, h, VIEW, cur.zoom)
@@ -449,10 +464,10 @@ private fun Cropper(image: ImageBitmap, w: Int, h: Int, crop: Crop, set: (Crop) 
             val ring = 1.5f * k
             drawCircle(Color.White.copy(alpha = .85f), radius = r - ring / 2, style = Stroke(ring))
         }
-        Text("Drag to move the picture, or use the arrow keys. Plus and minus zoom.", style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.profile_crop_hint), style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center)
         Row(Modifier.widthIn(max = 260.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ZoomGlyph(16)
-            RangeInput(cur.zoom, 1f, 4f, { zoomTo(it) }, "Zoom", Modifier.weight(1f))
+            RangeInput(cur.zoom, 1f, 4f, { zoomTo(it) }, stringResource(R.string.profile_crop_zoom), Modifier.weight(1f))
             ZoomGlyph(22)
         }
     }

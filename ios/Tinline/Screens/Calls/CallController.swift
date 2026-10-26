@@ -73,7 +73,7 @@ final class CallController: ObservableObject {
     func showForPreview(_ u: CallUi?, ended e: EndedUi? = nil, waiting w: CallInfo? = nil) { ui = u; ended = e; waiting = w }
 
     private func micUnavailable() {
-        let msg = platform.micGranted ? "Microphone unavailable - you can't be heard" : "Microphone permission needed - you can't be heard"
+        let msg = platform.micGranted ? tr("call_mic_unavailable") : tr("call_mic_permission_needed")
         ui?.micProblem = msg
     }
 
@@ -318,7 +318,7 @@ final class CallController: ObservableObject {
         let id = info.callId
         videoNow = info.video
         let s = CallSession(
-            provider: provider, engine: audio, name: callOr(info.peerName, "Tinline call"), incoming: info.incoming,
+            provider: provider, engine: audio, name: callOr(info.peerName, tr("call_system_call_name")), incoming: info.incoming,
             // A video call (either side pressed Video) is a system video call on the loudspeaker; a headset still wins.
             video: info.video, preferSpeaker: info.video,
             onAnswer: { [weak self] in self?.systemAnswer(id) },

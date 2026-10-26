@@ -17,13 +17,13 @@ const val URL_SOURCE = "https://github.com/osvauld/tinline"
 
 /** Friendly text for a core error; never includes secrets. */
 fun friendly(e: Throwable): String = when (e) {
-    is CoreError.WrongPassphrase -> "That didn’t match. Check the spelling and spaces."
-    is CoreError.WeakPassphrase -> "Type a passphrase, or skip it"
-    is CoreError.Locked -> "Locked — enter your passphrase to unlock"
-    is CoreError.BadPhrase -> "That recovery phrase is not valid"
-    is CoreError.AccountExists -> "That account is already on this phone"
-    is CoreError.InCall -> "Finish your call first"
-    else -> e.message ?: "Something went wrong"
+    is CoreError.WrongPassphrase -> appString(R.string.support_err_wrong_passphrase)
+    is CoreError.WeakPassphrase -> appString(R.string.support_err_weak_passphrase)
+    is CoreError.Locked -> appString(R.string.support_err_locked)
+    is CoreError.BadPhrase -> appString(R.string.support_err_bad_phrase)
+    is CoreError.AccountExists -> appString(R.string.support_err_account_exists)
+    is CoreError.InCall -> appString(R.string.support_err_in_call)
+    else -> e.message ?: appString(R.string.support_err_generic)
 }
 
 /** The BIP-39 English list, bundled as an asset (the core does not expose it). */

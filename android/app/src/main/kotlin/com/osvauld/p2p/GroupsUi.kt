@@ -1,5 +1,7 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -79,7 +81,7 @@ fun PersonAvatar(name: String, did: String, size: Dp, contact: Boolean = true, i
 
 /** Three-segment flag meter (playground `.meter`): 6 dp bars, radius 3, gap 6; [filled] in danger-btn, the next one ([yours]) at 45 %. */
 @Composable
-fun FlagMeter(filled: Int, total: Int = GroupText.FLAGS_TO_REMOVE, yours: Boolean = false, desc: String = "$filled of $total flags") {
+fun FlagMeter(filled: Int, total: Int = GroupText.FLAGS_TO_REMOVE, yours: Boolean = false, desc: String = pluralStringResource(R.plurals.groupsc_flags_of, total, filled, total)) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().semantics { contentDescription = desc }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(total) { i ->
@@ -140,11 +142,11 @@ fun authorColor(did: String): Color {
 
 // ------------------------------------------------------------------ time words
 
-private val MDHM = DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.getDefault())
+private fun mdhm() = localFormatter("MMMdHm", "MMM d, HH:mm")
 internal fun at(ms: Long) = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault())
 
 /** "Oct 10, 14:02" */
-fun whenFull(ms: Long): String = at(ms).format(MDHM)
+fun whenFull(ms: Long): String = at(ms).format(mdhm())
 
 /** "Yesterday, 03:12" / "Today, 09:00" / "Oct 3, 10:00" */
 fun dayAndTime(ms: Long, nowMs: Long): String =

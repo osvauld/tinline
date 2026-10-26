@@ -83,11 +83,11 @@ enum CallRoutes {
     static func label(_ r: AudioRoute) -> String {
         let blank = r.name.trimmingCharacters(in: .whitespaces).isEmpty
         switch r.kind {
-        case .earpiece: return "Phone"
-        case .speaker: return "Speaker"
-        case .wired: return blank ? "Headset" : r.name
-        case .bluetooth: return blank || r.name == genericBluetooth ? "Bluetooth" : r.name
-        case .other: return blank ? "Other" : r.name
+        case .earpiece: return tr("call_route_phone")
+        case .speaker: return tr("call_route_speaker")
+        case .wired: return blank ? tr("call_route_headset") : r.name
+        case .bluetooth: return blank || r.name == genericBluetooth ? tr("call_route_bluetooth") : r.name
+        case .other: return blank ? tr("call_route_other") : r.name
         }
     }
 
@@ -96,7 +96,7 @@ enum CallRoutes {
         if let routes, routes.hasHeadset, let cur = routes.current, cur.kind != .speaker {
             return (label(cur), icon(cur.kind))
         }
-        return ("Speaker", .speaker)
+        return (tr("call_route_speaker"), .speaker)
     }
 
     static func icon(_ k: AudioRoute.Kind) -> CallIcon {
@@ -148,7 +148,7 @@ struct EndedUi: Equatable {
 
 /** Thrown by [CallController.place] when the microphone permission is missing. */
 struct MicPermissionNeeded: Swift.Error, LocalizedError {
-    var errorDescription: String? { "Microphone permission needed to place a call" }
+    var errorDescription: String? { tr("call_mic_permission_needed_place") }
 }
 
 /** Wall clock in ms, as `System.currentTimeMillis()`. */
@@ -173,17 +173,17 @@ func describeCallState(_ s: CallState) -> String {
 
 /** CallScreen.svelte's copy: never claim encryption while dialling or ringing. */
 func callStatus(active: Bool, ringing: Bool, reconnecting: Bool, secs: Int64, waking: Bool = false) -> String {
-    if active && reconnecting { return "Reconnecting…" }
+    if active && reconnecting { return tr("call_status_reconnecting") }
     if active { return clock(secs: secs) }
-    if ringing { return "Ringing…" }
-    if waking { return "Waking their phone…" }
-    return "Calling…"
+    if ringing { return tr("call_status_ringing") }
+    if waking { return tr("call_status_waking") }
+    return tr("call_status_calling")
 }
 
 func callPrivacy(active: Bool, name: String) -> String {
     active
-        ? "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on \(name)’s."
-        : "Connecting to \(name). Once the call is connected, it is end-to-end encrypted."
+        ? tr("call_privacy_active", name)
+        : tr("call_privacy_connecting", name)
 }
 
 /** First word of a name ("Arjun Mehta" -> "Arjun"), as Kotlin's `trim().substringBefore(' ')`. */
@@ -253,11 +253,11 @@ struct CallMarkLook: Equatable {
 /** The call branch of `statusLook()`: the call phase wins over everything else, so connection does not matter here. */
 func callMarkLook(_ phase: CallMarkPhase) -> CallMarkLook {
     switch phase {
-    case .incoming: CallMarkLook(state: .ringing, swayPeriod: 1.6, swayAmp: 12, label: "Incoming call")
-    case .outgoing: CallMarkLook(state: .ringing, swayPeriod: 2.0, swayAmp: 9, label: "Calling")
-    case .connecting: CallMarkLook(state: .ringing, swayPeriod: 1.2, swayAmp: 6, label: "Connecting")
-    case .active: CallMarkLook(state: .taut, label: "In a call")
-    case .reconnecting: CallMarkLook(state: .ringing, swayPeriod: 2.0, swayAmp: 4, label: "Reconnecting")
+    case .incoming: CallMarkLook(state: .ringing, swayPeriod: 1.6, swayAmp: 12, label: tr("call_mark_incoming"))
+    case .outgoing: CallMarkLook(state: .ringing, swayPeriod: 2.0, swayAmp: 9, label: tr("call_mark_outgoing"))
+    case .connecting: CallMarkLook(state: .ringing, swayPeriod: 1.2, swayAmp: 6, label: tr("call_mark_connecting"))
+    case .active: CallMarkLook(state: .taut, label: tr("call_mark_active"))
+    case .reconnecting: CallMarkLook(state: .ringing, swayPeriod: 2.0, swayAmp: 4, label: tr("call_mark_reconnecting"))
     }
 }
 

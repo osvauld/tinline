@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import androidx.compose.foundation.Image
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -94,16 +95,16 @@ fun AddContactSheet(
     fun look(text: String?, how: ContactCodeSource) {
         reset()
         val generation = inputGeneration
-        if (text.isNullOrBlank()) { hint = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."; return }
+        if (text.isNullOrBlank()) { hint = ctx.getString(R.string.addcontact_clipboard_empty); return }
         scope.launch {
             // core peek_code: says why a code can't be used, without dialling.
             val p = withContext(Dispatchers.IO) { runCatching { app.node.peekCode(text) }.getOrNull() }
             if (generation != inputGeneration || app.incoming.value != null) return@launch
             when (p) {
                 is CodePeek.Found -> { found = p.card; source = how }
-                is CodePeek.Own -> hint = "That’s your own code. Send it to them, and paste theirs here."
-                is CodePeek.Expired -> hint = "That code from ${p.name} has expired. Ask them for a fresh one."
-                else -> hint = "That doesn’t look like a Tinline code. Could they copy it again for you?"
+                is CodePeek.Own -> hint = ctx.getString(R.string.addcontact_own_code)
+                is CodePeek.Expired -> hint = ctx.getString(R.string.addcontact_code_expired, p.name)
+                else -> hint = ctx.getString(R.string.addcontact_not_a_code)
             }
         }
     }
@@ -111,9 +112,9 @@ fun AddContactSheet(
         if (imageGeneration == inputGeneration && qrTab && app.incoming.value == null) {
             when (result) {
                 is ContactQrImageResult.Decoded -> look(result.text, ContactCodeSource.Image)
-                ContactQrImageResult.NoQr -> hint = "No QR found. Try a clearer image."
-                ContactQrImageResult.Multiple -> hint = "More than one QR. Crop to the one you want."
-                ContactQrImageResult.Unreadable -> hint = "Couldn’t read that image. Choose another."
+                ContactQrImageResult.NoQr -> hint = ctx.getString(R.string.addcontact_no_qr)
+                ContactQrImageResult.Multiple -> hint = ctx.getString(R.string.addcontact_many_qr)
+                ContactQrImageResult.Unreadable -> hint = ctx.getString(R.string.addcontact_unreadable_image)
             }
         }
     }
@@ -121,7 +122,7 @@ fun AddContactSheet(
         reset(); scanning = false; imageGeneration = inputGeneration
         imagePicker.launch()
     }
-    fun share() { myCode?.let { if (!shareCard(ctx, it)) hint = "Couldn’t open sharing. You can copy your code instead." } }
+    fun share() { myCode?.let { if (!shareCard(ctx, it)) hint = ctx.getString(R.string.addcontact_share_failed) } }
     fun add() {
         val p = found ?: return
         if (adding) return
@@ -167,11 +168,11 @@ fun AddContactSheet(
 
     val i = inc
     PgSheet(onDismiss = onClose) {
-        PgDialogBody(when { i == null -> "Add contact"; i.joined -> "New contact"; else -> "Contact request" }) {
+        PgDialogBody(when { i == null -> stringResource(R.string.addcontact_title); i.joined -> stringResource(R.string.addcontact_title_new); else -> stringResource(R.string.addcontact_title_request) }) {
             // `.tabs.gone`: hidden but keeping its height, so the sheet doesn't jump when it becomes a request.
             Row(Modifier.padding(top = 8.dp).alpha(if (i != null) 0f else 1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PgChip("Code", qrTab.not(), { if (i == null) { qrTab = false; scanning = false; reset() } })
-                PgChip("QR", qrTab, { if (i == null) { qrTab = true; reset() } })
+                PgChip(stringResource(R.string.addcontact_tab_code), qrTab.not(), { if (i == null) { qrTab = false; scanning = false; reset() } })
+                PgChip(stringResource(R.string.addcontact_tab_qr), qrTab, { if (i == null) { qrTab = true; reset() } })
             }
             // 360: room for a 260 dp QR. The real code is long and dense; at 176 dp its modules were too small to scan.
             Box(Modifier.fillMaxWidth().padding(top = 12.dp).height(360.dp), contentAlignment = Alignment.Center) {
@@ -181,7 +182,7 @@ fun AddContactSheet(
                     p != null -> Found(meName, p, source, added, requested, adding, slow, fail, p.known, p.known && blocks.of(p.did).blockedByMe)
                     qrTab -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
-                            if (scanning) QrCameraBox(Modifier.size(260.dp).clip(SmoothCornerShape(20.dp)), "Point at their Tinline code.", false, {}) { t ->
+                            if (scanning) QrCameraBox(Modifier.size(260.dp).clip(SmoothCornerShape(20.dp)), stringResource(R.string.addcontact_point_camera), false, {}) { t ->
                                 // A final camera callback can arrive after the photo picker replaces it.
                                 if (scanning && qrTab && !imagePicker.reading && app.incoming.value == null) {
                                     scanning = false; look(t, ContactCodeSource.Camera)
@@ -189,44 +190,44 @@ fun AddContactSheet(
                             }
                             else Box(Modifier.size(260.dp).clip(SmoothCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
                                 val t = myCode
-                                if (t != null) Image(remember(t) { qrBitmap(t, 1040, fg = 0xFF17201D.toInt()) }.asImageBitmap(), "Your QR code", Modifier.fillMaxSize().padding(6.dp))
-                                else Text("Preparing your code…", style = PgType.sub, color = Color(0xFF4D5853))
+                                if (t != null) Image(remember(t) { qrBitmap(t, 1040, fg = 0xFF17201D.toInt()) }.asImageBitmap(), stringResource(R.string.addcontact_my_qr_desc), Modifier.fillMaxSize().padding(6.dp))
+                                else Text(stringResource(R.string.addcontact_preparing), style = PgType.sub, color = Color(0xFF4D5853))
                             }
                         }
-                        Text(when { imagePicker.reading -> "Reading image…"; hint.isNotEmpty() -> hint; scanning -> "Point at their Tinline code."; else -> "Let them scan this with Tinline." },
+                        Text(when { imagePicker.reading -> stringResource(R.string.addcontact_reading_image); hint.isNotEmpty() -> hint; scanning -> stringResource(R.string.addcontact_point_camera); else -> stringResource(R.string.addcontact_let_them_scan) },
                             Modifier.fillMaxWidth().height(38.dp).semantics { liveRegion = LiveRegionMode.Polite }, style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            PBtn(if (scanning) "Show my code" else "Scan their code", { reset(); scanning = !scanning }, Modifier.weight(1f), enabled = !imagePicker.reading, padH = 12.dp)
-                            PBtn("Choose image", ::chooseImage, Modifier.weight(1f), enabled = !imagePicker.reading, padH = 12.dp)
+                            PBtn(if (scanning) stringResource(R.string.addcontact_show_mine) else stringResource(R.string.addcontact_scan_theirs), { reset(); scanning = !scanning }, Modifier.weight(1f), enabled = !imagePicker.reading, padH = 12.dp)
+                            PBtn(stringResource(R.string.addcontact_choose_image), ::chooseImage, Modifier.weight(1f), enabled = !imagePicker.reading, padH = 12.dp)
                         }
                     }
                     else -> Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             // "New code" sits on the label's line (a text button, same height), so it never moves anything.
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("Your code", Modifier.weight(1f), style = PgType.sub.copy(fontWeight = FontWeight.Bold, lineHeight = 21.sp), color = c.ink)
-                                Text("New code", Modifier.clickable(role = Role.Button) {
+                                Text(stringResource(R.string.addcontact_your_code), Modifier.weight(1f), style = PgType.sub.copy(fontWeight = FontWeight.Bold, lineHeight = 21.sp), color = c.ink)
+                                Text(stringResource(R.string.addcontact_new_code), Modifier.clickable(role = Role.Button) {
                                     scope.launch { withContext(Dispatchers.IO) { runCatching { app.node.resetTicket() } }; myCode = null; codeVersion++ }
                                 }, style = PgType.sub.copy(fontWeight = FontWeight.SemiBold, lineHeight = 21.sp), color = c.accentInk)
                             }
                             // Reusable for 7 days (core my_code); the date is the code's own exp.
-                            Text(myCodeExp?.let { "Send it to anyone you’d like to talk to, in any app. It works until ${codeUntil(it)}." }
-                                ?: "Send it to anyone you’d like to talk to, in any app.", style = PgType.sub19, color = c.ink2)
-                            Text(myCode ?: "Preparing your code…", Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sf2).padding(horizontal = 12.dp, vertical = 8.dp),
+                            Text(myCodeExp?.let { stringResource(R.string.addcontact_send_until, codeUntil(it)) }
+                                ?: stringResource(R.string.addcontact_send), style = PgType.sub19, color = c.ink2)
+                            Text(myCode ?: stringResource(R.string.addcontact_preparing), Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sf2).padding(horizontal = 12.dp, vertical = 8.dp),
                                 style = PgType.mono.copy(fontSize = 12.sp, lineHeight = 18.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             // the bare code only (OSVC2:…)
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                PBtn(if (copied) "Copied" else "Copy my code", { myCode?.let { copyToClipboard(ctx, "Tinline code", it); copied = true } }, Modifier.weight(1f),
+                                PBtn(if (copied) stringResource(R.string.common_copied) else stringResource(R.string.addcontact_copy_mine), { myCode?.let { copyToClipboard(ctx, "Tinline code", it); copied = true } }, Modifier.weight(1f),
                                     variant = PVariant.Primary, enabled = myCode != null, padH = 12.dp)
-                                PBtn("Share", ::share, Modifier.weight(1f), enabled = myCode != null, icon = PgIcons.Share, padH = 12.dp)
+                                PBtn(stringResource(R.string.common_share), ::share, Modifier.weight(1f), enabled = myCode != null, icon = PgIcons.Share, padH = 12.dp)
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Box(Modifier.weight(1f).height(1.dp).background(c.ln)); Text("or", style = PgType.sub, color = c.ink2); Box(Modifier.weight(1f).height(1.dp).background(c.ln))
+                            Box(Modifier.weight(1f).height(1.dp).background(c.ln)); Text(stringResource(R.string.addcontact_or), style = PgType.sub, color = c.ink2); Box(Modifier.weight(1f).height(1.dp).background(c.ln))
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Their code", style = PgType.sub.copy(fontWeight = FontWeight.Bold, lineHeight = 21.sp), color = c.ink)
-                            PBtn("Paste their code", { look(clipboardText(ctx), ContactCodeSource.Code) }, Modifier.fillMaxWidth())
+                            Text(stringResource(R.string.addcontact_their_code), style = PgType.sub.copy(fontWeight = FontWeight.Bold, lineHeight = 21.sp), color = c.ink)
+                            PBtn(stringResource(R.string.addcontact_paste_theirs), { look(clipboardText(ctx), ContactCodeSource.Code) }, Modifier.fillMaxWidth())
                             // Hints are not errors: muted, polite (never red, never an alert).
                             Text(hint, Modifier.fillMaxWidth().heightIn(min = 38.dp).semantics { liveRegion = LiveRegionMode.Polite }, style = PgType.sub19, color = c.ink2)
                         }
@@ -237,23 +238,23 @@ fun AddContactSheet(
             PfActs(top = 2.dp) {
                 when {
                     i != null && !i.joined -> {
-                        PBtn("Not now", onClose, variant = PVariant.Quiet, enabled = !answering)
-                        PBtn("Accept", { accept(i.did) }, variant = PVariant.Primary, enabled = !answering, minWidth = 132.dp)
+                        PBtn(stringResource(R.string.common_not_now), onClose, variant = PVariant.Quiet, enabled = !answering)
+                        PBtn(stringResource(R.string.common_accept), { accept(i.did) }, variant = PVariant.Primary, enabled = !answering, minWidth = 132.dp)
                     }
-                    i != null -> { PBtn("Done", onClose, variant = PVariant.Quiet); PBtn("Message", { onMessage(i.did) }, variant = PVariant.Primary, minWidth = 132.dp) }
+                    i != null -> { PBtn(stringResource(R.string.common_done), onClose, variant = PVariant.Quiet); PBtn(stringResource(R.string.addcontact_message), { onMessage(i.did) }, variant = PVariant.Primary, minWidth = 132.dp) }
                     p == null -> {
-                        if (qrTab && !scanning) PBtn("Share", ::share, enabled = myCode != null && !imagePicker.reading, icon = PgIcons.Share)
-                        PBtn("Close", onClose, variant = PVariant.Quiet)
+                        if (qrTab && !scanning) PBtn(stringResource(R.string.common_share), ::share, enabled = myCode != null && !imagePicker.reading, icon = PgIcons.Share)
+                        PBtn(stringResource(R.string.common_close), onClose, variant = PVariant.Quiet)
                     }
-                    requested && !added -> PBtn("Done", onClose, variant = PVariant.Primary, minWidth = 132.dp)
-                    added -> { PBtn("Done", onClose, variant = PVariant.Quiet); PBtn("Message", { onMessage(p.did) }, variant = PVariant.Primary) }
-                    p.known -> { PBtn("Close", onClose, variant = PVariant.Quiet); PBtn("Open profile", { onProfile(p.did) }, variant = PVariant.Primary) }
-                    fail == Reach.Refused -> { PBtn("Back", { reset() }, variant = PVariant.Quiet); PBtn("Paste a new code", { reset() }, variant = PVariant.Primary) }
-                    fail == Reach.Blocked -> { PBtn("Back", { reset() }, variant = PVariant.Quiet); PBtn("Close", onClose, variant = PVariant.Primary, minWidth = 132.dp) }
+                    requested && !added -> PBtn(stringResource(R.string.common_done), onClose, variant = PVariant.Primary, minWidth = 132.dp)
+                    added -> { PBtn(stringResource(R.string.common_done), onClose, variant = PVariant.Quiet); PBtn(stringResource(R.string.addcontact_message), { onMessage(p.did) }, variant = PVariant.Primary) }
+                    p.known -> { PBtn(stringResource(R.string.common_close), onClose, variant = PVariant.Quiet); PBtn(stringResource(R.string.addcontact_open_profile), { onProfile(p.did) }, variant = PVariant.Primary) }
+                    fail == Reach.Refused -> { PBtn(stringResource(R.string.common_back), { reset() }, variant = PVariant.Quiet); PBtn(stringResource(R.string.addcontact_paste_new), { reset() }, variant = PVariant.Primary) }
+                    fail == Reach.Blocked -> { PBtn(stringResource(R.string.common_back), { reset() }, variant = PVariant.Quiet); PBtn(stringResource(R.string.common_close), onClose, variant = PVariant.Primary, minWidth = 132.dp) }
                     else -> {
-                        PBtn("Back", { reset() }, variant = PVariant.Quiet, enabled = !adding)
+                        PBtn(stringResource(R.string.common_back), { reset() }, variant = PVariant.Quiet, enabled = !adding)
                         // Keep the action short; the complete username is shown in the preview.
-                        PBtn(when { adding -> "Adding…"; fail != null -> "Try again"; else -> "Add contact" }, ::add, variant = PVariant.Primary, enabled = !adding, minWidth = 132.dp)
+                        PBtn(when { adding -> stringResource(R.string.addcontact_adding); fail != null -> stringResource(R.string.common_try_again); else -> stringResource(R.string.addcontact_add) }, ::add, variant = PVariant.Primary, enabled = !adding, minWidth = 132.dp)
                     }
                 }
             }
@@ -268,7 +269,7 @@ private fun LineJoin(meName: String, name: String, did: String, state: MarkState
     Row(Modifier.height(64.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         SelfAvatar(meName.ifBlank { "?" }, 56.dp)
         TinMark(64.dp, state = state, live = true, lineColor = true, sway = Sway(1.2, 6.0), spring = MarkSpring.Line,
-            description = when (state) { MarkState.Taut -> "Connected"; MarkState.Ringing -> "Connecting"; else -> "Not connected yet" })
+            description = when (state) { MarkState.Taut -> stringResource(R.string.addcontact_line_connected); MarkState.Ringing -> stringResource(R.string.addcontact_line_connecting); else -> stringResource(R.string.addcontact_line_not_yet) })
         Avatar(name.ifBlank { "?" }, did, 56.dp)
     }
 }
@@ -298,23 +299,23 @@ private fun Found(meName: String, p: CardPeek, source: ContactCodeSource, added:
     // slack (recognised) → ringing while the dial runs and while the request waits → taut.
     val state = when { added || known -> MarkState.Taut; adding || requested -> MarkState.Ringing; else -> MarkState.Slack }
     val why = when {
-        blocked -> "You blocked $first. Unblock them in Privacy before adding them again."
-        known -> "$first is already in your contacts."
-        added -> "Your line to $first is open. Say hello."
-        requested -> "Request sent. Your line opens when $first accepts."
-        adding -> if (slow) "Still trying. $first’s Tinline needs to be open and online for this." else "Reaching $first’s Tinline…"
-        fail == Reach.Timeout -> "Couldn’t reach $first’s Tinline. It needs to be open and online, so try again when $first’s around."
-        fail == Reach.Refused -> "$first’s code isn’t valid any more. They may have made a new one, so ask $first for their newest code."
-        fail == Reach.Blocked -> "You can’t add $first right now. They’ve chosen not to be in touch here."
-        fail == Reach.Offline -> "You’re offline. Once you’re connected, try again."
-        else -> "Is this $first? If you’re not sure, check with them first."
+        blocked -> stringResource(R.string.addcontact_why_blocked, first)
+        known -> stringResource(R.string.addcontact_why_known, first)
+        added -> stringResource(R.string.addcontact_why_added, first)
+        requested -> stringResource(R.string.addcontact_why_requested, first)
+        adding -> if (slow) stringResource(R.string.addcontact_why_slow, first) else stringResource(R.string.addcontact_why_reaching, first)
+        fail == Reach.Timeout -> stringResource(R.string.addcontact_why_timeout, first)
+        fail == Reach.Refused -> stringResource(R.string.addcontact_why_refused, first)
+        fail == Reach.Blocked -> stringResource(R.string.addcontact_why_blocked_them, first)
+        fail == Reach.Offline -> stringResource(R.string.addcontact_why_offline)
+        else -> stringResource(R.string.addcontact_why_check, first)
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LineJoin(meName, p.name, p.did, state)
         Text(p.name, style = PgType.title.copy(fontSize = 20.sp, lineHeight = 26.sp), color = c.ink)
         when (source) {
-            ContactCodeSource.Camera -> StateChip(PgIcons.Scan, "Read with camera")
-            ContactCodeSource.Image -> StateChip(PgIcons.Image, "Read from image")
+            ContactCodeSource.Camera -> StateChip(PgIcons.Scan, stringResource(R.string.addcontact_read_camera))
+            ContactCodeSource.Image -> StateChip(PgIcons.Image, stringResource(R.string.addcontact_read_image))
             ContactCodeSource.Code -> Unit
         }
         Why(why)
@@ -328,11 +329,11 @@ private fun Incoming(meName: String, i: IncomingSheet) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LineJoin(meName, i.name, i.did, if (i.joined) MarkState.Taut else MarkState.Ringing)
         Text(i.name, style = PgType.title.copy(fontSize = 20.sp, lineHeight = 26.sp), color = Tin.c.ink)
-        StateChip(PgIcons.UserPlus, if (i.theirs) "Accepted your request" else "Has your code")
+        StateChip(PgIcons.UserPlus, if (i.theirs) stringResource(R.string.addcontact_accepted_yours) else stringResource(R.string.addcontact_has_your_code))
         Why(when {
-            !i.joined -> "$f wants to add you as a contact. Accepting lets you message and call each other."
-            i.theirs -> "$f accepted. Your line to $f is open. Say hello."
-            else -> "Your line to $f is open. Say hello."
+            !i.joined -> stringResource(R.string.addcontact_inc_wants, f)
+            i.theirs -> stringResource(R.string.addcontact_inc_accepted, f)
+            else -> stringResource(R.string.addcontact_inc_open, f)
         })
     }
 }

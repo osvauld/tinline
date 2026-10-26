@@ -26,18 +26,18 @@ class ScreenGroupsTest {
     @Test fun noOnlineHostDoesNotPromiseDelivery() {
         assertTrue(GroupText.waitingForHost(detail(GroupRole.MEMBER)))
         assertFalse(GroupText.waitingForHost(detail(GroupRole.REMOVED)))
-        assertTrue(GroupText.status(detail(GroupRole.MEMBER)).contains("no host"))
+        assertEquals(appString(R.string.groupsc_status_join), GroupText.status(detail(GroupRole.MEMBER)))
     }
 
     @Test fun flagConfirmationExplainsFinalFlag() {
         val (next, copy) = GroupText.flagCopy("Sam Rao", 2)
         assertEquals(3, next)
-        assertTrue(copy.contains("removed right away"))
+        assertEquals(appString(R.string.groupsc_flag_final), copy)
     }
 
     @Test fun declinedAndBlockedRequestsAreNotPresentedAsPending() {
         val r = GroupChatRequest("r", "g", "Hike", "sam", "Sam Rao", true, ChatRequestState.DECLINED, 1uL, false)
-        assertEquals("Sam declined" to true, GroupText.sentLine(r))
-        assertEquals("Sam blocked you" to true, GroupText.sentLine(r.copy(state = ChatRequestState.BLOCKED)))
+        assertEquals(appString(R.string.groupsc_req_declined_named) to true, GroupText.sentLine(r))
+        assertEquals(appString(R.string.groupsc_req_blocked_named) to true, GroupText.sentLine(r.copy(state = ChatRequestState.BLOCKED)))
     }
 }

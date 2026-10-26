@@ -26,11 +26,11 @@ struct GroupCallLayer: View {
                                     CallIcon.back.image.font(.system(size: 20)).rotationEffect(.degrees(-90)).foregroundStyle(tin.ink)
                                         .frame(width: 44, height: 44).contentShape(Circle())
                                 }
-                                .buttonStyle(.plain).accessibilityLabel("Minimize call")
+                                .buttonStyle(.plain).accessibilityLabel(tr("call_group_minimize"))
                             }
                             Spacer()
                             if s.live4 && (s.host != nil || s.hosting) {
-                                CallTopButton(icon: .info, label: "About this call") { ui.about(true) }
+                                CallTopButton(icon: .info, label: tr("call_about_title")) { ui.about(true) }
                             }
                         }
                     }
@@ -54,7 +54,7 @@ struct GroupCallLayer: View {
                     }
                     .padding(.top, 4)
                     let n = s.parts.count
-                    Text(s.connected && n > 0 ? (n == 1 ? "Only you so far. Waiting for others." : "\(n) people in the call") : " ")
+                    Text(s.connected && n > 0 ? (n == 1 ? tr("call_group_only_you") : trn("call_group_people_count", n)) : " ")
                         .font(CallFont.figtree(13).monospacedDigit()).foregroundStyle(tin.ink)
                         .frame(minHeight: 20).padding(.top, 4)
                     Spacer().frame(height: 20)
@@ -83,21 +83,21 @@ struct GroupCallLayer: View {
                             let isMe = ui.isMe(did)
                             VStack(spacing: 8) {
                                 TinAvatar(did: did, size: av)
-                                Text(isMe ? "You" : callFirstName(ui.gcName(did))).font(CallFont.figtree(13, .medium))
+                                Text(isMe ? tr("call_person_you") : callFirstName(ui.gcName(did))).font(CallFont.figtree(13, .medium))
                                     .foregroundStyle(tin.ink).lineLimit(1).truncationMode(.tail)
                             }
                             .frame(width: av + 32)
                         }
                     }
                 }
-                if n > 9 { Text("+\(n - 8) more").font(CallFont.figtree(13, .semibold)).foregroundStyle(tin.ink) }
+                if n > 9 { Text(trn("call_group_more", n - 8)).font(CallFont.figtree(13, .semibold)).foregroundStyle(tin.ink) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             if let note = s.note {
                 HStack(spacing: 10) {
                     Text(note).font(CallFont.figtree(13)).foregroundStyle(tin.onWarn).frame(maxWidth: .infinity, alignment: .leading)
                     Button { ui.noteOk() } label: {
-                        Text("OK").font(CallFont.figtree(13, .bold)).foregroundStyle(tin.onWarn).padding(.horizontal, 14)
+                        Text(tr("call_ok")).font(CallFont.figtree(13, .bold)).foregroundStyle(tin.onWarn).padding(.horizontal, 14)
                             .frame(minHeight: 36).background(Capsule().fill(tin.onWarn.opacity(0.14)))
                     }
                     .buttonStyle(.plain)
@@ -111,14 +111,25 @@ struct GroupCallLayer: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private func hostPill(_ k: GroupCallUi.GcHostKind) -> String {
+        switch k {
+        case .thisPhone: return tr("call_group_you_host")
+        case .yourOtherDevice: return tr("call_group_host_is_yours")
+        case .member(let n): return tr("call_group_host_is", n)
+        case .unknownMember: return tr("call_group_host_is_someone")
+        case .none: return ""
+        }
+    }
+
     /** .host: "Call host: Arjun's device" with the info icon; it opens About this call. */
     private func host(_ s: GcState) -> some View {
-        let host = ui.gcHost(s)
+        let host = ui.gcHostKind(s)
+        let hasHost: Bool = { if case .none = host { return false }; return true }()
         return ZStack {
-            if let host, s.connected || s.phase == .connecting {
+            if hasHost, s.connected || s.phase == .connecting {
                 Button { ui.about(true) } label: {
                     HStack(spacing: 8) {
-                        Text(s.hosting ? "You’re the call host" : "Call host: \(host)").font(CallFont.figtree(13)).foregroundStyle(tin.ink)
+                        Text(hostPill(host)).font(CallFont.figtree(13)).foregroundStyle(tin.ink)
                         CallIcon.info.image.font(.system(size: 14)).foregroundStyle(tin.ink).opacity(0.75)
                     }
                     .padding(.horizontal, 14).frame(minHeight: 44).contentShape(Capsule())
@@ -136,10 +147,10 @@ struct GroupCallLayer: View {
         let speaker = audio.routes.speaker
         let slot = CallRoutes.slot(audio.routes)
         return HStack(spacing: 36) {
-            GcControl(caption: s.muted ? "Muted" : "Mute", bg: s.muted ? tin.ink : fill, enabled: s.connected, action: { ui.toggleMute() }) {
+            GcControl(caption: s.muted ? tr("call_control_muted") : tr("call_control_mute"), bg: s.muted ? tin.ink : fill, enabled: s.connected, action: { ui.toggleMute() }) {
                 (s.muted ? CallIcon.micOff : .mic).image.font(.system(size: 22)).foregroundStyle(s.muted ? tin.bg : tin.ink)
             }
-            GcControl(caption: "Leave", bg: tin.callButtonEnd, enabled: s.live4, action: { ui.leave() }) {
+            GcControl(caption: tr("call_control_leave"), bg: tin.callButtonEnd, enabled: s.live4, action: { ui.leave() }) {
                 CallHangupGlyph(gone: false, tint: .white).frame(width: 28, height: 28)
             }
             GcControl(caption: slot.caption, bg: speaker ? tin.ink : fill, enabled: true, action: { audio.setSpeaker(!speaker) }) {
@@ -178,21 +189,27 @@ private struct GcAboutCard: View {
     let s: GcState
     @Environment(\.tin) var tin
     var body: some View {
-        let h = ui.gcHost(s) ?? "the call host"
-        let host = h.prefix(1).uppercased() + h.dropFirst()
         let p = CallFont.figtree(13)
+        let about: AttributedString = {
+            let strong: (inout AttributedString, Range<AttributedString.Index>) -> Void = { s, r in s[r].foregroundColor = tin.ink; s[r].font = CallFont.figtree(13, .semibold) }
+            switch ui.gcHostKind(s) {
+            case .thisPhone: return trRich("call_group_about_this_phone", style: strong)
+            case .yourOtherDevice: return trRich("call_group_about_your_other", style: strong)
+            case .member(let n): return trRich("call_group_about_member", n, style: strong)
+            case .unknownMember: return trRich("call_group_about_someone", style: strong)
+            case .none: return trRich("call_group_about_unknown", style: strong)
+            }
+        }()
         CallScrimCard(onDismiss: { ui.about(false) }) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("About this call").font(CallFont.figtree(17, .semibold)).foregroundStyle(tin.ink)
-                (Text(host).foregroundStyle(tin.ink).fontWeight(.semibold)
-                 + Text(" \(s.hosting ? "is carrying" : "carries") this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak.")
-                    .foregroundStyle(tin.ink2))
-                    .font(p)
-                Text("Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts.")
+                Text(tr("call_about_title")).font(CallFont.figtree(17, .semibold)).foregroundStyle(tin.ink)
+                Text(about)
                     .font(p).foregroundStyle(tin.ink2)
-                Text("A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info.")
+                Text(tr("call_group_about_trust"))
                     .font(p).foregroundStyle(tin.ink2)
-                CallButton("Got it", height: 44) { ui.about(false) }.padding(.top, 8)
+                Text(tr("call_group_about_who"))
+                    .font(p).foregroundStyle(tin.ink2)
+                CallButton(tr("call_got_it"), height: 44) { ui.about(false) }.padding(.top, 8)
             }
         }
     }
@@ -218,17 +235,17 @@ struct GroupCallOngoingBanner: View {
             HStack(spacing: 12) {
                 CallIcon.users.image.font(.system(size: 18)).foregroundStyle(fg)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(mine ? "You’re in the call" : "Call in progress").font(CallFont.figtree(15, .semibold)).foregroundStyle(fg).lineLimit(1)
+                    Text(mine ? tr("call_group_in_call") : tr("call_group_in_progress")).font(CallFont.figtree(15, .semibold)).foregroundStyle(fg).lineLimit(1)
                     TimelineView(.periodic(from: .now, by: 0.5)) { tl in
                         let now = Int64(tl.date.timeIntervalSince1970 * 1000)
                         let secs = max(0, (now - (s.sinceMs ?? now)) / 1000)
-                        Text(mine ? (s.phase == .active ? clockOf(secs) : s.status) : "Started by \(callFirstName(ui.gcName(call!.starterDid)))")
+                        Text(mine ? (s.phase == .active ? clockOf(secs) : s.status) : tr("call_group_started_by", callFirstName(ui.gcName(call!.starterDid))))
                             .font(CallFont.figtree(13).monospacedDigit()).foregroundStyle(fg.opacity(0.85))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Button { if mine { ui.restore() } else { ui.call(gid, onError: onError) } } label: {
-                    Text(mine ? "Open" : "Join").font(CallFont.figtree(13, .bold)).foregroundStyle(mine ? tin.callAccentInk : tin.callOnAccent)
+                    Text(mine ? tr("call_open") : tr("call_join")).font(CallFont.figtree(13, .bold)).foregroundStyle(mine ? tin.callAccentInk : tin.callOnAccent)
                         .padding(.horizontal, 18).frame(minWidth: 72, minHeight: 36)
                         .background { if mine { Capsule().strokeBorder(tin.callAccentInk, lineWidth: 1.5) } else { Capsule().fill(tin.callAccent) } }
                         .contentShape(Capsule())
@@ -282,7 +299,7 @@ struct GroupCallAnnounce: View {
                     TinAvatar(did: l.by, size: 44)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(group).font(CallFont.figtree(15, .semibold)).foregroundStyle(tin.ink).lineLimit(1)
-                        Text(l.ringing ? "\(callFirstName(by)) is calling the group" : "\(by) started a call")
+                        Text(l.ringing ? tr("call_group_announce_ringing", callFirstName(by)) : tr("call_group_announce_started", by))
                             .font(CallFont.sub).foregroundStyle(tin.ink2).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -290,10 +307,10 @@ struct GroupCallAnnounce: View {
                 .padding(.horizontal, 4).frame(minHeight: 48).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open \(group)")
+            .accessibilityLabel(tr("call_group_open_label", group))
             if l.ringing {
                 Button { ui.notNow() } label: {
-                    Text("Not now").font(CallFont.figtree(13, .bold)).foregroundStyle(tin.ink).padding(.horizontal, 14)
+                    Text(tr("call_not_now")).font(CallFont.figtree(13, .bold)).foregroundStyle(tin.ink).padding(.horizontal, 14)
                         .frame(height: 44).background(SmoothRoundedRectangle(cornerRadius: 22).fill(tin.sf2))
                 }
                 .buttonStyle(.plain)
@@ -301,10 +318,10 @@ struct GroupCallAnnounce: View {
                 Button { ui.dismissAnnounce() } label: {
                     CallIcon.close.image.font(.system(size: 15)).foregroundStyle(tin.ink2).frame(width: 36, height: 36).contentShape(Circle())
                 }
-                .buttonStyle(.plain).accessibilityLabel("Dismiss")
+                .buttonStyle(.plain).accessibilityLabel(tr("call_dismiss"))
             }
             Button { ui.call(l.gid) { _ in } } label: {
-                Text("Join").font(CallFont.figtree(13, .bold)).foregroundStyle(.white).padding(.horizontal, 20)
+                Text(tr("call_join")).font(CallFont.figtree(13, .bold)).foregroundStyle(.white).padding(.horizontal, 20)
                     .frame(height: 44).background(SmoothRoundedRectangle(cornerRadius: 22).fill(tin.callButtonAnswer))
             }
             .buttonStyle(.plain)
@@ -314,6 +331,6 @@ struct GroupCallAnnounce: View {
         .overlay(SmoothRoundedRectangle(cornerRadius: 20).stroke(tin.ln, lineWidth: 1))
         .callDepth(.pop, dark: tin.dark)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(l.ringing ? "\(by) is calling the group \(group)" : "\(by) started a call in \(group)")
+        .accessibilityLabel(l.ringing ? tr("call_group_announce_ringing_label", by, group) : tr("call_group_announce_started_label", by, group))
     }
 }

@@ -52,40 +52,40 @@ object Notifications {
 
     fun createChannels(c: Context) {
         val n = nm(c)
-        n.createNotificationChannel(NotificationChannel(CH_SERVICE, "Call listener", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "Keeps the app reachable for incoming calls"
+        n.createNotificationChannel(NotificationChannel(CH_SERVICE, c.getString(R.string.notif_ch_service), NotificationManager.IMPORTANCE_LOW).apply {
+            description = c.getString(R.string.notif_ch_service_desc)
             setShowBadge(false)
         })
-        n.createNotificationChannel(NotificationChannel(CH_CALLS, "Incoming calls", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Rings when a contact calls you"
+        n.createNotificationChannel(NotificationChannel(CH_CALLS, c.getString(R.string.notif_ch_calls), NotificationManager.IMPORTANCE_HIGH).apply {
+            description = c.getString(R.string.notif_ch_calls_desc)
             setSound(null, null)
             enableVibration(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         })
-        n.createNotificationChannel(NotificationChannel(CH_ONGOING, "Ongoing calls", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Shows your current call and lets you return to it or hang up"
+        n.createNotificationChannel(NotificationChannel(CH_ONGOING, c.getString(R.string.notif_ch_ongoing), NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = c.getString(R.string.notif_ch_ongoing_desc)
             setSound(null, null)
             enableVibration(false)
             setShowBadge(false)
         })
-        n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
+        n.createNotificationChannel(NotificationChannel(CH_MISSED, c.getString(R.string.notif_ch_missed), NotificationManager.IMPORTANCE_DEFAULT))
         listOf("messages", "groups", "requests").forEach { old -> if (n.getNotificationChannel(old) != null) n.deleteNotificationChannel(old) }
         val tone = receivedTone(c)
         val toneAttrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-        n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "New messages from your contacts"
+        n.createNotificationChannel(NotificationChannel(CH_MESSAGES, c.getString(R.string.notif_messages), NotificationManager.IMPORTANCE_HIGH).apply {
+            description = c.getString(R.string.notif_ch_messages_desc)
             if (tone != null) setSound(tone, toneAttrs)
         })
-        n.createNotificationChannel(NotificationChannel(CH_GROUPS, "Groups", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Posts in your groups and invitations to join one"
+        n.createNotificationChannel(NotificationChannel(CH_GROUPS, c.getString(R.string.notif_groups), NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = c.getString(R.string.notif_ch_groups_desc)
             if (tone != null) setSound(tone, toneAttrs)
         })
-        n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "When someone asks to add you as a contact"
+        n.createNotificationChannel(NotificationChannel(CH_REQUESTS, c.getString(R.string.notif_ch_requests), NotificationManager.IMPORTANCE_HIGH).apply {
+            description = c.getString(R.string.notif_ch_requests_desc)
         })
-        n.createNotificationChannel(NotificationChannel(CH_LOCKED, "Locked", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "Shown while the app needs your passphrase to receive calls"
+        n.createNotificationChannel(NotificationChannel(CH_LOCKED, c.getString(R.string.notif_ch_locked), NotificationManager.IMPORTANCE_LOW).apply {
+            description = c.getString(R.string.notif_ch_locked_desc)
             setShowBadge(false)
         })
     }
@@ -127,20 +127,20 @@ object Notifications {
     private fun idleTitle(c: Context): String {
         val app = P2pApp.instance
         return when {
-            wakeOnly(c) -> c.getString(R.string.wake_service_title)
-            !app.availability.value.available -> "Not available"
-            app.status.value?.online == false -> "Offline — reconnecting"
-            else -> "Available for calls"
+            wakeOnly(c) -> c.getString(R.string.notif_wake_service_title)
+            !app.availability.value.available -> appString(R.string.notif_idle_unavailable)
+            app.status.value?.online == false -> appString(R.string.notif_idle_offline)
+            else -> appString(R.string.notif_idle_available)
         }
     }
 
     private fun idleText(c: Context): String {
         val app = P2pApp.instance
         return when {
-            wakeOnly(c) -> c.getString(R.string.wake_service_text)
-            !app.availability.value.available -> "Calls won’t ring. Tap to change."
-            app.status.value?.online == false -> "Your calls come through again once you’re back online."
-            else -> "Your line is open. Tap to change."
+            wakeOnly(c) -> c.getString(R.string.notif_wake_service_text)
+            !app.availability.value.available -> appString(R.string.notif_idle_unavailable_text)
+            app.status.value?.online == false -> appString(R.string.notif_idle_offline_text)
+            else -> appString(R.string.notif_idle_available_text)
         }
     }
 
@@ -155,7 +155,7 @@ object Notifications {
             .setOnlyAlertOnce(true)
             .setColor(0xFF0B6B5B.toInt())
             .setContentTitle(inCall ?: idleTitle(c))
-            .setContentText(if (inCall != null) "Tap to return to the call" else idleText(c))
+            .setContentText(if (inCall != null) c.getString(R.string.notif_return_to_call) else idleText(c))
             .setContentIntent(
                 if (groupCall) activity(c, MainActivity::class.java, 13) { it.putExtra(EXTRA_GCALL_OPEN, true) }
                 else if (inCall != null) activity(c, CallActivity::class.java, 10)
@@ -167,19 +167,19 @@ object Notifications {
             val hangup = service(c, CoreService.ACTION_HANGUP, 12)
             val call = P2pApp.instance.calls.ui.value
             if (Build.VERSION.SDK_INT >= 31) {
-                val person = Person.Builder().setName(inCall.ifBlank { "Call" }).setImportant(true).build()
+                val person = Person.Builder().setName(inCall.ifBlank { c.getString(R.string.call_notif_fallback_title) }).setImportant(true).build()
                 b.style = Notification.CallStyle.forOngoingCall(person, hangup)
             } else {
                 b.addAction(Notification.Action.Builder(
                     Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel),
-                    if (groupCall) "Leave" else "End call", hangup).build())
+                    if (groupCall) c.getString(R.string.notif_leave) else c.getString(R.string.notif_end_call), hangup).build())
             }
             if (groupCall) {
                 val g = app.groupCallUi.state.value
                 g.sinceMs?.takeIf { g.connected }?.let { b.setWhen(it).setShowWhen(true).setUsesChronometer(true) }
                 b.addAction(Notification.Action.Builder(
                     Icon.createWithResource(c, android.R.drawable.ic_lock_silent_mode),
-                    if (g.muted) "Unmute" else "Mute", service(c, CoreService.ACTION_GCALL_MUTE, 14)).build())
+                    if (g.muted) c.getString(R.string.notif_unmute) else c.getString(R.string.notif_mute), service(c, CoreService.ACTION_GCALL_MUTE, 14)).build())
             }
             call?.activeSinceMs?.let { since ->
                 b.setWhen(since).setShowWhen(true).setUsesChronometer(true)
@@ -190,7 +190,7 @@ object Notifications {
 
     fun incoming(c: Context, call: CallInfo) {
         if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
-        ring(c, call.peerName.ifBlank { "Unknown" }, call.video,
+        ring(c, call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.video,
             answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
             decline = service(c, CoreService.ACTION_DECLINE, 22))
     }
@@ -202,7 +202,7 @@ object Notifications {
      */
     fun wakeRing(c: Context, name: String) {
         if (!AlertPrefs.calls(c)) return
-        ring(c, name.ifBlank { "Someone" }, false,
+        ring(c, name.ifBlank { c.getString(R.string.common_someone) }, false,
             answer = activity(c, IncomingCallActivity::class.java, 23) { it.putExtra(EXTRA_WAKE_ANSWER, true) },
             decline = service(c, CoreService.ACTION_WAKE_DECLINE, 24))
     }
@@ -213,8 +213,8 @@ object Notifications {
         val n = Notification.Builder(c, CH_MESSAGES)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setAutoCancel(true)
-            .setContentTitle("You may have a new message")
-            .setContentText("Open Tinline and unlock to catch up.")
+            .setContentTitle(c.getString(R.string.notif_wake_notice_title))
+            .setContentText(c.getString(R.string.notif_wake_notice_text))
             .setContentIntent(activity(c, MainActivity::class.java, 41))
             .build()
         try { nm(c).notify(ID_WAKE_NOTICE, n) } catch (e: SecurityException) { }
@@ -235,9 +235,9 @@ object Notifications {
             val p = Person.Builder().setName(name).setImportant(true).build()
             b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(video)
         } else {
-            b.setContentTitle(name).setContentText(if (video) "Incoming video call" else "Incoming call")
-            b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Decline", decline).build())
-            b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Answer", answer).build())
+            b.setContentTitle(name).setContentText(if (video) c.getString(R.string.notif_incoming_video) else c.getString(R.string.notif_incoming))
+            b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), c.getString(R.string.common_decline), decline).build())
+            b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), c.getString(R.string.common_answer), answer).build())
         }
         try { nm(c).notify(ID_INCOMING, b.build()) } catch (e: SecurityException) { }
     }
@@ -246,7 +246,7 @@ object Notifications {
      * A group call someone else started rings (up to 30 s): the group's name over "<First name> is calling the group",
      * Join / Not now, on the calls channel (heads-up, no full-screen). Posted only while the app is not in front.
      */
-    fun groupRing(c: Context, gid: String, group: String, by: String, ringMs: Long) {
+    fun groupRing(c: Context, gid: String, group: String, by: String?, ringMs: Long) {
         if (!AlertPrefs.calls(c)) return
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
@@ -254,12 +254,12 @@ object Notifications {
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setContentTitle(group)
-            .setContentText("$by is calling the group")
+            .setContentText(if (by != null) c.getString(R.string.notif_group_calling, by) else c.getString(R.string.notif_group_calling_unnamed))
             .setContentIntent(activity(c, MainActivity::class.java, 60) { it.putExtra(EXTRA_GROUPS, true) })
             .setTimeoutAfter(ringMs)
-            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Join",
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), c.getString(R.string.common_join),
                 activity(c, MainActivity::class.java, 61) { it.putExtra(EXTRA_GCALL_JOIN, gid) }).build())
-            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Not now",
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), c.getString(R.string.common_not_now),
                 service(c, CoreService.ACTION_GCALL_NOT_NOW, 62)).build())
         try { nm(c).notify(ID_GROUP_RING, b.build()) } catch (e: SecurityException) { }
     }
@@ -279,18 +279,18 @@ object Notifications {
 
     /** A second call during a call: a quiet heads-up with two actions, no full-screen intent. */
     fun waiting(c: Context, call: CallInfo) {
-        val name = call.peerName.ifBlank { "Unknown" }
+        val name = call.peerName.ifBlank { c.getString(R.string.common_unknown) }
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setCategory(Notification.CATEGORY_CALL)
             .setAutoCancel(false)
             .setOnlyAlertOnce(true)
-            .setContentTitle("$name is calling")
-            .setContentText("Your call continues until you choose.")
+            .setContentTitle(c.getString(R.string.notif_waiting_title, name))
+            .setContentText(c.getString(R.string.notif_waiting_text))
             .setContentIntent(activity(c, CallActivity::class.java, 50))
             .setTimeoutAfter(30_000)
-            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Decline", service(c, CoreService.ACTION_DECLINE_WAITING, 51)).build())
-            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "End & answer", service(c, CoreService.ACTION_END_ANSWER, 52)).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), c.getString(R.string.common_decline), service(c, CoreService.ACTION_DECLINE_WAITING, 51)).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), c.getString(R.string.notif_end_answer), service(c, CoreService.ACTION_END_ANSWER, 52)).build())
         try { nm(c).notify(ID_WAITING, b.build()) } catch (e: SecurityException) { }
     }
 
@@ -300,8 +300,8 @@ object Notifications {
         val n = Notification.Builder(c, CH_LOCKED)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOnlyAlertOnce(true)
-            .setContentTitle("Unlock to receive calls")
-            .setContentText("Tap to enter your passphrase")
+            .setContentTitle(c.getString(R.string.notif_locked_title))
+            .setContentText(c.getString(R.string.notif_locked_text))
             .setOngoing(true)
             .setContentIntent(activity(c, MainActivity::class.java, 40))
             .build()
@@ -315,8 +315,8 @@ object Notifications {
         val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
-            .setContentTitle("Contact request")
-            .setContentText("${name.ifBlank { "Someone" }} would like to add you")
+            .setContentTitle(c.getString(R.string.notif_request_title))
+            .setContentText(if (name.isBlank()) c.getString(R.string.notif_request_text_unnamed) else c.getString(R.string.notif_request_text, name))
             .setCategory(Notification.CATEGORY_SOCIAL)
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -330,8 +330,8 @@ object Notifications {
         val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
-            .setContentTitle(name.ifBlank { "Your contact" })
-            .setContentText("Accepted your request. Your line is open.")
+            .setContentTitle(c.getString(R.string.notif_accepted_title))
+            .setContentText(if (name.isBlank()) c.getString(R.string.notif_accepted_text_unnamed) else c.getString(R.string.notif_accepted_text, name))
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 60 + (did.hashCode() and 0xfff)) { it.putExtra(ChatNotifier.EXTRA_PEER, did) })
             .build()
@@ -342,8 +342,8 @@ object Notifications {
         val n = androidx.core.app.NotificationCompat.Builder(c, CH_MISSED)
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
-            .setContentTitle("Missed call")
-            .setContentText(name.ifBlank { "Unknown" })
+            .setContentTitle(c.getString(R.string.notif_missed_title))
+            .setContentText(name.ifBlank { c.getString(R.string.common_unknown) })
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 30))
             .build()

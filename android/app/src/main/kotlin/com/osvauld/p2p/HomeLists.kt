@@ -1,5 +1,7 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -58,8 +60,8 @@ fun ChatsTabBody(
         // With no chats at all the filters mean nothing yet: the whole row goes, so the hero sits at the same height as on Calls.
         if (rows.isNotEmpty()) item(key = "_chips") {
             Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip("All", !unreadOnly) { unreadOnly = false }
-                FilterChip("Unread", unreadOnly) { unreadOnly = true }
+                FilterChip(stringResource(R.string.chats_filter_all), !unreadOnly) { unreadOnly = false }
+                FilterChip(stringResource(R.string.chats_filter_unread), unreadOnly) { unreadOnly = true }
             }
         }
         if (rows.isEmpty()) item(key = "_empty") { empty?.invoke() ?: EmptyQuietLine(EmptyQuiet.CHATS) }
@@ -75,6 +77,8 @@ fun ChatsTabBody(
 fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick: () -> Unit) {
     val c = Tin.c
     val hot = r.unread > 0
+    val draftLabel = stringResource(R.string.chats_draft)
+    val waitingLabel = stringResource(R.string.chats_waiting)
     Row(
         Modifier.fillMaxWidth().heightIn(min = 72.dp).pressable(onClick, RowShape, rest = if (selected) c.accentSoft else androidx.compose.ui.graphics.Color.Transparent).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -89,8 +93,8 @@ fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick
                 val text = buildAnnotatedString {
                     when {
                         r.alert -> withStyle(SpanStyle(color = c.danger, fontWeight = FontWeight.SemiBold)) { append(r.preview) }
-                        !draft.isNullOrBlank() -> { withStyle(SpanStyle(color = c.accentInk, fontWeight = FontWeight.SemiBold)) { append("Draft:") }; append(" " + draft.replace('\n', ' ')) }
-                        r.tick == Tick.Clock -> { withStyle(SpanStyle(color = c.threadText, fontWeight = FontWeight.SemiBold)) { append("Waiting") }; append(" · " + r.preview) }
+                        !draft.isNullOrBlank() -> { withStyle(SpanStyle(color = c.accentInk, fontWeight = FontWeight.SemiBold)) { append(draftLabel) }; append(" " + draft.replace('\n', ' ')) }
+                        r.tick == Tick.Clock -> { withStyle(SpanStyle(color = c.threadText, fontWeight = FontWeight.SemiBold)) { append(waitingLabel) }; append(" · " + r.preview) }
                         else -> append(r.preview)
                     }
                 }
@@ -115,17 +119,31 @@ fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick
 
 /** "Outgoing", "Missed", "No answer"...: CallsList.svelte `what()`, over the core's reasons. */
 fun callWhat(r: CallRecord): String = when {
-    r.durationSecs > 0u -> if (r.incoming) "Incoming" else "Outgoing"
-    r.incoming && r.reason == "unavailable" -> "While not available"
-    r.incoming -> if (r.missed) "Missed" else "Declined"
+    r.durationSecs > 0u -> if (r.incoming) appString(R.string.history_kind_incoming) else appString(R.string.history_kind_outgoing)
+    r.incoming && r.reason == "unavailable" -> appString(R.string.history_kind_away)
+    r.incoming -> if (r.missed) appString(R.string.history_kind_missed) else appString(R.string.calls_what_declined)
     else -> when (r.reason) {
-        "no_answer" -> "No answer"
-        "declined", "busy" -> "Declined"
-        "cancelled" -> "Cancelled"
-        "unreachable" -> "Couldn’t connect"
-        else -> "Call"
+        "no_answer" -> appString(R.string.calls_what_no_answer)
+        "declined", "busy" -> appString(R.string.calls_what_declined)
+        "cancelled" -> appString(R.string.calls_what_cancelled)
+        "unreachable" -> appString(R.string.calls_what_unreachable)
+        else -> appString(R.string.calls_what_other)
     }
 }
+
+/** [callWhat] as a full phrase for a screen reader ("Missed call"): never an adjective slotted into a sentence. */
+fun callWhatDesc(r: CallRecord): String = appString(when {
+    r.durationSecs > 0u -> if (r.incoming) R.string.calls_desc_incoming else R.string.calls_desc_outgoing
+    r.incoming && r.reason == "unavailable" -> R.string.calls_desc_away
+    r.incoming -> if (r.missed) R.string.calls_desc_missed else R.string.calls_desc_declined
+    else -> when (r.reason) {
+        "no_answer" -> R.string.calls_desc_no_answer
+        "declined", "busy" -> R.string.calls_desc_declined
+        "cancelled" -> R.string.calls_desc_cancelled
+        "unreachable" -> R.string.calls_desc_unreachable
+        else -> R.string.calls_desc_other
+    }
+})
 
 /**
  * Group calls on the Calls tab (CallsList.svelte, 2026-10-14): [log] is the core's group call log, [names] the groups I am
@@ -169,9 +187,14 @@ fun CallsTabBody(
             val bad = r.missed
             val callable = canCall(r.peerDid)
             val what = callWhat(r)
+            val whatDesc = callWhatDesc(r)
             val stamp = listTime(r.startedAt.toLong() * 1000, now)
+            val profileDesc = stringResource(R.string.calls_profile_desc, name)
+            val action = stringResource(if (callable) R.string.common_call else R.string.calls_cant_call)
+            val rowDesc = if (r.durationSecs > 0u) stringResource(R.string.calls_row_desc_duration, name, whatDesc, uniffi.present.clock(r.durationSecs.toLong()), stamp, action)
+                else stringResource(R.string.calls_row_desc, name, whatDesc, stamp, action)
             Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                Box(Modifier.pressable({ onProfile(r.peerDid) }, RowShape).semantics { contentDescription = "$name’s profile" }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
+                Box(Modifier.pressable({ onProfile(r.peerDid) }, RowShape).semantics { contentDescription = profileDesc }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
                     Avatar(name, r.peerDid, 48.dp)
                 }
                 // The row calls them (decided 2026-10-14: this is the Calls tab; the chat lives in Chats). Someone I can't
@@ -179,7 +202,7 @@ fun CallsTabBody(
                 Row(
                     Modifier.weight(1f).heightIn(min = 68.dp).pressable({ if (callable) onCall(r.peerDid) else onProfile(r.peerDid) }, RowShape)
                         .semantics(mergeDescendants = true) {
-                            contentDescription = "$name, $what call" + (if (r.durationSecs > 0u) ", " + uniffi.present.clock(r.durationSecs.toLong()) else "") + ", $stamp. " + if (callable) "Call" else "Can’t call"
+                            contentDescription = rowDesc
                         }
                         .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -208,13 +231,15 @@ private fun GroupCallRow(r: uniffi.p2pcore.GroupCallRecord, name: String, now: L
     val c = Tin.c
     val what = uniffi.p2pcore.groupCallLabel(r)
     val stamp = listTime(r.startedAt.toLong() * 1000, now)
+    val infoDesc = stringResource(R.string.calls_group_info_desc, name)
+    val rowDesc = stringResource(R.string.calls_group_row_desc, name, what, stamp)
     Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        Box(Modifier.pressable({ g.onInfo(r.groupId) }, RowShape).semantics { contentDescription = "$name, group info" }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
+        Box(Modifier.pressable({ g.onInfo(r.groupId) }, RowShape).semantics { contentDescription = infoDesc }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
             GroupAvatar(0, 48.dp, gid = r.groupId)
         }
         Row(
             Modifier.weight(1f).heightIn(min = 68.dp).pressable({ g.onCall(r.groupId) }, RowShape)
-                .semantics(mergeDescendants = true) { contentDescription = "$name, $what, $stamp. Start or join a call" }
+                .semantics(mergeDescendants = true) { contentDescription = rowDesc }
                 .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -266,6 +291,7 @@ fun ContactsTabBody(
 ) {
     val c = Tin.c
     var q by remember { mutableStateOf("") }
+    val findLabel = stringResource(R.string.contacts_find)
     fun match(ct: Contact) = q.isBlank() || ct.display().contains(q.trim(), true) || ct.name.contains(q.trim(), true)
     val sorted = contacts.sortedBy { it.display().lowercase() }
     val mine = sorted.filter { !blocked(it.did) && match(it) }
@@ -285,8 +311,8 @@ fun ContactsTabBody(
             ) {
                 Icon(PgIcons.Search, null, tint = c.ink2, modifier = Modifier.size(18.dp))
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                    if (q.isEmpty()) Text("Find a contact", style = TinFs.body, color = c.ink2)
-                    BasicTextField(q, { q = it }, Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }.semantics { contentDescription = "Find a contact" },
+                    if (q.isEmpty()) Text(findLabel, style = TinFs.body, color = c.ink2)
+                    BasicTextField(q, { q = it }, Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }.semantics { contentDescription = findLabel },
                         singleLine = true, textStyle = TinFs.body.copy(color = c.ink), cursorBrush = SolidColor(c.accentInk))
                 }
             }
@@ -300,14 +326,14 @@ fun ContactsTabBody(
                     Icon(PgIcons.UserPlus, null, tint = c.accentInk, modifier = Modifier.size(22.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    Text("Add contact", style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                    Text("Share your code or paste theirs", style = TinFs.sub, color = c.ink2)
+                    Text(stringResource(R.string.contacts_add), style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                    Text(stringResource(R.string.contacts_add_sub), style = TinFs.sub, color = c.ink2)
                 }
             }
         }
         // People waiting for my answer: a card each (Accept / Not now). No "declined" anywhere: an unanswered request waits.
         if (waitingIn.isNotEmpty()) {
-            item(key = "_hrq") { ListSection("Waiting for you", Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
+            item(key = "_hrq") { ListSection(stringResource(R.string.contacts_waiting_for_you), Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
             items(waitingIn, key = { "rq" + it.did }) { r ->
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf)
                     .border(1.dp, c.hairline, RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -315,26 +341,26 @@ fun ContactsTabBody(
                         Avatar(r.name.ifBlank { "?" }, r.did, 44.dp)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                             Text(r.name, style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("Wants to add you as a contact", style = TinFs.sub, color = c.ink2)
+                            Text(stringResource(R.string.contacts_wants_to_add), style = TinFs.sub, color = c.ink2)
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PBtn("Accept", { onAccept(r.did) }, variant = PVariant.Primary)
-                        PBtn("Not now", { onNotNow(r.did) }, variant = PVariant.Quiet)
+                        PBtn(stringResource(R.string.common_accept), { onAccept(r.did) }, variant = PVariant.Primary)
+                        PBtn(stringResource(R.string.common_not_now), { onNotNow(r.did) }, variant = PVariant.Quiet)
                     }
-                    Text("Accepting lets you message and call each other.", style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2)
+                    Text(stringResource(R.string.contacts_accepting), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2)
                 }
             }
         }
         if (waitingOut.isNotEmpty()) {
-            item(key = "_hsent") { ListSection("Waiting for them", Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
+            item(key = "_hsent") { ListSection(stringResource(R.string.contacts_waiting_for_them), Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
             items(waitingOut, key = { "sent" + it.did }) { x ->
                 Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth().heightIn(min = 64.dp).padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Avatar(x.name.ifBlank { "?" }, x.did, 40.dp)
                     Column(Modifier.weight(1f)) {
                         Text(x.name, style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("Request sent. Your line opens when ${firstName(x.name)} accepts.", style = TinFs.sub, color = c.ink2)
+                        Text(stringResource(R.string.contacts_request_sent, firstName(x.name)), style = TinFs.sub, color = c.ink2)
                     }
                 }
             }
@@ -346,15 +372,15 @@ fun ContactsTabBody(
             }
         }
         if (gone.isNotEmpty()) {
-            item(key = "_hb") { ListSection("Blocked", Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
+            item(key = "_hb") { ListSection(stringResource(R.string.common_blocked), Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
             items(gone, key = { "b" + it.did }) { ct ->
-                Box(Modifier.padding(horizontal = 8.dp)) { PersonRow(ct.display(), ct.did, "Blocked", onClick = { onOpen(ct) }, dim = true) }
+                Box(Modifier.padding(horizontal = 8.dp)) { PersonRow(ct.display(), ct.did, stringResource(R.string.common_blocked), onClick = { onOpen(ct) }, dim = true) }
             }
         }
         if (total == 0 && gone.isEmpty() && waitingOut.isEmpty() && q.isBlank()) item(key = "_empty") { EmptyQuietLine(EmptyQuiet.CONTACTS) }
         else if (total == 0 && q.isBlank()) Unit
         else item(key = "_foot") {
-            val t = if (q.isNotBlank() && mine.isEmpty() && gone.isEmpty()) "No one called “${q.trim()}” in your contacts." else "$total ${if (total == 1) "contact" else "contacts"}"
+            val t = if (q.isNotBlank() && mine.isEmpty() && gone.isEmpty()) stringResource(R.string.contacts_none_found, q.trim()) else pluralStringResource(R.plurals.contacts_count, total, total)
             Text(t, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp).heightIn(min = 19.dp), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
         }
     }
@@ -362,9 +388,9 @@ fun ContactsTabBody(
 
 /** A group row's mark in words (screen reader). */
 private fun listTickLabel(v: TickVis): String = when (v) {
-    TickVis.SLACK -> "Waiting to send"
-    TickVis.ONE -> "Sent"
-    TickVis.TWO -> "Delivered to everyone"
-    TickVis.READ -> "Read by everyone"
-    TickVis.BAD -> "Not delivered"
+    TickVis.SLACK -> appString(R.string.list_tick_waiting)
+    TickVis.ONE -> appString(R.string.list_tick_sent)
+    TickVis.TWO -> appString(R.string.list_tick_delivered)
+    TickVis.READ -> appString(R.string.list_tick_read)
+    TickVis.BAD -> appString(R.string.list_tick_bad)
 }

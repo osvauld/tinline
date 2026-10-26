@@ -1,0 +1,4961 @@
+# Generated from i18n/tm/fr.toml by scripts/i18n_tm.py apply. Edit the tm file.
+
+[app_name]
+text = "Tinline"
+
+[common_cancel]
+text = "Annuler"
+
+[common_close]
+text = "Fermer"
+
+[common_back]
+text = "Retour"
+
+[common_done]
+text = "OK"
+
+[common_continue]
+text = "Continuer"
+
+[common_not_now]
+text = "Plus tard"
+
+[common_try_again]
+text = "Réessayer"
+
+[common_copied]
+text = "Copié"
+
+[common_share]
+text = "Partager"
+
+[common_remove]
+text = "Retirer"
+
+[common_search]
+text = "Rechercher"
+
+[common_you]
+text = "Vous"
+
+[common_unknown]
+text = "Inconnu"
+
+[common_someone]
+text = "Quelqu’un"
+
+[common_blocked]
+text = "Bloqué"
+
+[common_call]
+text = "Appeler"
+
+[common_decline]
+text = "Refuser"
+
+[common_accept]
+text = "Accepter"
+
+[common_answer]
+text = "Répondre"
+
+[common_join]
+text = "Rejoindre"
+
+[groups_cant_do]
+text = "Cette action n’a pas abouti"
+
+[groups_waiting_host]
+text = "En attente d’un hôte"
+
+[groups_host_ask_title]
+text = "{name} demande à ce téléphone d’héberger {group}"
+
+[groups_host_ask_body]
+text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en ligne et consomme de la batterie : un ordinateur qui reste allumé est un meilleur hôte. Héberger ne fait pas de vous un admin."
+
+[groups_host_here]
+text = "Héberger ici"
+
+[groups_host_declined]
+text = "Refusé. Les admins ne voient aucune réponse de ce téléphone."
+
+[groups_list_new_title]
+text = "Nouveau groupe"
+
+[groups_list_new_sub]
+text = "Vous en serez propriétaire"
+
+[groups_list_join_title]
+text = "Rejoindre avec un lien"
+
+[groups_list_join_sub]
+text = "Collez ou scannez une invitation de groupe"
+
+[groups_list_invitations]
+text = "Invitations pour vous"
+
+[groups_list_invited]
+text = "{name} vous invite dans {group}"
+
+[groups_list_valid_until]
+text = "Valable jusqu’au {date}"
+
+[groups_list_joining]
+text = "Connexion…"
+
+[groups_list_joined]
+text = "Vous avez rejoint {group}."
+
+[groups_list_cant_join]
+text = "Impossible de rejoindre"
+
+[groups_list_requests]
+text = "Demandes de discussion"
+
+[groups_list_wants_chat]
+text = "{name} veut discuter"
+
+[groups_list_member_of]
+text = "Membre de {group}"
+
+[groups_list_accepting_adds]
+text = "Accepter ajoute {name} comme contact pour les messages uniquement. Vous pourrez autoriser les appels plus tard."
+
+[groups_list_block]
+text = "Bloquer"
+
+[groups_list_yours]
+text = "Vos groupes"
+
+[groups_list_empty]
+text = "Pas encore de groupe. Créez-en un, ou acceptez une invitation."
+
+[groups_list_fold]
+text = "Replier"
+
+[groups_list_unfold]
+text = "Déplier"
+
+[groups_list_expanded]
+text = "Déplié"
+
+[groups_list_collapsed]
+text = "Replié"
+
+[groups_list_left_or_removed]
+text = "Quittés ou retirés"
+
+[groups_list_removed]
+text = "Retiré"
+
+[groups_list_left]
+text = "Vous l’avez quitté"
+
+[groups_list_in_call]
+text = "Vous êtes dans l’appel"
+
+[groups_list_call_running]
+text = "Appel en cours"
+
+[groups_list_no_posts]
+text = "Pas encore de publication"
+
+[groups_new_field_label]
+text = "Nom du groupe"
+
+[groups_new_field_hint]
+text = "Nom"
+
+[groups_new_note]
+text = "Vous en serez propriétaire. Cet appareil est le premier hôte du groupe : il conserve le groupe et transmet les publications."
+
+[groups_new_creating]
+text = "Création…"
+
+[groups_new_create]
+text = "Créer"
+
+[groups_chat_title]
+text = "Groupe"
+
+[groups_chat_loading]
+text = "Chargement…"
+
+[groups_chat_cant_read_picture]
+text = "Impossible de lire cette image."
+
+[groups_chat_cant_send]
+text = "Envoi impossible"
+
+[groups_chat_back]
+text = "Retour aux groupes"
+
+[groups_chat_head_desc]
+text = "{name}. {status}. Infos du groupe"
+
+[groups_chat_call_return]
+text = "Revenir à l’appel de groupe"
+
+[groups_chat_call_join]
+text = "Rejoindre l’appel de groupe"
+
+[groups_chat_call_start]
+text = "Lancer un appel de groupe"
+
+[groups_chat_no_call_host]
+text = "Pas encore d’hôte d’appel : un admin peut en désigner un dans Infos du groupe"
+
+[groups_chat_info]
+text = "Infos du groupe"
+
+[groups_chat_earlier]
+text = "Afficher les messages précédents"
+
+[groups_chat_no_messages]
+text = "Pas encore de message"
+
+[groups_chat_waiting_strip]
+text = "En attente d’un hôte. Aucun hôte du groupe n’est en ligne ; vos publications sont gardées et partiront dès qu’il y en aura un."
+
+[groups_chat_removed_footer]
+text = "Vous avez été retiré de ce groupe et ne pouvez plus y envoyer de messages."
+
+[groups_chat_why]
+text = "Pourquoi ?"
+
+[groups_chat_left_footer]
+text = "Vous avez quitté ce groupe. Ses messages restent ici, en lecture seule."
+
+[groups_chat_composer_hint]
+text = "Message"
+
+[groups_chat_replying_self]
+text = "Réponse à vous-même"
+
+[groups_chat_replying]
+text = "Réponse à {name}"
+
+[groups_chat_cancel_reply]
+text = "Annuler la réponse"
+
+[groups_chat_no_picker]
+text = "Pas de sélecteur de photos sur ce téléphone."
+
+[groups_online_pill]
+text = "Qui est en ligne"
+
+[groups_online_title]
+text = "Qui est en ligne dans {group}"
+
+[groups_online_lag]
+text = "Membres vus par un hôte dans la dernière minute. L’affichage peut avoir quelques secondes de retard."
+
+[groups_online_cap]
+one = "Un hôte affiche jusqu’à {count} personne à la fois, il peut donc y en avoir d’autres."
+many = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
+other = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
+
+[groups_online_hidden]
+text = "Les autres ne vous voient pas ici. Vous pouvez changer cela dans Paramètres › Confidentialité."
+
+[groups_online_none]
+text = "Personne n’est en ligne pour le moment. Les personnes apparaissent ici quand elles sont connectées."
+
+[groups_online_admin]
+text = "Admin"
+
+[groups_call_pill_desc]
+text = "{text}, {time}. Lancer ou rejoindre un appel"
+
+[groups_msg_removed_title]
+one = "Retrait après {count} signalement d’admin"
+many = "Retrait après {count} signalements d’admins"
+other = "Retrait après {count} signalements d’admins"
+
+[groups_msg_removed_by]
+text = "Signalé par {names}. Vous pouvez toujours lire ce que vous avez reçu avant ; rien de nouveau n’arrivera."
+
+[groups_msg_see_details]
+text = "Voir les détails"
+
+[groups_msg_removed_system]
+text = "Vous avez été retiré de ce groupe"
+
+[groups_msg_show]
+text = "Afficher le message"
+
+[groups_msg_blocked_folded]
+text = "Message de {name} (contact bloqué) · Afficher"
+
+[groups_msg_original_missing]
+text = "Message d’origine indisponible"
+
+[groups_msg_sent]
+text = "Envoyé"
+
+[groups_msg_name_removed]
+text = "{name} · hors du groupe"
+
+[groups_msg_reply]
+text = "Répondre"
+
+[groups_msg_who_has_it]
+text = "Qui l’a reçu"
+
+[groups_msg_written_before]
+text = "Écrit avant le retrait de {name}"
+
+[groups_photo_cant_load]
+text = "Impossible de charger l’image"
+
+[groups_photo_load]
+text = "Charger la photo"
+
+[groups_photo_size]
+text = "Photo · {size}"
+
+[groups_photo_desc]
+text = "Photo"
+
+[groups_photo_desc_caption]
+text = "Photo : {caption}"
+
+[groups_photo_retry]
+text = "Réessayer le chargement"
+
+[groups_receipt_delivered]
+text = "Distribué {done}/{total}"
+
+[groups_receipt_read]
+text = "Lu {done}/{total}"
+
+[groups_receipt_level_read]
+text = "Lu"
+
+[groups_receipt_level_device]
+text = "Sur leur appareil"
+
+[groups_receipt_level_not_yet]
+text = "Pas encore"
+
+[groups_receipt_who]
+text = "{label} : {names}"
+
+[groups_receipt_also]
+text = "Ont aussi confirmé : {names}"
+
+[groupsb_info_title]
+text = "Infos du groupe"
+
+[groupsb_removed_title]
+text = "Retiré"
+
+[groupsb_cant_do]
+text = "Cette action n’a pas abouti"
+
+[groupsb_hero_owner]
+one = "{count} membre · Vous êtes propriétaire"
+many = "{count} membres · Vous êtes propriétaire"
+other = "{count} membres · Vous êtes propriétaire"
+
+[groupsb_hero_admin]
+one = "{count} membre · Vous êtes admin"
+many = "{count} membres · Vous êtes admin"
+other = "{count} membres · Vous êtes admin"
+
+[groupsb_hero_member]
+one = "{count} membre · Vous êtes membre"
+many = "{count} membres · Vous êtes membre"
+other = "{count} membres · Vous êtes membre"
+
+[groupsb_hero_left]
+text = "Vous avez quitté ce groupe"
+
+[groupsb_hero_removed]
+text = "Vous n’êtes plus membre"
+
+[groupsb_left_note]
+text = "Vous pouvez toujours lire les publications sur cet appareil. Pour revenir, quelqu’un du groupe doit vous inviter à nouveau."
+
+[groupsb_invites_sec]
+text = "Invitations"
+
+[groupsb_invite_contacts]
+text = "Inviter des contacts"
+
+[groupsb_invite_contacts_sub]
+text = "Une invitation privée pour chaque personne"
+
+[groupsb_create_link]
+text = "Créer un lien d’invitation"
+
+[groupsb_create_link_nohost]
+text = "Désignez d’abord un hôte. Un lien indique un seul hôte."
+
+[groupsb_create_link_valid]
+text = "Valable 7 jours"
+
+[groupsb_members_sec]
+text = "Membres"
+
+[groupsb_req_pending]
+text = "Demande de discussion envoyée"
+
+[groupsb_req_declined]
+text = "A refusé votre demande de discussion"
+
+[groupsb_invited_by]
+text = "Invité par {name} · {date}"
+
+[groupsb_since]
+text = "Depuis le {date}"
+
+[groupsb_member_since]
+text = "Membre depuis le {date}"
+
+[groupsb_name_you]
+text = "{name} (vous)"
+
+[groupsb_role_owner_lc]
+text = "propriétaire"
+
+[groupsb_role_admin_lc]
+text = "admin"
+
+[groupsb_role_member_lc]
+text = "membre"
+
+[groupsb_flags_of]
+one = "Signalements : {flags} sur {count}"
+many = "Signalements : {flags} sur {count}"
+other = "Signalements : {flags} sur {count}"
+
+[groupsb_of_total]
+text = "{n} sur {total}"
+
+[groupsb_blocked_by_you]
+text = "Bloqué par vous"
+
+[groupsb_pill_owner]
+text = "Propriétaire"
+
+[groupsb_pill_admin]
+text = "Admin"
+
+[groupsb_pill_member]
+text = "Membre"
+
+[groupsb_host]
+text = "Hôte"
+
+[groupsb_call_host]
+text = "Hôte d’appel"
+
+[groupsb_leave_group]
+text = "Quitter le groupe"
+
+[groupsb_owner_cant_leave]
+text = "Le propriétaire ne peut pas encore partir"
+
+[groupsb_leave_title]
+text = "Quitter {name} ?"
+
+[groupsb_leave_body]
+text = "Vous ne recevrez plus les publications. Ce qui est déjà sur cet appareil reste, et vous pouvez le lire. Pour revenir, quelqu’un du groupe doit vous inviter à nouveau."
+
+[groupsb_leave_admin]
+text = "Vous êtes admin. Le propriétaire et les autres admins restent."
+
+[groupsb_leave]
+text = "Quitter"
+
+[groupsb_open_group]
+text = "Ouvrir le groupe"
+
+[groupsb_open_title]
+text = "Ouvrir {name} à toute personne qui a le lien ?"
+
+[groupsb_open_body1]
+text = "Toute personne qui a le lien peut rejoindre, sans invitation ni date limite. Partagez-le là où vous aimeriez qu’on trouve le groupe."
+
+[groupsb_open_body2]
+text = "Tant qu’il est ouvert, aucune confirmation de lecture n’est envoyée dans ce groupe, et les membres voient qui est en ligne. Chacun peut se masquer dans ses paramètres."
+
+[groupsb_open_body3]
+text = "Vous pouvez fermer le lien à tout moment ; les personnes déjà présentes restent."
+
+[groupsb_opening]
+text = "Ouverture…"
+
+[groupsb_opened]
+text = "Votre groupe est ouvert. Copiez le lien pour le partager."
+
+[groupsb_group_link]
+text = "Lien du groupe"
+
+[groupsb_public_sec]
+text = "Groupe public"
+
+[groupsb_open_link_on]
+text = "Toute personne qui a le lien peut rejoindre"
+
+[groupsb_open_link_off]
+text = "Seules les personnes que vous invitez peuvent rejoindre"
+
+[groupsb_copy_link]
+text = "Copier le lien"
+
+[groupsb_getting_link]
+text = "Récupération du lien…"
+
+[groupsb_link_never_expires]
+text = "Un lien qui n’expire pas"
+
+[groupsb_turn_on_open]
+text = "Activez Lien public pour le partager"
+
+[groupsb_cant_get_link]
+text = "Impossible de récupérer le lien"
+
+[groupsb_admins_only]
+text = "Admins uniquement"
+
+[groupsb_admins_only_on]
+text = "Seuls les admins publient ; tout le monde lit"
+
+[groupsb_admins_only_off]
+text = "Tout le monde dans le groupe peut publier"
+
+[groupsb_public_note]
+text = "Le lien ouvert n’expire pas. Le fermer empêche de nouvelles arrivées ; les personnes déjà présentes restent. Tant que le groupe est ouvert, aucune confirmation de lecture n’y est envoyée et les membres voient qui est en ligne."
+
+[groupsb_hosts_sec]
+text = "Hôtes"
+
+[groupsb_this_device]
+text = "Cet appareil"
+
+[groupsb_hosts_none]
+text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné."
+
+[groupsb_hosts_online]
+one = "{count} hôte en ligne. Les publications passent tout de suite."
+many = "{count} hôtes en ligne. Les publications passent tout de suite."
+other = "{count} hôtes en ligne. Les publications passent tout de suite."
+
+[groupsb_hosts_offline]
+text = "Aucun hôte n’est en ligne. Vos publications sont gardées et partiront dès qu’il y en aura un."
+
+[groupsb_also_hosts_calls]
+text = "héberge aussi les appels"
+
+[groupsb_remove_host_desc]
+text = "Retirer {device} comme hôte"
+
+[groupsb_cancel_host_desc]
+text = "Annuler la demande d’hébergement à {device}"
+
+[groupsb_waiting_accept]
+text = "En attente d’acceptation"
+
+[groupsb_offered_host]
+text = "Propose d’héberger · un admin doit valider"
+
+[groupsb_appoint]
+text = "Désigner"
+
+[groupsb_hosts_note]
+text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe."
+
+[groupsb_hosts_note_admin]
+text = "Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre."
+
+[groupsb_callhosts_sec]
+text = "Hôtes d’appel"
+
+[groupsb_callhosts_none]
+text = "Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’appel tant qu’un admin n’en a pas désigné un."
+
+[groupsb_callhosts_ready]
+one = "{count} hôte d’appel prêt. Les appels passent par lui."
+many = "{count} hôtes d’appel prêts. Les appels passent par eux."
+other = "{count} hôtes d’appel prêts. Les appels passent par eux."
+
+[groupsb_callhosts_offline]
+text = "Aucun hôte d’appel n’est disponible pour le moment. Un appel pourra démarrer dès que l’un d’eux sera de retour."
+
+[groupsb_callhosts_me]
+text = "Ce téléphone héberge les appels que vous lancez."
+
+[groupsb_remove_callhost_desc]
+text = "Retirer {device} comme hôte d’appel"
+
+[groupsb_cancel_callhost_desc]
+text = "Annuler la demande d’hôte d’appel à {device}"
+
+[groupsb_stop_calls_phone]
+text = "Ne plus héberger les appels sur ce téléphone"
+
+[groupsb_host_calls_phone]
+text = "Héberger les appels sur ce téléphone"
+
+[groupsb_host_calls_phone_sub]
+text = "Héberge les appels que vous lancez ici. Un ordinateur qui reste allumé peut héberger ceux de tout le monde."
+
+[groupsb_callhosts_note]
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
+
+[groupsb_callhosts_note_admin]
+text = "Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur ce téléphone. Un téléphone n’héberge que les appels lancés par son propriétaire."
+
+[groupsb_flags_on_you]
+text = "Signalements vous concernant"
+
+[groupsb_flags_left_note]
+one = "Encore {count} signalement de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+many = "Encore {count} signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+other = "Encore {count} signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+
+[groupsb_flag_first]
+text = "Premier signalement"
+
+[groupsb_flag_second]
+text = "Deuxième signalement"
+
+[groupsb_flag_third]
+text = "Troisième signalement"
+
+[groupsb_flag_n]
+text = "Signalement"
+
+[groupsb_removed_after]
+one = "Retrait après {count} signalement d’admin"
+many = "Retrait après {count} signalements d’admins"
+other = "Retrait après {count} signalements d’admins"
+
+[groupsb_who_flagged]
+text = "Qui vous a signalé"
+
+[groupsb_flags_checked_note]
+text = "Chaque signalement vient d’un admin du groupe, et cet appareil les a vérifiés avant de les afficher."
+
+[groupsb_what_means]
+text = "Ce que cela signifie"
+
+[groupsb_removal_body]
+text = "Vous gardez les publications déjà présentes sur cet appareil, et vous pouvez les lire. Vous ne pouvez plus publier, et les hôtes du groupe n’acceptent plus rien de votre part. Le retrait est définitif : pour revenir, un admin doit vous inviter à nouveau."
+
+[groupsb_read_posts]
+text = "Lire les publications"
+
+[groupsb_invite_to]
+text = "Inviter dans {name}"
+
+[groupsb_invite_sheet_note]
+text = "Chaque personne reçoit une invitation privée valable 7 jours. Toute personne invitée peut lire les publications du groupe une fois qu’elle l’a rejoint."
+
+[groupsb_invite_none]
+text = "Tous vos contacts sont déjà dans ce groupe ou ont une invitation en attente."
+
+[groupsb_sending]
+text = "Envoi…"
+
+[groupsb_invite]
+text = "Inviter"
+
+[groupsb_invite_people]
+one = "Inviter {count} personne"
+many = "Inviter {count} personnes"
+other = "Inviter {count} personnes"
+
+[groupsb_cant_invite]
+text = "Impossible d’inviter"
+
+[groupsb_member_sheet_me]
+text = "Votre rôle dans ce groupe"
+
+[groupsb_member_in_group]
+text = "{name} dans {group}"
+
+[groupsb_message_fn]
+text = "Écrire à {name}"
+
+[groupsb_you_blocked]
+text = "Vous avez bloqué {name}"
+
+[groupsb_blocked_stay]
+text = "Cette personne reste dans le groupe. Débloquez-la dans Contacts pour discuter."
+
+[groupsb_request_sent]
+text = "Demande envoyée"
+
+[groupsb_waiting_answer]
+text = "En attente de la réponse de {name}"
+
+[groupsb_cant_receive]
+text = "{name} ne peut pas recevoir vos demandes."
+
+[groupsb_ask_again]
+text = "Redemander à {name}"
+
+[groupsb_ask_chat]
+text = "Proposer une discussion privée à {name}"
+
+[groupsb_declined_last]
+text = "{name} a refusé votre dernière demande"
+
+[groupsb_sends_request]
+text = "Envoie une demande de discussion via l’hôte du groupe"
+
+[groupsb_make_admin]
+text = "Nommer admin"
+
+[groupsb_remove_admin]
+text = "Retirer le rôle d’admin"
+
+[groupsb_make_device_host]
+text = "Faire de l’appareil {device} un hôte"
+
+[groupsb_make_host]
+text = "Nommer hôte"
+
+[groupsb_asks_host]
+text = "Demande à {name} d’héberger. Il faut son accord."
+
+[groupsb_stop_device_host]
+text = "Arrêter l’hébergement sur l’appareil {device}"
+
+[groupsb_remove_as_host]
+text = "Retirer comme hôte"
+
+[groupsb_cancel_callhost_request]
+text = "Annuler la demande d’hôte d’appel"
+
+[groupsb_waiting_device]
+text = "En attente de l’acceptation de l’appareil de {name}"
+
+[groupsb_remove_as_callhost]
+text = "Retirer comme hôte d’appel"
+
+[groupsb_make_callhost]
+text = "Nommer hôte d’appel"
+
+[groupsb_asks_callhost]
+text = "Demande à {name} d’héberger les appels de groupe. Il faut son accord."
+
+[groupsb_stop_hosting_device]
+text = "Arrêter d’héberger sur cet appareil"
+
+[groupsb_host_device]
+text = "Héberger sur cet appareil"
+
+[groupsb_host_device_sub]
+text = "Un admin doit aussi le désigner. Un ordinateur qui reste allumé est un meilleur hôte."
+
+[groupsb_stop_calls_device]
+text = "Arrêter d’héberger les appels sur cet appareil"
+
+[groupsb_flag_removal]
+text = "Signaler pour retrait"
+
+[groupsb_flag_removal_sub]
+one = "{count} signalement retire {name} du groupe"
+many = "{count} signalements retirent {name} du groupe"
+other = "{count} signalements retirent {name} du groupe"
+
+[groupsb_owner_cant_flag]
+text = "Le propriétaire ne peut pas être signalé"
+
+[groupsb_flag_title]
+text = "Signaler {name} pour retrait ?"
+
+[groupsb_flag_next_of]
+text = "Signalement {next} sur {total}"
+
+[groupsb_flag_note1]
+text = "Un signalement ne peut pas être annulé, et le retrait est définitif. Un même admin peut signaler plusieurs fois ; chaque signalement compte."
+
+[groupsb_flag_note2]
+text = "Le signalement est une décision collective. Il est distinct du blocage, qui ne concerne que vous. {name} voit chaque signalement : qui l’a fait et quand."
+
+[groupsb_flag_button]
+text = "Signaler {name}"
+
+[groupsb_ask_note1]
+text = "{name} voit votre nom et le groupe. La demande passe par l’hôte du groupe, scellée, donc l’hôte ne peut pas la lire."
+
+[groupsb_ask_note2]
+text = "Si {name} accepte, vous pourrez vous écrire directement. Les appels restent désactivés jusqu’à ce que l’un de vous les autorise. Une demande expire au bout de 7 jours."
+
+[groupsb_send_request]
+text = "Envoyer la demande"
+
+[groupsb_new_group]
+text = "Nouveau groupe"
+
+[groupsb_group_name]
+text = "Nom du groupe"
+
+[groupsb_new_group_host_note]
+text = "Ce téléphone héberge le groupe au début : il le conserve et transmet les messages. Un ordinateur qui reste allumé est un meilleur hôte — désignez-en un depuis Infos du groupe une fois qu’il a rejoint."
+
+[groupsb_new_group_own]
+text = "Vous serez propriétaire du groupe. Invitez des personnes depuis Infos du groupe."
+
+[groupsb_making]
+text = "Création…"
+
+[groupsb_create_group]
+text = "Créer le groupe"
+
+[groupsb_add_members]
+text = "Ajouter des membres"
+
+[groupsb_add_to]
+text = "Ajouter à {name}"
+
+[groupsb_contacts_selected]
+one = "CONTACTS · {count} SÉLECTIONNÉ"
+many = "CONTACTS · {count} SÉLECTIONNÉS"
+other = "CONTACTS · {count} SÉLECTIONNÉS"
+
+[groupsb_no_contacts]
+text = "Aucun contact à ajouter. Les personnes que vous bloquez, ou qui vous bloquent, n’apparaissent pas."
+
+[groupsb_add_note]
+text = "Chaque personne reçoit l’invitation dans votre discussion privée, et rejoint quand elle accepte. Elle est valable 7 jours."
+
+[groupsb_scan_invite]
+text = "Scanner l’invitation"
+
+[groupsb_point_invite]
+text = "Visez l’invitation de groupe"
+
+[groupsb_join_group]
+text = "Rejoindre un groupe"
+
+[groupsb_invite_field]
+text = "Lien ou code d’invitation"
+
+[groupsb_checking_host]
+text = "Vérification auprès de l’hôte du groupe…"
+
+[groupsb_bad_link]
+text = "Ce lien n’a pas marché : ce n’est pas une invitation de groupe, elle a expiré, ou son hôte est hors ligne."
+
+[groupsb_paste]
+text = "Coller"
+
+[groupsb_scan]
+text = "Scanner"
+
+[groupsb_join_invited_by]
+text = "Invité par {name}"
+
+[groupsb_own_account_link]
+text = "Un lien pour votre propre compte"
+
+[groupsb_join_owner]
+text = "Propriétaire : {name}"
+
+[groupsb_valid_until]
+text = "Valable jusqu’au {date}"
+
+[groupsb_join_note]
+text = "Rejoindre connecte ce téléphone aux hôtes du groupe. Les membres voient votre nom ; seuls les hôtes savent comment joindre ce téléphone. Cela peut prendre jusqu’à une minute."
+
+[groupsb_joining]
+text = "Connexion…"
+
+[groupsb_invite_link_title]
+text = "Lien d’invitation"
+
+[groupsb_link_note]
+text = "Toute personne qui a ce lien ou ce QR code peut rejoindre {name} pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
+
+[groupsb_show_full_screen]
+text = "Afficher en plein écran"
+
+[groupsb_qr_desc]
+text = "QR code du lien d’invitation au groupe"
+
+[groupsb_qr_desc_full]
+text = "QR code du lien d’invitation au groupe, en plein écran"
+
+[groupsb_making_it]
+text = "Création…"
+
+[groupsb_share_text]
+text = "Rejoignez {name} sur Tinline : {link}"
+
+[groupsb_share_title]
+text = "Partager l’invitation au groupe"
+
+[unlock_wrong_passphrase]
+text = "Cette phrase secrète n’a pas ouvert le compte."
+
+[unlock_keylost_title_named]
+text = "Impossible d’ouvrir le compte de {name}"
+
+[unlock_keylost_title]
+text = "Impossible d’ouvrir votre compte"
+
+[unlock_keylost_lead]
+text = "Ce téléphone n’a plus la clé qui ouvre votre compte. Cela arrive après une réinitialisation du verrouillage de l’écran ou la restauration d’une sauvegarde. Dès que vous restaurez, vos appels arrivent à nouveau."
+
+[unlock_keylost_restore]
+text = "Restaurer avec mes mots de récupération"
+
+[unlock_keylost_notice]
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
+
+[accounts_switch_account]
+text = "Changer de compte"
+
+[unlock_welcome_back_named]
+text = "Bienvenue, {name}"
+
+[unlock_welcome_back]
+text = "Bienvenue"
+
+[unlock_welcome_back_prefix]
+text = "Bienvenue,"
+
+[unlock_unlocking]
+text = "Déverrouillage…"
+
+[unlock_unlock]
+text = "Déverrouiller"
+
+[unlock_forgot]
+text = "Je l’ai oubliée"
+
+[unlock_passphrase_label]
+text = "Phrase secrète"
+
+[unlock_slow_hint]
+text = "La vérification prend une seconde. Elle est lente exprès pour empêcher les essais au hasard."
+
+[unlock_open_as_label]
+text = "Ouvrir avec une autre identité"
+
+[unlock_switch_identity_desc]
+text = "{nick}, changer d’identité"
+
+[accounts_open_as]
+text = "Ouvrir en tant que"
+
+[accounts_title]
+text = "Comptes"
+
+[accounts_opens_right_away]
+text = "S’ouvre tout de suite"
+
+[accounts_asks_passphrase]
+text = "Demande votre phrase secrète"
+
+[accounts_online_here]
+text = "En ligne sur ce téléphone"
+
+[accounts_on_this_phone]
+text = "Sur ce téléphone"
+
+[accounts_locked_not_ringing]
+text = "Verrouillé · ne sonne pas ici"
+
+[accounts_current_desc]
+text = "Compte actuel"
+
+[accounts_create]
+text = "Créer un nouveau compte"
+
+[accounts_link]
+text = "Associer un compte depuis un autre appareil"
+
+[accounts_restore]
+text = "Restaurer avec mes mots de récupération"
+
+[accounts_one_online_hint]
+text = "Un seul compte est en ligne à la fois. Les appels vers un compte verrouillé ne sonnent que sur vos autres appareils."
+
+[accounts_finish_call_first]
+text = "Terminez d’abord votre appel"
+
+[accounts_switch_to]
+text = "Passer à {name} ?"
+
+[accounts_switch_lead]
+text = "{current} passe hors ligne sur ce téléphone. Les appels vers {current} sonneront seulement sur vos autres appareils associés jusqu’à ce que vous reveniez."
+
+[accounts_passphrase_for]
+text = "Phrase secrète de {name}"
+
+[accounts_not_on_call]
+text = "Vous n’êtes pas en appel. Si vous l’étiez, changer de compte y mettrait fin."
+
+[accounts_switching]
+text = "Changement…"
+
+[accounts_unlock_and_switch]
+text = "Déverrouiller et changer"
+
+[accounts_switch]
+text = "Changer"
+
+[profile_my_profile]
+text = "Mon profil"
+
+[profile_edit_profile]
+text = "Modifier le profil"
+
+[profile_share_my_code]
+text = "Partager mon code"
+
+[profile_share_my_code_sub]
+text = "Pour les personnes que vous aimeriez ajouter"
+
+[profile_only_you]
+text = "Vous seul"
+
+[profile_account_recovery]
+text = "Récupération du compte"
+
+[profile_account_recovery_sub]
+text = "Votre clé et vos {words} mots"
+
+[profile_code_title]
+text = "Votre code contact"
+
+[profile_code_lead_qr]
+text = "Faites scanner ce code avec Tinline."
+
+[profile_code_lead_text]
+text = "Envoyez-le à quelqu’un que vous aimeriez ajouter."
+
+[profile_code_load_failed]
+text = "Impossible de charger votre code."
+
+[profile_code_loading]
+text = "Préparation de votre code…"
+
+[profile_code_qr_desc]
+text = "Votre QR code contact"
+
+[profile_code_use_code]
+text = "Utiliser plutôt un code"
+
+[profile_code_show_qr]
+text = "Afficher plutôt le QR code"
+
+[profile_code_copy]
+text = "Copier mon code"
+
+[profile_code_copy_failed]
+text = "Copie impossible. Essayez plutôt Partager."
+
+[profile_code_share_failed]
+text = "Impossible d’ouvrir le partage. Copiez plutôt votre code."
+
+[profile_code_clip_label]
+text = "Code contact"
+
+[profile_saved]
+text = "Enregistré"
+
+[profile_saved_offline]
+text = "Enregistré · synchronisé une fois connecté"
+
+[profile_not_set]
+text = "Non renseigné"
+
+[profile_field_edit_desc]
+text = "{label} : {value}. Modifier"
+
+[profile_edit]
+text = "Modifier"
+
+[profile_save]
+text = "Enregistrer"
+
+[profile_bytes_of_limit]
+text = "{used} octets sur {limit}"
+
+[profile_remove_field_title]
+text = "Retirer « {label} » de votre profil ?"
+
+[profile_remove_field_body]
+text = "Ce champ disparaît de votre profil. Des versions précédentes peuvent rester dans l’historique synchronisé."
+
+[profile_open_link_desc]
+text = "Ouvrir {label} : {link}"
+
+[profile_remove_field_desc]
+text = "Retirer {label}"
+
+[profile_value_yes]
+text = "Oui"
+
+[profile_value_no]
+text = "Non"
+
+[profile_view_photo]
+text = "Voir la photo"
+
+[profile_view_geometry]
+text = "Voir la géométrie de l’identité"
+
+[profile_photo_desc]
+text = "Photo de {name}"
+
+[profile_err_bad_link]
+text = "Saisissez une adresse web qui commence par http:// ou https://."
+
+[profile_err_too_detailed]
+text = "Cette image est trop détaillée pour être enregistrée. Essayez-en une autre."
+
+[profile_announce_updated]
+text = "Photo mise à jour"
+
+[profile_announce_removed]
+text = "Photo retirée"
+
+[profile_picture_desc]
+text = "Photo"
+
+[profile_saved_pending]
+text = "Enregistré sur cet appareil. La synchronisation se fera quand vous serez connecté."
+
+[profile_change_photo]
+text = "Changer de photo"
+
+[profile_add_photo]
+text = "Ajouter une photo"
+
+[profile_section_profile]
+text = "Profil"
+
+[profile_field_name]
+text = "Nom"
+
+[profile_name_placeholder]
+text = "Votre nom"
+
+[profile_field_status]
+text = "Statut"
+
+[profile_status_empty]
+text = "Ajouter un statut"
+
+[profile_status_placeholder]
+text = "Que faites-vous en ce moment ?"
+
+[profile_field_about]
+text = "À propos"
+
+[profile_about_empty]
+text = "Ajoutez quelques mots sur vous"
+
+[profile_section_availability]
+text = "Disponibilité"
+
+[profile_availability_note]
+text = "Vos contacts peuvent voir ceci, et c’est pareil sur tous vos appareils. Cela détermine si les appels vous parviennent, indépendamment du fait d’être en ligne."
+
+[profile_section_additional]
+text = "Informations supplémentaires"
+
+[profile_add_information]
+text = "Ajouter une information"
+
+[profile_field_help]
+text = "Vos contacts peuvent voir votre profil. Retirer une information la masque de votre profil ; des versions précédentes peuvent rester dans l’historique synchronisé."
+
+[profile_other_info_note]
+text = "Certaines informations viennent d’un autre appareil ou d’une autre version de l’app. Elles sont affichées telles qu’enregistrées et conservées quand vous modifiez autre chose."
+
+[profile_layer_choose_picture]
+text = "Choisir votre photo"
+
+[profile_remove_picture_title]
+text = "Retirer votre photo"
+
+[profile_remove_picture_q]
+text = "Retirer votre photo ?"
+
+[profile_remove_picture_body]
+text = "Vos initiales s’afficheront à la place."
+
+[profile_picture_help]
+text = "Remplacer ou retirer votre photo demande la suppression de l’ancienne copie en cache sur vos appareils associés et chez vos contacts lors de leur synchronisation. Les captures d’écran, les sauvegardes et les copies conservées par des clients modifiés ne peuvent pas être effacées par l’app."
+
+[profile_remove_picture_button]
+text = "Retirer la photo"
+
+[profile_open_link_layer]
+text = "Lien ouvert"
+
+[profile_dismiss]
+text = "Fermer"
+
+[profile_available]
+text = "Disponible"
+
+[profile_busy]
+text = "Occupé"
+
+[profile_busy_until]
+text = "Occupé jusqu’à {time}"
+
+[profile_busy_until_open]
+text = "Occupé jusqu’à nouvel ordre"
+
+[profile_err_time_passed]
+text = "Choisissez une heure qui n’est pas encore passée."
+
+[profile_busy_how_long]
+text = "Pour combien de temps"
+
+[profile_busy_30m]
+text = "30 minutes"
+
+[profile_busy_1h]
+text = "1 heure"
+
+[profile_busy_4h]
+text = "4 heures"
+
+[profile_busy_tomorrow]
+text = "Demain matin"
+
+[profile_busy_open]
+text = "Sans heure de fin"
+
+[profile_until_tomorrow]
+text = "demain à {time}"
+
+[profile_err_name_taken]
+text = "Vous avez déjà une information avec ce nom."
+
+[profile_err_need_value]
+text = "Ajoutez quelque chose à enregistrer."
+
+[profile_add_info_lead]
+text = "Vos contacts la verront sur votre profil."
+
+[profile_add_kinds_desc]
+text = "Types d’information"
+
+[profile_something_else]
+text = "Autre chose"
+
+[profile_name_it_yourself]
+text = "Nommez-la vous-même"
+
+[profile_what_called]
+text = "Comment s’appelle-t-elle ?"
+
+[profile_what_called_placeholder]
+text = "Par exemple, Thé préféré"
+
+[profile_value]
+text = "Valeur"
+
+[profile_add]
+text = "Ajouter"
+
+[profile_open_link_q]
+text = "Ouvrir ce lien ?"
+
+[profile_open_link_body]
+text = "Il s’ouvre dans votre navigateur, en dehors de Tinline. Tinline ne le charge pas pour vous et ne peut pas garantir son contenu."
+
+[profile_open_link_button]
+text = "Lien ouvert"
+
+[profile_crop_title]
+text = "Cadrez votre photo"
+
+[profile_crop_hint]
+text = "Faites glisser pour déplacer la photo, ou utilisez les flèches. Plus et moins pour zoomer."
+
+[profile_crop_zoom]
+text = "Zoom"
+
+[profile_use_photo]
+text = "Utiliser la photo"
+
+[profile_err_prepare]
+text = "Impossible de préparer cette image. Essayez-en une autre."
+
+[profile_err_picture_save]
+text = "Impossible d’enregistrer votre photo. Votre photo actuelle n’a pas changé."
+
+[profile_err_picture_remove]
+text = "Impossible de retirer votre photo. Elle n’a pas changé."
+
+[profile_err_save_failed]
+text = "Impossible d’enregistrer. Votre profil n’a pas changé et ce que vous avez saisi est toujours là."
+
+[profile_err_account_changed]
+text = "Le compte sélectionné a changé. Rien n’a été enregistré dans le nouveau compte."
+
+[profile_pick_too_big]
+text = "Cette image fait {size} Mo. Les images peuvent faire jusqu’à {max} Mo."
+
+[profile_pick_wrong_type]
+text = "Tinline accepte les images PNG, JPEG ou WebP. Ce fichier est d’un autre type."
+
+[profile_pick_unreadable]
+text = "Ce fichier n’a pas pu être lu comme une image. Il est peut-être endommagé."
+
+[profile_pick_too_wide]
+text = "Cette image fait {width} × {height} pixels. Tinline accepte jusqu’à {max} pixels de côté."
+
+[profile_err_name_empty]
+text = "Le nom ne peut pas être vide."
+
+[profile_err_name_chars]
+text = "Le nom ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_name_long]
+text = "Ce nom est trop long. {limit} octets au maximum ; certains caractères en prennent plus d’un."
+
+[profile_err_status_long]
+text = "C’est trop long pour un statut : {limit} octets au maximum, et certains caractères en prennent plus d’un."
+
+[profile_err_about_long]
+text = "C’est trop long pour la section À propos : {limit} octets au maximum, et certains caractères en prennent plus d’un."
+
+[profile_err_status_chars]
+text = "Un statut ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_about_chars]
+text = "La section À propos ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_key_blank]
+text = "Donnez un nom à l’information."
+
+[profile_err_key_bad]
+text = "Ce nom ne peut pas être utilisé. Gardez-le court, sans caractères de contrôle."
+
+[profile_err_value_long]
+text = "C’est trop long. Chaque information peut faire jusqu’à {max} Kio."
+
+[profile_err_fields_full]
+text = "Vous avez atteint {max} informations. Retirez-en une pour en ajouter une autre."
+
+[profile_err_profile_full]
+text = "Votre profil est plein. Retirez des informations pour en ajouter d’autres."
+
+[profile_err_use_picture_controls]
+text = "Utilisez les commandes de la photo pour cela."
+
+[profile_err_availability_remove]
+text = "La disponibilité peut être modifiée mais pas retirée."
+
+[profile_known_pronouns]
+text = "Pronoms"
+
+[profile_known_pronouns_hint]
+text = "Par exemple, elle"
+
+[profile_known_location]
+text = "Lieu"
+
+[profile_known_location_hint]
+text = "Ville ou région"
+
+[profile_known_website]
+text = "Site web"
+
+[profile_known_website_hint]
+text = "https://"
+
+[onboarding_step_nickname]
+text = "Votre pseudo"
+
+[onboarding_step_passphrase]
+text = "Phrase secrète"
+
+[onboarding_step_phrase]
+text = "Mots de récupération"
+
+[onboarding_step_device]
+text = "Nom de l’appareil"
+
+[onboarding_step_terms]
+text = "Conditions"
+
+[onboarding_step_permissions]
+text = "Autorisations"
+
+[onboarding_step_restore]
+text = "Restaurer le compte"
+
+[onboarding_step_link]
+text = "Associer à votre compte"
+
+[onboarding_device_personal]
+text = "Téléphone perso"
+
+[onboarding_device_work]
+text = "Téléphone pro"
+
+[onboarding_device_tablet]
+text = "Tablette"
+
+[onboarding_restore_warning_forgot]
+text = "Restaurer garde la même identité : utilisez les mots de récupération de ce compte. Vous choisirez une nouvelle phrase secrète."
+
+[onboarding_restore_warning_next]
+text = "Ensuite, vous choisirez une phrase secrète pour ce compte."
+
+[onboarding_exists_title]
+text = "Déjà sur ce téléphone"
+
+[onboarding_exists_choose]
+text = "Choisir un compte"
+
+[onboarding_exists_body]
+text = "Ces mots de récupération appartiennent à un compte déjà présent ici. Passez plutôt à ce compte au lieu de l’ajouter à nouveau."
+
+[onboarding_restore_key_typo]
+text = "Cette clé contient une faute de frappe ou est incomplète. Collez-la à nouveau depuis l’endroit où vous l’avez enregistrée."
+
+[onboarding_restore_clipboard_failed]
+text = "Impossible de lire le presse-papiers. Collez plutôt dans la première case."
+
+[onboarding_restore_words_desc]
+text = "Mots de récupération"
+
+[onboarding_restore_word_desc]
+text = "Mot {number}"
+
+[onboarding_restore_bad_word]
+text = "Le mot {number} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+
+[onboarding_restore_bad_words_more]
+one = "Le mot {number} et {count} autre ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+many = "Le mot {number} et {count} autres ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+other = "Le mot {number} et {count} autres ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+
+[onboarding_restore_missing]
+one = "Il manque encore {count} mot."
+many = "Il manque encore {count} mots."
+other = "Il manque encore {count} mots."
+
+[onboarding_restore_lead_key]
+text = "Votre clé de récupération est saisie. Elle reste sur ce téléphone."
+
+[onboarding_restore_lead_words]
+text = "Saisissez vos {words} mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur ce téléphone."
+
+[onboarding_restore_key_caption]
+text = "Clé de récupération"
+
+[onboarding_restore_use_words]
+text = "Utiliser plutôt mes mots"
+
+[onboarding_restore_paste]
+text = "Coller depuis le presse-papiers"
+
+[onboarding_restore_filled]
+text = "{filled} sur {words}"
+
+[onboarding_welcome_title_adding]
+text = "Ajouter un compte"
+
+[onboarding_welcome_title]
+text = "Une ligne directe avec vos proches"
+
+[onboarding_welcome_lead_adding]
+text = "Créez un nouveau compte ou ajoutez celui que vous avez déjà.\nVotre compte actuel reste sur ce téléphone."
+
+[onboarding_welcome_lead]
+text = "Tinline relie votre téléphone directement à celui de vos proches.\nIl vous suffit d’un pseudo. Chiffré de bout en bout."
+
+[onboarding_create_account]
+text = "Créer mon compte"
+
+[onboarding_have_account]
+text = "J’ai déjà un compte"
+
+[onboarding_not_emergency]
+text = "Pas pour les appels d’urgence."
+
+[onboarding_dialer_note]
+text = "Utilisez l’application Téléphone pour joindre les services d’urgence."
+
+[onboarding_choose_title]
+text = "Utiliser votre compte ici"
+
+[onboarding_choose_lead]
+text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc le retrouver sur ce téléphone de deux façons."
+
+[onboarding_choose_link]
+text = "Associer mon autre appareil"
+
+[onboarding_choose_link_sub]
+text = "Scannez un code sur un appareil qui a déjà votre compte. Vos contacts et vos discussions suivent."
+
+[onboarding_choose_restore]
+text = "Restaurer mon compte"
+
+[onboarding_choose_restore_sub]
+text = "Saisissez vos {words} mots de récupération. Ce téléphone démarre avec une liste de contacts vide."
+
+[onboarding_done_title_named]
+text = "Votre ligne est ouverte, {name}"
+
+[onboarding_done_title]
+text = "Votre ligne est ouverte"
+
+[onboarding_done_lead]
+text = "Scannez leur code ou partagez le vôtre, et vous pourrez vous appeler."
+
+[onboarding_done_add_contact]
+text = "Ajouter mon premier contact"
+
+[onboarding_tip_devices_title]
+text = "Deux appareils valent mieux qu’un"
+
+[onboarding_tip_devices_body]
+text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous gardez l’accès à votre compte."
+
+[onboarding_tip_groups_title]
+text = "Les groupes sont hébergés sur un ordinateur"
+
+[onboarding_tip_groups_body]
+text = "Pour créer un groupe, installez Tinline sur un ordinateur qui peut rester allumé."
+
+[onboarding_name_title]
+text = "Comment voulez-vous qu’on vous appelle ?"
+
+[onboarding_name_lead]
+text = "Seules les personnes que vous ajoutez le verront."
+
+[onboarding_name_hint]
+text = "Vous pouvez le changer à tout moment dans Paramètres."
+
+[onboarding_pass_title_forgot]
+text = "Choisissez une nouvelle phrase secrète"
+
+[onboarding_pass_title_link]
+text = "Protégez ce téléphone"
+
+[onboarding_pass_title]
+text = "Ajoutez une phrase secrète"
+
+[onboarding_pass_cta_link]
+text = "Ajouter une phrase secrète"
+
+[onboarding_pass_cta_save]
+text = "Enregistrer le compte"
+
+[onboarding_pass_lead]
+text = "Facultatif. Un verrou, pour que vous seul puissiez ouvrir Tinline sur ce téléphone."
+
+[onboarding_pass_skip]
+text = "Passer pour l’instant"
+
+[onboarding_pass_encrypting]
+text = "Chiffrement…"
+
+[onboarding_pass_why]
+text = "Chiffre votre compte sur ce téléphone. Votre téléphone s’en souvient, donc les appels sonnent toujours après un redémarrage. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
+
+[onboarding_strength_0]
+text = "Toutes les longueurs conviennent. Quelques mots au hasard sont faciles à retenir."
+
+[onboarding_strength_1]
+text = "Courte. Quelques mots de plus la rendent plus solide."
+
+[onboarding_strength_2]
+text = "Correcte"
+
+[onboarding_strength_3]
+text = "Solide"
+
+[onboarding_phrase_title_key]
+text = "Voici votre clé de récupération"
+
+[onboarding_phrase_title_words]
+text = "Voici vos mots de récupération"
+
+[onboarding_phrase_lead_key]
+text = "Votre clé de récupération équivaut à vos {words} mots, en une seule ligne.\nCollez-la dans un endroit sûr. Un gestionnaire de mots de passe convient très bien."
+
+[onboarding_phrase_lead_words]
+text = "Si vous changez un jour d’appareil, ces {words} mots emportent votre compte avec vous.\nGardez-en une copie en lieu sûr. Le papier, c’est très bien."
+
+[onboarding_phrase_saved_key]
+text = "Je l’ai enregistrée"
+
+[onboarding_phrase_saved_words]
+text = "Je les ai enregistrés"
+
+[onboarding_phrase_copy_again]
+text = "Copier à nouveau"
+
+[onboarding_phrase_copy_key]
+text = "Copier ma clé"
+
+[onboarding_phrase_copy_words]
+text = "Copier mes mots"
+
+[onboarding_phrase_elsewhere_key]
+text = "Je l’ai enregistrée ailleurs"
+
+[onboarding_phrase_elsewhere_words]
+text = "Je les ai notés"
+
+[onboarding_clip_key]
+text = "Clé de récupération"
+
+[onboarding_clip_words]
+text = "Mots de récupération"
+
+[onboarding_your_account]
+text = "Votre compte"
+
+[onboarding_seg_words]
+text = "Mots"
+
+[onboarding_seg_key]
+text = "Clé"
+
+[onboarding_device_title]
+text = "Nommez ce téléphone"
+
+[onboarding_device_lead]
+text = "Pour distinguer vos appareils dans Appareils associés. Seuls vos propres appareils voient ce nom ; les personnes que vous appelez, jamais."
+
+[onboarding_device_hint]
+text = "Vous pourrez le renommer plus tard."
+
+[onboarding_restored_title_adding]
+text = "{name} est maintenant sur ce téléphone"
+
+[onboarding_restored_lead_adding]
+text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+
+[onboarding_restored_lead]
+text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide."
+
+[onboarding_open_tinline]
+text = "Ouvrir Tinline"
+
+[onboarding_linked_title]
+text = "Associé à {device}"
+
+[onboarding_linked_lead]
+text = "Vos contacts et discussions arrivent depuis {device} et resteront synchronisés sur les deux."
+
+[onboarding_sync_contacts]
+text = "Contacts"
+
+[onboarding_sync_calls]
+text = "Historique des appels"
+
+[onboarding_sync_waiting]
+text = "En attente"
+
+[onboarding_sync_slow]
+text = "Rien pour l’instant. L’autre appareil est peut-être hors ligne : il reprendra là où il s’était arrêté la prochaine fois que les deux seront en ligne."
+
+[onboarding_sync_keep_online]
+text = "Gardez les deux appareils en ligne. La synchronisation continue en arrière-plan."
+
+[onboarding_savefail_title]
+text = "Impossible d’enregistrer votre compte"
+
+[onboarding_savefail_lead]
+text = "Tinline n’a pas pu stocker la clé qui ouvre votre compte sur ce téléphone, votre compte n’est donc pas encore enregistré."
+
+[onboarding_savefail_trying]
+text = "Nouvel essai…"
+
+[onboarding_savefail_add_pass]
+text = "Ajouter plutôt une phrase secrète"
+
+[onboarding_savefail_notice]
+text = "Rien n’a encore été gardé sur ce téléphone, il n’y a donc rien à perdre. Réessayez, ou protégez le compte avec une phrase secrète plutôt qu’avec la clé du téléphone."
+
+[onboarding_terms_title]
+text = "Avant de commencer"
+
+[onboarding_terms_agree_button]
+text = "J’accepte"
+
+[onboarding_terms_ads_title]
+text = "Sans publicité ni pistage."
+
+[onboarding_terms_ads_body]
+text = "Tinline ne collecte pas vos contacts, vos appels ni votre position."
+
+[onboarding_terms_encrypted_title]
+text = "Les appels sont chiffrés de bout en bout."
+
+[onboarding_terms_encrypted_body]
+text = "Quand une ligne directe n’est pas possible, un relais chiffré transmet l’appel. Il ne peut pas l’entendre."
+
+[onboarding_terms_account_title]
+text = "Votre compte vous appartient."
+
+[onboarding_terms_account_body]
+text = "Il vit sur vos appareils, pas sur un serveur. Vos mots de récupération sont le moyen d’y revenir, alors gardez-les en lieu sûr."
+
+[onboarding_terms_by_continuing]
+text = "En continuant, vous acceptez les [Conditions d’utilisation](terms) et confirmez avoir lu la [Politique de confidentialité](privacy)."
+
+[onboarding_perms_title]
+text = "Pour que les appels vous parviennent"
+
+[onboarding_perms_lead]
+text = "Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
+
+[onboarding_perms_lead_push]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
+
+[onboarding_perm_mic]
+text = "Micro"
+
+[onboarding_perm_mic_why]
+text = "Pour qu’on puisse vous entendre. Utilisé uniquement pendant un appel."
+
+[onboarding_perm_notifications]
+text = "Notifications"
+
+[onboarding_perm_notifications_why]
+text = "Pour voir les appels et messages entrants."
+
+[onboarding_perm_fullscreen]
+text = "Sonner sur l’écran verrouillé"
+
+[onboarding_perm_fullscreen_why]
+text = "Affiche les appels entrants en plein écran, comme l’application Téléphone."
+
+[onboarding_perm_background]
+text = "Fonctionner en arrière-plan"
+
+[onboarding_perm_background_why]
+text = "Android met en pause les apps inactives pour économiser la batterie. Ceci garde votre ligne ouverte, en consommant un peu de batterie."
+
+[onboarding_perm_allow]
+text = "Autoriser"
+
+[onboarding_perm_allow_desc]
+text = "Autoriser l’accès : {permission}"
+
+[onboarding_perm_allowed_desc]
+text = "Autorisation accordée : {permission}"
+
+[perms_open_settings]
+text = "Ouvrir les paramètres"
+
+[perms_notifications_off_title]
+text = "Les notifications sont désactivées"
+
+[perms_notifications_off_body]
+text = "Tinline ne peut pas vous prévenir des messages ou des appels. Ils arrivent quand même ; vous les verrez en ouvrant l’app. Activez les notifications dans les paramètres du système."
+
+[perms_battery_title]
+text = "L’économie de batterie peut retarder les appels"
+
+[perms_battery_body]
+text = "Android peut mettre Tinline en pause en arrière-plan, et les appels et messages peuvent arriver en retard. Réglez l’utilisation de la batterie de Tinline sur Non restreinte."
+
+[perms_mic_title]
+text = "Micro"
+
+[perms_mic_why]
+text = "Pour que l’autre personne puisse vous entendre"
+
+[perms_notifications_title]
+text = "Notifications"
+
+[perms_notifications_why]
+text = "Pour afficher les appels entrants"
+
+[perms_battery_need_title]
+text = "Fonctionner en arrière-plan"
+
+[perms_battery_need_why]
+text = "Exempté de l’optimisation de la batterie pour recevoir les appels en veille"
+
+[perms_fullscreen_title]
+text = "Appels en plein écran"
+
+[perms_fullscreen_why]
+text = "Afficher les appels entrants sur l’écran verrouillé"
+
+[settings_title]
+text = "Paramètres"
+
+[settings_available]
+text = "Disponible"
+
+[settings_busy_until]
+text = "Occupé jusqu’à {time}"
+
+[settings_busy]
+text = "Occupé"
+
+[settings_see_details]
+text = "Voir les détails"
+
+[settings_account_selected]
+text = "Sélectionné · en ligne"
+
+[settings_account_paused]
+text = "En pause · touchez pour changer"
+
+[settings_add_account]
+text = "Ajouter un autre compte"
+
+[settings_accounts_note]
+text = "Seul le compte sélectionné est en ligne sur ce téléphone. Changer met l’autre en pause : il ne reçoit aucun appel jusqu’à ce que vous le sélectionniez à nouveau."
+
+[settings_appearance]
+text = "Apparence"
+
+[settings_language]
+text = "Langue"
+
+[settings_language_match]
+text = "Comme mon téléphone"
+
+[settings_language_match_sub]
+text = "Utilise la langue de ce téléphone"
+
+[settings_look_match]
+text = "Comme mon téléphone"
+
+[settings_look_match_sub]
+text = "Clair ou sombre, selon le réglage de ce téléphone"
+
+[settings_look_light]
+text = "Clair"
+
+[settings_look_dark]
+text = "Sombre"
+
+[settings_devices]
+text = "Appareils"
+
+[settings_privacy]
+text = "Confidentialité"
+
+[settings_notifications]
+text = "Notifications"
+
+[settings_sounds]
+text = "Sons"
+
+[settings_video]
+text = "Vidéo"
+
+[settings_storage]
+text = "Stockage"
+
+[settings_about]
+text = "À propos de Tinline"
+
+[settings_video_in_calls]
+text = "Vidéo dans les appels"
+
+[settings_video_in_calls_on]
+text = "Vous pouvez activer votre caméra pendant un appel"
+
+[settings_video_in_calls_off]
+text = "Les appels sont uniquement vocaux"
+
+[settings_add_create]
+text = "Créer un nouveau compte"
+
+[settings_add_link]
+text = "Associer à un appareil"
+
+[settings_add_restore]
+text = "Restaurer avec les mots de récupération"
+
+[settings_edit_profile]
+text = "Modifier le profil"
+
+[notif_alert_about]
+text = "Me prévenir pour"
+
+[notif_messages]
+text = "Messages"
+
+[notif_messages_sub]
+text = "Des personnes, pas des groupes"
+
+[notif_calls]
+text = "Appels"
+
+[notif_calls_sub]
+text = "Sonnerie quand quelqu’un appelle"
+
+[notif_groups]
+text = "Groupes"
+
+[notif_groups_sub]
+text = "Publications, invitations et demandes"
+
+[notif_messages_switch]
+text = "Notifications de messages"
+
+[notif_calls_switch]
+text = "Notifications d’appels"
+
+[notif_groups_switch]
+text = "Notifications de groupes"
+
+[notif_muted_note]
+text = "Une discussion en sourdine ne vous prévient jamais, quels que soient les réglages ici. Les appels manqués d’une même personne sont regroupés en une notification."
+
+[notif_permissions]
+text = "Autorisations"
+
+[notif_perm_allowed]
+text = "Autorisé"
+
+[notif_perm_off]
+text = "Désactivé dans les paramètres du système"
+
+[notif_perm_mic]
+text = "Micro"
+
+[notif_perm_mic_asked]
+text = "Demandé quand vous appelez"
+
+[notif_perm_battery]
+text = "Utilisation de la batterie"
+
+[notif_perm_unrestricted]
+text = "Non restreinte"
+
+[notif_perm_restricted]
+text = "Restreinte"
+
+[notif_fix]
+text = "Régler"
+
+[notif_ring_lock]
+text = "Sonner sur l’écran verrouillé"
+
+[notif_system_note]
+text = "Ces autorisations sont gérées par votre système, pas par Tinline. Tinline ne les demande que lorsqu’il en a besoin."
+
+[settings_quiet]
+text = "Silence"
+
+[settings_quiet_sub]
+text = "Aucun son de Tinline : sonnerie, tonalités d’appel, arrivées"
+
+[settings_sound_classic]
+text = "Carillon classique"
+
+[settings_sound_classic_sub]
+text = "Un carillon clair de quatre notes."
+
+[settings_sound_slack]
+text = "Lâche → tendu"
+
+[settings_sound_slack_sub]
+text = "Deux notes proches battent comme une corde lâche, puis l’une se tend."
+
+[settings_sound_triad]
+text = "Triade frappée"
+
+[settings_sound_triad_sub]
+text = "Trois notes montantes, comme on frappe à la porte."
+
+[settings_call_sounds]
+text = "Sons d’appel"
+
+[settings_cue_ring]
+text = "Sonnerie"
+
+[settings_cue_connected]
+text = "Connecté"
+
+[settings_cue_ended]
+text = "Appel terminé"
+
+[settings_sounds_note_quiet]
+text = "Le mode Silence est activé, les aperçus sont donc muets."
+
+[settings_sounds_note]
+text = "Touchez un son pour l’écouter. Le choix s’applique au prochain appel."
+
+[settings_video_quality]
+text = "Qualité vidéo"
+
+[settings_sharper_video]
+text = "Vidéo plus nette"
+
+[settings_sharper_on]
+text = "Démarre toujours en HD. Consomme plus de données et de batterie."
+
+[settings_sharper_off]
+text = "Passe en HD toute seule quand la connexion le permet."
+
+[settings_video_note]
+text = "Chaque appel vidéo démarre ainsi. Pendant un appel, touchez HD pour changer cela pour cet appel."
+
+[settings_size_gb]
+text = "{value} Go"
+
+[settings_size_mb]
+text = "{value} Mo"
+
+[settings_size_kb]
+text = "{value} Ko"
+
+[settings_size_b]
+text = "{value} o"
+
+[settings_storage_on_phone]
+text = "Sur ce téléphone"
+
+[settings_storage_pictures]
+text = "Images"
+
+[settings_storage_files]
+text = "Fichiers"
+
+[settings_storage_messages]
+text = "Messages"
+
+[settings_storage_cache]
+text = "Cache"
+
+[settings_download_pictures]
+text = "Télécharger les images"
+
+[settings_dl_always]
+text = "Toujours"
+
+[settings_dl_always_sub]
+text = "En Wi-Fi et en données mobiles"
+
+[settings_dl_wifi]
+text = "En Wi-Fi"
+
+[settings_dl_wifi_sub]
+text = "En données mobiles, elles attendent que vous les touchiez"
+
+[settings_dl_tap]
+text = "Quand je les touche"
+
+[settings_dl_tap_sub]
+text = "Chacune affiche un aperçu flou d’ici là"
+
+[settings_clear_cache]
+text = "Vider le cache"
+
+[settings_clear_cache_sub]
+text = "{size} d’images et de fichiers que vous avez ouverts. Ils sont préparés à nouveau quand vous les ouvrez."
+
+[settings_cleared]
+text = "Vidé"
+
+[settings_nothing_to_clear]
+text = "Rien à vider"
+
+[settings_storage_note]
+text = "Pour libérer plus d’espace, retirez des images ou des fichiers de leur discussion."
+
+[settings_blocked_count]
+one = "{count} personne"
+many = "{count} personnes"
+other = "{count} personnes"
+
+[settings_blocked_none]
+text = "Personne"
+
+[settings_calls_allowed_title]
+text = "Qui peut m’appeler"
+
+[settings_messages_only_count]
+one = "{count} contact en messages uniquement"
+many = "{count} contacts en messages uniquement"
+other = "{count} contacts en messages uniquement"
+
+[settings_calls_all]
+text = "Tous les contacts peuvent appeler"
+
+[settings_account_recovery]
+text = "Récupération du compte"
+
+[settings_recovery_needs_pass]
+text = "Demande votre phrase secrète"
+
+[settings_recovery_needs_lock]
+text = "Demande le verrouillage de votre écran"
+
+[settings_passphrase]
+text = "Phrase secrète"
+
+[settings_passphrase_sub]
+text = "Protège Tinline sur cet appareil"
+
+[settings_privacy_note]
+text = "Vos contacts voient votre nom, votre photo et votre profil. Tinline ne cache pas avec qui vous parlez, et chaque appareil associé à votre compte peut lire vos discussions."
+
+[settings_read_receipts]
+text = "Confirmations de lecture"
+
+[settings_receipts_on]
+text = "Les autres voient quand vous avez lu leurs messages"
+
+[settings_receipts_off]
+text = "Vos lectures restent privées"
+
+[settings_receipts_note]
+text = "Les coches de distribution partent dans tous les cas, et vous voyez toujours quand les autres lisent les vôtres. Les messages lus pendant que c’est désactivé restent sans confirmation."
+
+[settings_presence_title]
+text = "M’afficher en ligne dans les groupes publics"
+
+[settings_presence_on]
+text = "Les membres voient quand vous êtes là"
+
+[settings_presence_off]
+text = "Vous restez hors de leurs listes de présence"
+
+[settings_presence_note]
+text = "Les groupes publics sont ceux que tout le monde peut rejoindre avec un lien ouvert. Ce réglage s’applique à cet appareil ; vos autres appareils gardent leur propre choix."
+
+[settings_group_pictures]
+text = "Images des groupes"
+
+[settings_group_pictures_note]
+text = "Les images des groupes viennent des hôtes du groupe. Ce réglage s’applique à cet appareil."
+
+[settings_contacts]
+text = "Contacts"
+
+[settings_can_call]
+text = "Peut vous appeler"
+
+[settings_messages_only]
+text = "Messages uniquement"
+
+[settings_allow_calls_from]
+text = "Autoriser les appels de {name}"
+
+[settings_calls_allowed_note]
+text = "Une personne autorisée peut vous appeler ; une personne en messages uniquement peut toujours écrire. Les personnes bloquées ne peuvent faire ni l’un ni l’autre."
+
+[settings_battery_title]
+text = "Arrière-plan et batterie"
+
+[settings_battery_keep]
+text = "Garder ma ligne ouverte"
+
+[settings_battery_hint]
+text = "Tinline reste connecté en arrière-plan pour que les appels sonnent comme sur un téléphone normal. Cela consomme un peu de batterie. La liste ci-dessous indique ce dont Android a besoin pour le permettre."
+
+[settings_battery_hint_push]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille : il n’a donc pas besoin d’exception pour la batterie. La liste ci-dessous indique ce dont Android a besoin pour sonner."
+
+[settings_stay_connected]
+text = "Rester connecté en permanence"
+
+[settings_stay_connected_on]
+text = "Tinline garde votre ligne ouverte, pour que les appels et les messages arrivent tout de suite. Cela consomme un peu plus de batterie."
+
+[settings_stay_connected_off]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis se réveille. Le signal de réveil ne contient aucun message, c’est un simple petit signal."
+
+[settings_checklist]
+text = "VÉRIFICATIONS"
+
+[settings_battery_row]
+text = "Batterie"
+
+[settings_battery_optimised]
+text = "Optimisée — Android peut mettre Tinline en pause"
+
+[settings_on]
+text = "Activé"
+
+[settings_battery_missing_bold]
+text = "Vous manquez encore des appels ?"
+
+[settings_battery_missing]
+text = "Certains téléphones demandent une étape de plus pour laisser les apps tourner."
+
+[settings_battery_steps]
+text = "Étapes pour votre téléphone"
+
+[settings_recovery_open_failed]
+text = "Impossible d’ouvrir la récupération. Revenez en arrière et réessayez."
+
+[settings_recovery_wrong]
+text = "Cela ne correspond pas. Réessayez."
+
+[settings_recovery_backup_failed]
+text = "Impossible d’ouvrir votre sauvegarde. Réessayez."
+
+[settings_recovery_add_lock]
+text = "Ajoutez un verrouillage d’écran ou une phrase secrète d’app pour ouvrir votre sauvegarde."
+
+[settings_only_you]
+text = "Vous seul"
+
+[settings_recovery_check]
+text = "Confirmez que c’est bien vous avant d’ouvrir votre sauvegarde."
+
+[settings_your_passphrase]
+text = "Votre phrase secrète"
+
+[settings_recovery_use_lock]
+text = "Utilisez le verrouillage d’écran de votre téléphone pour continuer."
+
+[settings_use_screen_lock]
+text = "Utiliser le verrouillage d’écran"
+
+[settings_backup_title]
+text = "Votre sauvegarde de récupération"
+
+[settings_backup_private]
+text = "Gardez-la privée. Toute personne qui l’a peut agir en votre nom."
+
+[settings_backup_key]
+text = "Clé"
+
+[settings_backup_words]
+text = "{words} mots"
+
+[settings_backup_key_failed]
+text = "Impossible de préparer la clé. Utilisez plutôt vos {words} mots."
+
+[settings_hide]
+text = "Masquer"
+
+[settings_reveal]
+text = "Afficher"
+
+[settings_backup_hides]
+text = "Se masque après 30 secondes. Se verrouille quand vous quittez l’app."
+
+[settings_backup_same]
+text = "La clé ou les mots restaurent le même compte. Gardez-les dans un endroit privé et sûr."
+
+[settings_backup_copied]
+text = "Copiée. Gardez-la dans un endroit privé."
+
+[settings_copy_key]
+text = "Copier la clé"
+
+[settings_copy_failed]
+text = "Copie impossible. Réessayez."
+
+[settings_change_passphrase]
+text = "Changer de phrase secrète"
+
+[settings_add_passphrase]
+text = "Ajouter une phrase secrète"
+
+[settings_current_passphrase]
+text = "Phrase secrète actuelle"
+
+[settings_new_passphrase]
+text = "Nouvelle phrase secrète"
+
+[settings_passphrase_why]
+text = "Votre compte vit uniquement sur ce téléphone. Une phrase secrète le chiffre, pour que personne ne puisse le copier en ayant votre téléphone en main."
+
+[settings_encrypting]
+text = "Chiffrement…"
+
+[settings_about_version]
+text = "Version {version}"
+
+[settings_about_made_by]
+text = "Créé par Osvauld"
+
+[settings_licences_title]
+text = "Licences open source"
+
+[settings_licences_sub]
+text = "Les bibliothèques sur lesquelles Tinline repose"
+
+[settings_licences_full]
+text = "Textes complets des licences"
+
+[settings_source]
+text = "Code source"
+
+[settings_source_sub]
+text = "Tinline est open source"
+
+[settings_about_note]
+text = "Tinline n’a ni publicité ni pistage. Vos messages et appels circulent entre vos appareils et les personnes avec qui vous parlez."
+
+[settings_terms]
+text = "Conditions d’utilisation"
+
+[settings_privacy_policy]
+text = "Politique de confidentialité"
+
+[settings_emergency]
+text = "Pas pour les appels d’urgence."
+
+[settings_log_copy]
+text = "Copier le journal de débogage"
+
+[settings_log_copy_sub]
+text = "Collez-le à la personne qui vous aide à résoudre un problème"
+
+[settings_log_send]
+text = "Envoyer le journal de débogage"
+
+[settings_log_send_sub]
+text = "Le journal complet, sous forme de fichier"
+
+[settings_log_note]
+text = "Le journal contient ce que Tinline a fait sur ce téléphone, avec les identifiants des contacts et des appels. Il ne contient jamais vos messages ni votre secret racine."
+
+[settings_log_collecting]
+text = "Récupération du journal…"
+
+[settings_log_copied]
+text = "Journal de débogage copié. Collez-le dans un message."
+
+[settings_log_failed]
+text = "Impossible de récupérer le journal : {reason}"
+
+[devices_title]
+text = "Appareils associés"
+
+[devices_hint]
+text = "Les appels sonnent sur chacun d’eux. Les personnes que vous appelez ne voient jamais ces noms."
+
+[devices_link]
+text = "Associer un appareil"
+
+[devices_unlinked_label]
+text = "DISSOCIÉS"
+
+[devices_sync_label]
+text = "SYNCHRONISATION"
+
+[devices_sync_hint]
+text = "Les appareils se synchronisent directement entre eux dès que deux sont en ligne en même temps. Il n’y a de copie sur aucun serveur."
+
+[devices_this_phone_named]
+text = "Ce téléphone — {name}"
+
+[devices_unnamed]
+text = "Sans nom"
+
+[devices_unnamed_device]
+text = "Appareil sans nom"
+
+[devices_sub_unlinked]
+text = "Dissocié"
+
+[devices_sub_this]
+text = "Cet appareil · Android"
+
+[devices_sub_synced]
+text = "Synchronisé {time}"
+
+[devices_sub_not_seen]
+text = "Pas encore vu"
+
+[devices_device]
+text = "Appareil"
+
+[devices_this_phone]
+text = "Ce téléphone"
+
+[devices_name]
+text = "Nom"
+
+[devices_last_synced]
+text = "Dernière synchronisation"
+
+[devices_this_device]
+text = "Cet appareil"
+
+[devices_not_yet]
+text = "Pas encore"
+
+[devices_rings]
+text = "Sonne pour les appels"
+
+[devices_rings_no]
+text = "Non, il a été dissocié"
+
+[devices_rings_yes]
+text = "Oui, quand il est allumé"
+
+[devices_sync_now]
+text = "Synchroniser"
+
+[devices_syncing]
+text = "Synchronisation avec {name}…"
+
+[devices_remove_account]
+text = "Retirer le compte de ce téléphone"
+
+[devices_unlink_this]
+text = "Dissocier cet appareil"
+
+[devices_unlink_device]
+text = "Dissocier l’appareil"
+
+[devices_name_this_phone]
+text = "Nommez ce téléphone"
+
+[devices_rename]
+text = "Renommer l’appareil"
+
+[devices_save]
+text = "Enregistrer"
+
+[devices_name_field]
+text = "Nom de l’appareil"
+
+[devices_confirm_remove_title]
+text = "Retirer votre compte de ce téléphone ?"
+
+[devices_confirm_unlink_title]
+text = "Dissocier {name} ?"
+
+[devices_working]
+text = "En cours…"
+
+[devices_unlink]
+text = "Dissocier"
+
+[devices_remove_body]
+text = "Ce téléphone cesse de se synchroniser et de sonner, et votre compte, vos contacts, vos discussions et votre historique d’appels en sont supprimés."
+
+[devices_remove_only]
+text = "C’est le seul appareil qui a votre compte. Sans vos mots de récupération, rien ne peut le faire revenir."
+
+[devices_remove_others]
+text = "Vos autres appareils gardent tout."
+
+[devices_unlink_body]
+text = "Il cesse de se synchroniser et de sonner pour vos appels. S’il est en ligne, il retire lui-même votre compte."
+
+[devices_unlink_warn]
+text = "La dissociation ne peut pas le verrouiller à distance. Toute personne capable de le déverrouiller peut encore utiliser votre compte. La seule coupure complète, c’est un nouveau compte."
+
+[devices_lost_stolen]
+text = "Perdu ou volé ?"
+
+[devices_unlinked_msg]
+text = "Dissocié : {name}"
+
+[devices_finish_call]
+text = "Terminez d’abord votre appel"
+
+[devices_lock_cancelled]
+text = "Vérification du verrouillage d’écran annulée"
+
+[link_title]
+text = "Associer à votre compte"
+
+[link_same_code]
+text = "Le même code des deux côtés ?"
+
+[link_same_code_lead]
+text = "Vérifiez que {name} affiche ce code, puis validez là-bas."
+
+[link_fallback_other_device]
+text = "votre autre appareil"
+
+[link_code_differs]
+text = "Code différent, ou ce n’est pas vous qui avez lancé ceci ? Annulez. Quelqu’un d’autre a peut-être scanné le QR code."
+
+[link_waiting]
+text = "En attente de validation…"
+
+[link_linking]
+text = "Association…"
+
+[link_receiving]
+text = "Réception de votre compte. Gardez les deux appareils ouverts."
+
+[link_failed_title]
+text = "Association impossible"
+
+[link_show_lead]
+text = "Sur un appareil qui a déjà votre compte, ouvrez Paramètres › Associer un appareil et scannez ceci."
+
+[link_new_code]
+text = "Nouveau code"
+
+[link_scan_instead]
+text = "Scanner plutôt"
+
+[link_qr_warning]
+text = "Toute personne qui voit ce code dans les prochaines minutes pourrait essayer de l’utiliser. Ne le montrez qu’à votre propre appareil."
+
+[link_qr_desc]
+text = "QR code pour associer cet appareil"
+
+[link_preparing]
+text = "Préparation de votre code…"
+
+[link_expired]
+text = "Expiré. Créez un nouveau code."
+
+[link_expires]
+text = "Expire dans {time} · une seule utilisation"
+
+[link_code_desc]
+text = "Code d’association {code}"
+
+[link_existing_title]
+text = "Associer un nouvel appareil"
+
+[link_show_h1]
+text = "Montrez ce code à votre nouvel appareil"
+
+[link_show_body]
+text = "Sur le nouvel appareil, choisissez « Associer à un appareil », puis « Scanner plutôt », et visez ce code."
+
+[link_match_title]
+text = "Les codes correspondent-ils ?"
+
+[link_match_body]
+text = "**{name}** veut rejoindre votre compte. Cet appareil devrait afficher les six mêmes chiffres que ci-dessous."
+
+[link_match_note]
+text = "Comparez-les vous-même. S’ils diffèrent, quelqu’un d’autre a peut-être scanné le code avant vous."
+
+[link_no_match]
+text = "Ils ne correspondent pas"
+
+[link_match]
+text = "Ils correspondent"
+
+[link_connecting]
+text = "Connexion…"
+
+[link_linking_peer]
+text = "Association de {name}"
+
+[link_reaching]
+text = "Connexion à l’autre appareil"
+
+[link_sending]
+text = "Envoi de votre compte"
+
+[link_working]
+text = "En cours"
+
+[link_keep_open]
+text = "Gardez les deux appareils ouverts jusqu’à la fin."
+
+[link_done_title]
+text = "{name} est associé"
+
+[link_done_body]
+text = "Il se synchronise quand les deux appareils sont en ligne en même temps. Les contacts que vous n’avez pas bloqués reçoivent votre liste d’appareils à jour lors de leur prochaine connexion."
+
+[link_scan_h1]
+text = "Scannez le code sur votre nouvel appareil"
+
+[link_scan_step1]
+text = "Sur le nouvel appareil, ouvrez Tinline et choisissez {action}."
+
+[link_scan_step2]
+text = "Il affiche un QR code et un code court. Ils fonctionnent une fois et expirent au bout de 5 minutes."
+
+[link_scan_qr]
+text = "Scanner le QR code"
+
+[link_type_code]
+text = "Ou saisissez le code"
+
+[link_show_here]
+text = "Afficher plutôt un QR code ici"
+
+[link_wrong_pass]
+text = "Ce n’est pas la bonne phrase secrète."
+
+[link_approve_title]
+text = "Valider {name} ?"
+
+[link_approve_warning]
+text = "Valider envoie vos **mots de récupération** à {name}. Cet appareil devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+
+[link_dont_link]
+text = "Ne pas associer"
+
+[link_approving]
+text = "Validation…"
+
+[link_approve]
+text = "Valider"
+
+[link_scan_title]
+text = "Scannez le code"
+
+[link_torch]
+text = "Lampe torche"
+
+[link_point_new]
+text = "Visez le code sur votre autre appareil"
+
+[link_point_existing]
+text = "Pointez la caméra vers le QR code de votre nouvel appareil"
+
+[link_scan_again]
+text = "Scanner à nouveau"
+
+[link_scan_foot]
+text = "Le code fonctionne une fois et expire au bout de 5 minutes."
+
+[link_unlinked_title]
+text = "Ce téléphone a été dissocié"
+
+[link_unlinked_lead]
+text = "{name} a été retiré de ce téléphone par l’un de vos autres appareils. Ses contacts, discussions et appels sont supprimés ici. Vos autres appareils ne sont pas concernés."
+
+[link_your_account]
+text = "Votre compte"
+
+[link_ok]
+text = "OK"
+
+[link_again]
+text = "L’associer à nouveau"
+
+[blocking_title]
+text = "Personnes bloquées"
+
+[blocking_block]
+text = "Bloquer"
+
+[blocking_hint]
+text = "Une seule liste sur tous vos appareils : un blocage fait sur un autre appareil apparaît aussi ici."
+
+[blocking_none]
+text = "Personne n’est bloqué. Pour bloquer quelqu’un, ouvrez sa page de contact et touchez Bloquer."
+
+[blocking_blocked_on]
+text = "Bloqué le {date}"
+
+[blocking_unblock_name]
+text = "Débloquer {name}"
+
+[blocking_unblocked_told]
+text = "Votre déblocage est notifié à {name}"
+
+[blocking_unblock]
+text = "Débloquer"
+
+[blocking_unblocking]
+text = "Déblocage"
+
+[notif_ch_service]
+text = "Réception des appels"
+
+[notif_ch_service_desc]
+text = "Garde l’app joignable pour les appels entrants"
+
+[notif_ch_calls]
+text = "Appels entrants"
+
+[notif_ch_calls_desc]
+text = "Sonne quand un contact vous appelle"
+
+[notif_ch_ongoing]
+text = "Appels en cours"
+
+[notif_ch_ongoing_desc]
+text = "Affiche votre appel en cours et vous permet d’y revenir ou de raccrocher"
+
+[notif_ch_missed]
+text = "Appels manqués"
+
+[notif_ch_messages_desc]
+text = "Nouveaux messages de vos contacts"
+
+[notif_ch_groups_desc]
+text = "Publications dans vos groupes et invitations à en rejoindre un"
+
+[notif_ch_requests]
+text = "Demandes de contact"
+
+[notif_ch_requests_desc]
+text = "Quand quelqu’un demande à vous ajouter comme contact"
+
+[notif_ch_locked]
+text = "Verrouillé"
+
+[notif_ch_locked_desc]
+text = "Affiché quand l’app a besoin de votre phrase secrète pour recevoir les appels"
+
+[notif_idle_unavailable]
+text = "Indisponible"
+
+[notif_idle_offline]
+text = "Hors ligne — reconnexion"
+
+[notif_idle_available]
+text = "Disponible pour les appels"
+
+[notif_idle_unavailable_text]
+text = "Les appels ne sonneront pas. Touchez pour changer."
+
+[notif_idle_offline_text]
+text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
+
+[notif_idle_available_text]
+text = "Votre ligne est ouverte. Touchez pour changer."
+
+[notif_wake_service_title]
+text = "Récupération de vos messages…"
+
+[notif_wake_service_text]
+text = "Tinline se remettra en veille tout seul."
+
+[notif_wake_notice_title]
+text = "Vous avez peut-être un nouveau message"
+
+[notif_wake_notice_text]
+text = "Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé."
+
+[notif_return_to_call]
+text = "Touchez pour revenir à l’appel"
+
+[notif_leave]
+text = "Quitter"
+
+[notif_end_call]
+text = "Raccrocher"
+
+[notif_unmute]
+text = "Réactiver le micro"
+
+[notif_mute]
+text = "Couper le micro"
+
+[notif_incoming_video]
+text = "Appel vidéo entrant"
+
+[notif_incoming]
+text = "Appel entrant"
+
+[notif_group_calling]
+text = "{name} appelle le groupe"
+
+[notif_waiting_title]
+text = "{name} vous appelle"
+
+[notif_waiting_text]
+text = "Votre appel continue jusqu’à ce que vous choisissiez."
+
+[notif_end_answer]
+text = "Raccrocher et répondre"
+
+[notif_locked_title]
+text = "Déverrouillez pour recevoir les appels"
+
+[notif_locked_text]
+text = "Touchez pour saisir votre phrase secrète"
+
+[notif_request_title]
+text = "Demande de contact"
+
+[notif_request_text]
+text = "{name} aimerait vous ajouter"
+
+[notif_accepted_text]
+text = "{name} a accepté votre demande. Votre ligne est ouverte."
+
+[notif_missed_title]
+text = "Appel manqué"
+
+[chat_edited]
+text = "modifié"
+
+[chat_jump_to_message]
+text = "Aller au message"
+
+[chat_attach_file]
+text = "Joindre un fichier"
+
+[chat_save_edit]
+text = "Enregistrer la modification"
+
+[chat_send]
+text = "Envoyer"
+
+[chat_tick_slack]
+text = "En attente d’envoi"
+
+[chat_tick_one]
+text = "Envoyé, en attente de confirmation de l’appareil de {first}"
+
+[chat_tick_two]
+text = "Sur l’appareil de {first}"
+
+[chat_tick_read]
+text = "Lu sur l’appareil de {first}"
+
+[chat_tick_bad]
+text = "Non distribué"
+
+[chat_day_today]
+text = "Aujourd’hui"
+
+[chat_day_yesterday]
+text = "Hier"
+
+[chat_self_sub]
+text = "Éléments enregistrés · uniquement sur vos appareils"
+
+[chat_waiting_unreachable]
+text = "En attente d’envoi — {name} n’est pas encore joignable"
+
+[chat_search_contacts]
+text = "Rechercher des contacts"
+
+[chat_new_chat]
+text = "Nouvelle discussion"
+
+[chat_add_contact]
+text = "Ajouter un contact"
+
+[chat_add_contact_sub]
+text = "Scannez son code ou collez sa carte"
+
+[chat_contacts_count]
+text = "CONTACTS · {count}"
+
+[chat_no_messages_yet]
+text = "Pas encore de message"
+
+[chat_preview_voice]
+text = "Message vocal"
+
+[chat_preview_photo]
+text = "Photo"
+
+[chat_notif_message]
+text = "Message"
+
+[chat_notif_reply]
+text = "Répondre"
+
+[chat_notif_group]
+text = "Groupe"
+
+[chat_notif_a_group]
+text = "Un groupe"
+
+[chat_notif_invited]
+text = "{name} vous a invité dans le groupe"
+
+[chat_new_messages]
+one = "{count} nouveau message"
+many = "{count} nouveaux messages"
+other = "{count} nouveaux messages"
+
+[conv_send_file_failed]
+text = "Impossible d’envoyer ce fichier."
+
+[conv_read_file_failed]
+text = "Impossible de lire ce fichier."
+
+[conv_download_failed]
+text = "Impossible de lancer le téléchargement."
+
+[conv_saved_to_phone]
+text = "Enregistré sur votre téléphone"
+
+[conv_save_failed]
+text = "Impossible d’enregistrer ce fichier."
+
+[conv_no_app_opens]
+text = "Aucune app de ce téléphone n’ouvre les fichiers .{ext} — enregistrez-le plutôt"
+
+[conv_no_camera]
+text = "Aucune caméra disponible."
+
+[conv_allow_camera]
+text = "Autorisez la caméra pour prendre des photos."
+
+[conv_older_title]
+text = "Les messages plus anciens sont sur le téléphone de {first}"
+
+[conv_older_body]
+text = "Ce téléphone les garde depuis que vous avez commencé à l’utiliser. Les jours précédents se chargent quand vous êtes tous les deux en ligne."
+
+[conv_offline_self]
+text = "Vous êtes hors ligne. Les messages partiront dès que vous serez de retour en ligne."
+
+[conv_offline_peer]
+text = "{first} est hors ligne. Les messages partiront dès que vous serez tous les deux en ligne."
+
+[conv_replying_self]
+text = "Réponse à vous-même"
+
+[conv_replying_to]
+text = "Réponse à {first}"
+
+[conv_editing]
+text = "Modification du message"
+
+[conv_voice_send_failed]
+text = "Impossible d’envoyer ce message vocal."
+
+[conv_delete_failed]
+text = "Impossible de supprimer ce message."
+
+[conv_back_to_chats]
+text = "Retour aux discussions"
+
+[conv_blocked_you]
+text = "Vous a bloqué"
+
+[conv_not_contact]
+text = "Pas dans vos contacts"
+
+[conv_waiting_connection]
+text = "En attente de connexion"
+
+[conv_online]
+text = "En ligne"
+
+[conv_online_messages_only]
+text = "En ligne · messages uniquement"
+
+[conv_messages_only]
+text = "Messages uniquement"
+
+[conv_header_desc_status]
+text = "{name}. {status}. Détails de la discussion"
+
+[conv_header_desc]
+text = "{name}. Détails de la discussion"
+
+[conv_return_to_call]
+text = "Revenir à l’appel"
+
+[conv_cant_call]
+text = "Impossible d’appeler {first}"
+
+[conv_video_call]
+text = "Appel vidéo"
+
+[conv_find_in_chat]
+text = "Rechercher dans cette discussion"
+
+[conv_chat_details]
+text = "Détails de la discussion"
+
+[conv_call_video_duration]
+text = "Appel vidéo · {duration}"
+
+[conv_call_voice_duration]
+text = "Appel vocal · {duration}"
+
+[conv_call_declined_video]
+text = "Appel vidéo refusé"
+
+[conv_call_declined_voice]
+text = "Appel vocal refusé"
+
+[conv_call_missed_video]
+text = "Appel vidéo manqué"
+
+[conv_call_missed_voice]
+text = "Appel vocal manqué"
+
+[conv_call_no_answer]
+text = "Pas de réponse"
+
+[conv_call_declined]
+text = "Refusé"
+
+[conv_call_cancelled]
+text = "Appel annulé"
+
+[conv_call_failed]
+text = "L’appel n’a pas abouti"
+
+[conv_call_pill_desc]
+text = "{text}, {time}. Rappeler"
+
+[conv_message_hint]
+text = "Message"
+
+[conv_cancel_edit]
+text = "Annuler la modification"
+
+[conv_cancel_reply]
+text = "Annuler la réponse"
+
+[conv_reply]
+text = "Répondre"
+
+[conv_you_deleted]
+text = "Vous avez supprimé ce message"
+
+[conv_they_deleted]
+text = "{first} a supprimé ce message"
+
+[conv_original_unavailable]
+text = "Message d’origine indisponible"
+
+[conv_earlier_message]
+text = "Message précédent"
+
+[conv_message_unavailable]
+text = "Message indisponible"
+
+[conv_meta_status]
+text = "{status} · {time}"
+
+[conv_meta_sending]
+text = "Envoi {percent} % · {time}"
+
+[conv_meta_waiting]
+text = "En attente · {time}"
+
+[conv_meta_edited]
+text = "modifié · {time}"
+
+[conv_cancel_sending]
+text = "Annuler l’envoi"
+
+[conv_cancel_download]
+text = "Annuler le téléchargement"
+
+[conv_photo_size]
+text = "Photo · {size}"
+
+[conv_download]
+text = "Télécharger"
+
+[conv_retry_download]
+text = "Relancer le téléchargement"
+
+[conv_sends_when_online]
+text = "Envoi dès que {first} est en ligne"
+
+[conv_file_tap_open]
+text = "{size} · {type} · touchez pour ouvrir"
+
+[conv_file_tap_save]
+text = "{size} · {type} · touchez pour enregistrer"
+
+[conv_file_downloading]
+text = "Téléchargement · {done} sur {size}"
+
+[conv_file_paused]
+text = "{size} · en pause — en attente que {first} soit en ligne"
+
+[conv_file_starting]
+text = "{size} · démarrage…"
+
+[conv_file_failed]
+text = "{size} · téléchargement interrompu — touchez pour réessayer"
+
+[conv_file_not_downloaded]
+text = "{size} · non téléchargé"
+
+[conv_download_name]
+text = "Télécharger {name}"
+
+[conv_cancel_download_name]
+text = "Annuler le téléchargement de {name}"
+
+[conv_save_name_to_phone]
+text = "Enregistrer {name} sur le téléphone"
+
+[conv_info_saved]
+text = "Enregistré à {time} · sur vos appareils"
+
+[conv_info_received]
+text = "Reçu à {time}"
+
+[conv_info_sent_read]
+text = "Envoyé à {time} · lu sur l’appareil de {first}"
+
+[conv_info_sent_delivered]
+text = "Envoyé à {time} · sur l’appareil de {first}"
+
+[conv_info_sent_only_here]
+text = "Envoyé à {time} · seulement sur ce téléphone pour l’instant"
+
+[conv_info_sent_waiting]
+text = "Envoyé à {time} · en attente de confirmation de l’appareil de {first}"
+
+[conv_proof_read]
+text = "Lu · signé par {name} · appareil {device}"
+
+[conv_proof_delivered]
+text = "Distribué · signé par {name} · appareil {device}"
+
+[conv_copy_text]
+text = "Copier le texte"
+
+[conv_save_to_phone]
+text = "Enregistrer sur le téléphone"
+
+[conv_edit]
+text = "Modifier"
+
+[conv_delete_self]
+text = "Supprimer sur tous vos appareils"
+
+[conv_delete_both]
+text = "Supprimer pour vous deux"
+
+[conv_edits_reach_self]
+text = "Les modifications et suppressions atteignent vos autres appareils quand ils sont en ligne."
+
+[conv_edits_reach_peer]
+text = "Les modifications et suppressions atteignent le téléphone de {first} la prochaine fois que vous êtes tous les deux en ligne."
+
+[conv_attach_title_self]
+text = "Garder pour vous"
+
+[conv_attach_title]
+text = "Envoyer à {first}"
+
+[conv_attach_photos]
+text = "Photos et vidéos"
+
+[conv_attach_camera]
+text = "Appareil photo"
+
+[conv_attach_file]
+text = "Fichier"
+
+[conv_attach_hint_self]
+text = "Les fichiers restent chiffrés sur vos appareils et sont copiés sur les autres quand ils sont en ligne. Jusqu’à 2 Go chacun."
+
+[conv_attach_hint]
+text = "Les fichiers sont chiffrés de bout en bout. Jusqu’à 2 Go chacun. Vous devez être en ligne tous les deux pendant le transfert."
+
+[conv_viewer_note]
+text = "Conservé chiffré dans Tinline. « Enregistrer sur le téléphone » le copie dans votre galerie, où d’autres apps peuvent le voir."
+
+[conv_voice_download]
+text = "Télécharger le message vocal"
+
+[conv_voice_loading]
+text = "Chargement du message vocal"
+
+[conv_you_blocked]
+text = "Vous avez bloqué {name}"
+
+[conv_you_blocked_date]
+text = "Vous avez bloqué {name} · {date}"
+
+[conv_signed_by]
+text = "Signé par {name} · {date}"
+
+[conv_unblock]
+text = "Débloquer"
+
+[conv_add]
+text = "Ajouter"
+
+[voice_send]
+text = "Envoyer le message vocal"
+
+[voice_recording]
+text = "Enregistrement, relâchez pour envoyer"
+
+[voice_hold]
+text = "Maintenez pour enregistrer un message vocal"
+
+[voice_discard]
+text = "Supprimer l’enregistrement"
+
+[voice_slide_cancel]
+text = "Glissez pour annuler"
+
+[voice_pause]
+text = "Mettre en pause le message vocal"
+
+[voice_play]
+text = "Écouter le message vocal"
+
+[voice_waveform]
+text = "Forme d’onde du message vocal, touchez pour vous déplacer"
+
+[file_pdf_protected]
+text = "Ce PDF est protégé par un mot de passe, Tinline ne peut donc pas l’afficher. Enregistrez-le pour l’ouvrir dans une autre app."
+
+[file_pdf_unreadable]
+text = "Tinline ne peut pas lire ce PDF. Il est peut-être endommagé. Vous pouvez quand même l’enregistrer."
+
+[file_open_failed]
+text = "Impossible d’ouvrir ce fichier."
+
+[file_default_name]
+text = "Fichier"
+
+[file_page_of]
+text = "Page {page} sur {total}"
+
+[file_page_n]
+text = "Page {number}"
+
+[file_save_to_phone]
+text = "Enregistrer sur le téléphone"
+
+[file_opening]
+text = "Ouverture…"
+
+[file_too_big]
+text = "Ce fichier est trop volumineux pour être affiché ici. Enregistrez-le pour l’ouvrir dans une autre app."
+
+[file_not_text]
+text = "Ce fichier ne semble pas être un fichier texte. Enregistrez-le pour l’ouvrir dans une autre app."
+
+[find_in_chat]
+text = "Rechercher dans cette discussion"
+
+[find_match_of]
+text = "Résultat {shown} sur {total}"
+
+[find_no_matches]
+text = "Aucun résultat"
+
+[find_older]
+text = "Résultat plus ancien"
+
+[find_newer]
+text = "Résultat plus récent"
+
+[find_close]
+text = "Fermer la recherche"
+
+[search_people_groups]
+text = "Personnes et groupes"
+
+[search_no_people]
+text = "Aucune personne ni aucun groupe ne correspond"
+
+[search_messages]
+text = "Messages"
+
+[search_type_more]
+text = "Saisissez au moins 2 caractères pour rechercher dans les messages."
+
+[search_no_messages]
+text = "Aucun message ne correspond à « {query} »"
+
+[search_clear_field]
+text = "Effacer la recherche"
+
+[search_recent]
+text = "Récentes"
+
+[search_clear]
+text = "Effacer"
+
+[search_blank_1]
+text = "Recherchez des messages, des personnes et des groupes."
+
+[search_blank_2]
+text = "Tout reste sur cet appareil."
+
+[search_kind_group]
+text = "groupe"
+
+[search_kind_me]
+text = "votre profil"
+
+[search_kind_contact]
+text = "contact"
+
+[search_tile_desc]
+text = "{name}, {what}"
+
+[search_author_prefix]
+text = "{name} :"
+
+[card_copy]
+text = "Copier"
+
+[card_share_chooser]
+text = "Partager la carte de contact"
+
+[card_nothing_to_share]
+text = "Aucune app pour partager"
+
+[card_qr_desc]
+text = "QR code de votre carte de contact"
+
+[card_preparing]
+text = "Préparation de votre code…"
+
+[card_works_once]
+text = "Fonctionne une fois. Créer un nouveau code annule celui-ci."
+
+[card_new_code]
+text = "Nouveau code"
+
+[card_none_found]
+text = "Aucune carte de contact Tinline dans ce message"
+
+[card_chat_with]
+text = "Discuter avec {name} ?"
+
+[card_add_name]
+text = "Ajouter {name} ?"
+
+[card_already_contact]
+text = "Cette personne est déjà dans vos contacts."
+
+[card_found]
+text = "Tinline a trouvé sa carte."
+
+[card_open]
+text = "Ouvrir"
+
+[card_add]
+text = "Ajouter"
+
+[groupsc_removed_you_flags]
+one = "Vous avez été retiré après {count} signalement d’admin"
+many = "Vous avez été retiré après {count} signalements d’admins"
+other = "Vous avez été retiré après {count} signalements d’admins"
+
+[groupsc_admin_granted_other]
+text = "{by} a nommé {sub} admin"
+
+[groupsc_admin_revoked_you]
+text = "{by} vous a retiré le rôle d’admin"
+
+[groupsc_admin_revoked_other]
+text = "{by} a retiré le rôle d’admin à {sub}"
+
+[groupsc_host_added_you]
+text = "Un de vos appareils héberge maintenant le groupe"
+
+[groupsc_host_added_other]
+text = "Un appareil de {sub} héberge maintenant le groupe"
+
+[groupsc_host_removed_you]
+text = "Un de vos appareils n’héberge plus le groupe"
+
+[groupsc_host_removed_other]
+text = "Un appareil de {sub} n’héberge plus le groupe"
+
+[groupsc_left_you]
+text = "Vous avez quitté ce groupe"
+
+[groupsc_hosts]
+one = "{count} hôte"
+many = "{count} hôtes"
+other = "{count} hôtes"
+
+[groupsc_open_link_copied]
+text = "Copié. Toute personne qui a le lien peut rejoindre tant qu’il est ouvert."
+
+[groupsc_not_posted]
+text = "Non publié"
+
+[groupsc_req_accepted_messages]
+text = "{name} a accepté · messages uniquement"
+
+[groupsc_req_accepted_connecting]
+text = "{name} a accepté · connexion"
+
+[groupsc_an_admin]
+text = "Un admin"
+
+[groupsc_invited_waiting_answer]
+text = "Invité · en attente de réponse"
+
+[groupsc_invite_expired]
+text = "Invitation expirée"
+
+[groupsc_invite_blocked_you]
+text = "Vous a bloqué"
+
+[groupsc_err_not_member]
+text = "Vous n’êtes pas membre de ce groupe."
+
+[groupsc_err_you_block]
+text = "Vous bloquez cette personne. Débloquez-la d’abord pour lui proposer une discussion."
+
+[groupsc_err_they_block]
+text = "Cette personne vous a bloqué, vous ne pouvez donc pas lui proposer de discussion."
+
+[groupsc_err_invite_invalid]
+text = "Cette invitation n’est plus valable. Demandez-en une nouvelle."
+
+[groupsc_err_refused]
+text = "Refusé."
+
+[groupsc_err_locked]
+text = "Déverrouillez d’abord."
+
+[groupsc_err_not_found]
+text = "Ce groupe n’est pas sur ce téléphone."
+
+[groupsc_err_generic]
+text = "Quelque chose n’a pas marché"
+
+[groupsc_name_required]
+text = "Donnez un nom au groupe."
+
+[groupsc_flag_recorded]
+text = "Signalement enregistré. Il est signé par vous et le membre peut le voir."
+
+[groupsc_made_admin]
+text = "Nommé admin."
+
+[groupsc_no_longer_admin]
+text = "N’est plus admin."
+
+[groupsc_left_group]
+text = "Vous avez quitté le groupe. Ses messages restent ici."
+
+[groupsc_appointed]
+text = "Désigné. L’appareil héberge dès qu’il accepte."
+
+[groupsc_host_revoked]
+text = "Cet appareil n’héberge plus le groupe."
+
+[groupsc_host_agreed]
+text = "Ce téléphone a accepté d’héberger. Il héberge dès qu’un admin l’a désigné."
+
+[groupsc_host_stopped]
+text = "Ce téléphone n’héberge plus le groupe."
+
+[groupsc_call_host_asked]
+text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
+
+[groupsc_call_host_revoked]
+text = "Cet appareil n’héberge plus les appels du groupe."
+
+[groupsc_call_host_agreed]
+text = "Cet appareil héberge maintenant les appels du groupe."
+
+[groupsc_call_host_declined]
+text = "Cet appareil n’hébergera pas les appels du groupe."
+
+[groupsc_calls_here]
+text = "Ce téléphone héberge désormais les appels qu’il lance dans ce groupe."
+
+[groupsc_admins_only_on]
+text = "Seuls les admins publient désormais. Tout le monde peut toujours lire."
+
+[groupsc_admins_only_off]
+text = "Tout le monde peut à nouveau publier."
+
+[groupsc_req_declined]
+text = "Refusé. {name} verra « refusé »."
+
+[groupsc_unread]
+one = "{count} non lu"
+many = "{count} non lus"
+other = "{count} non lus"
+
+[groupsc_flags_of]
+one = "Signalements : {filled} sur {count}"
+many = "Signalements : {filled} sur {count}"
+other = "Signalements : {filled} sur {count}"
+
+[gcall_name]
+text = "Appel de groupe"
+
+[gcall_group_fallback]
+text = "Groupe"
+
+[gcall_finding_host]
+text = "Recherche d’un hôte d’appel…"
+
+[gcall_connecting]
+text = "Connexion de l’appel…"
+
+[gcall_reconnecting]
+text = "Reconnexion de l’appel…"
+
+[gcall_already_in_call]
+text = "Vous êtes déjà en appel."
+
+[gcall_ended]
+text = "Appel terminé"
+
+[gcall_ended_host_lost]
+text = "Appel terminé — hôte perdu"
+
+[gcall_battery_limited]
+text = "Batterie sous {percent} %. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
+
+[gcall_no_host]
+text = "Aucun hôte d’appel disponible"
+
+[gcall_cant_connect]
+text = "Impossible de rejoindre l’appel"
+
+[gcall_minimize]
+text = "Réduire l’appel"
+
+[gcall_about_title]
+text = "À propos de cet appel"
+
+[gcall_only_you]
+text = "Vous seul pour l’instant. En attente des autres."
+
+[gcall_people]
+one = "{count} personne dans l’appel"
+many = "{count} personnes dans l’appel"
+other = "{count} personnes dans l’appel"
+
+[gcall_more]
+one = "+{count}"
+many = "+{count}"
+other = "+{count}"
+
+[gcall_ok]
+text = "OK"
+
+[gcall_you_host]
+text = "Vous êtes l’hôte d’appel"
+
+[gcall_muted]
+text = "Micro coupé"
+
+[gcall_mute]
+text = "Couper le micro"
+
+[gcall_leave]
+text = "Quitter"
+
+[gcall_about_encrypted]
+text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de groupe pour les publications."
+
+[gcall_about_who]
+text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du groupe. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
+
+[gcall_got_it]
+text = "Compris"
+
+[gcall_in_call]
+text = "Vous êtes dans l’appel"
+
+[gcall_in_progress]
+text = "Appel en cours"
+
+[gcall_started_by]
+text = "Lancé par {name}"
+
+[gcall_open]
+text = "Ouvrir"
+
+[gcall_is_calling_group_desc]
+text = "{by} appelle le groupe {group}"
+
+[gcall_started_call_desc]
+text = "{by} a lancé un appel dans {group}"
+
+[gcall_open_group_desc]
+text = "Ouvrir {group}"
+
+[gcall_is_calling_group]
+text = "{name} appelle le groupe"
+
+[gcall_started_call]
+text = "{name} a lancé un appel"
+
+[gcall_dismiss]
+text = "Fermer"
+
+[gcall_mic_unavailable]
+text = "Micro indisponible — on ne peut pas vous entendre"
+
+[gcall_mic_permission]
+text = "Autorisation du micro nécessaire — on ne peut pas vous entendre"
+
+[addcontact_title]
+text = "Ajouter un contact"
+
+[addcontact_title_new]
+text = "Nouveau contact"
+
+[addcontact_title_request]
+text = "Demande de contact"
+
+[addcontact_tab_code]
+text = "Code"
+
+[addcontact_tab_qr]
+text = "QR"
+
+[addcontact_point_camera]
+text = "Visez son code Tinline."
+
+[addcontact_my_qr_desc]
+text = "Votre QR code"
+
+[addcontact_preparing]
+text = "Préparation de votre code…"
+
+[addcontact_reading_image]
+text = "Lecture de l’image…"
+
+[addcontact_let_them_scan]
+text = "Faites scanner ce code avec Tinline."
+
+[addcontact_show_mine]
+text = "Afficher mon code"
+
+[addcontact_scan_theirs]
+text = "Scanner son code"
+
+[addcontact_choose_image]
+text = "Choisir une image"
+
+[addcontact_your_code]
+text = "Votre code"
+
+[addcontact_new_code]
+text = "Nouveau code"
+
+[addcontact_send_until]
+text = "Envoyez-le à qui vous voulez, dans n’importe quelle app. Il fonctionne jusqu’au {date}."
+
+[addcontact_send]
+text = "Envoyez-le à qui vous voulez, dans n’importe quelle app."
+
+[addcontact_copy_mine]
+text = "Copier mon code"
+
+[addcontact_or]
+text = "ou"
+
+[addcontact_their_code]
+text = "Son code"
+
+[addcontact_paste_theirs]
+text = "Coller son code"
+
+[addcontact_message]
+text = "Message"
+
+[addcontact_open_profile]
+text = "Ouvrir le profil"
+
+[addcontact_paste_new]
+text = "Coller un nouveau code"
+
+[addcontact_adding]
+text = "Ajout…"
+
+[addcontact_add]
+text = "Ajouter un contact"
+
+[addcontact_line_connected]
+text = "Connecté"
+
+[addcontact_line_connecting]
+text = "Connexion"
+
+[addcontact_line_not_yet]
+text = "Pas encore connecté"
+
+[addcontact_clipboard_empty]
+text = "Votre presse-papiers est vide pour le moment. Quand son code arrivera, copiez-le et collez-le ici."
+
+[addcontact_own_code]
+text = "C’est votre propre code. Envoyez-le-lui, et collez le sien ici."
+
+[addcontact_code_expired]
+text = "Ce code de {name} a expiré. Demandez-en un nouveau."
+
+[addcontact_not_a_code]
+text = "Cela ne ressemble pas à un code Tinline. Pourrait-on vous le recopier ?"
+
+[addcontact_no_qr]
+text = "Aucun QR code trouvé. Essayez une image plus nette."
+
+[addcontact_many_qr]
+text = "Plusieurs QR codes. Recadrez sur celui que vous voulez."
+
+[addcontact_unreadable_image]
+text = "Impossible de lire cette image. Choisissez-en une autre."
+
+[addcontact_share_failed]
+text = "Impossible d’ouvrir le partage. Vous pouvez plutôt copier votre code."
+
+[addcontact_why_blocked]
+text = "Vous avez bloqué {name}. Débloquez cette personne dans Confidentialité avant de l’ajouter à nouveau."
+
+[addcontact_why_known]
+text = "{name} est déjà dans vos contacts."
+
+[addcontact_why_added]
+text = "Votre ligne avec {name} est ouverte. Dites bonjour."
+
+[addcontact_why_requested]
+text = "Demande envoyée. Votre ligne s’ouvre quand {name} accepte."
+
+[addcontact_why_slow]
+text = "Nouvel essai en cours. Le Tinline de {name} doit être ouvert et en ligne pour cela."
+
+[addcontact_why_reaching]
+text = "Connexion au Tinline de {name}…"
+
+[addcontact_why_timeout]
+text = "Impossible de joindre le Tinline de {name}. Il doit être ouvert et en ligne, alors réessayez quand {name} sera disponible."
+
+[addcontact_why_refused]
+text = "Le code de {name} n’est plus valable. Un nouveau a peut-être été créé : demandez à {name} son code le plus récent."
+
+[addcontact_why_blocked_them]
+text = "Vous ne pouvez pas ajouter {name} pour le moment. Cette personne a choisi de ne pas être en contact ici."
+
+[addcontact_why_offline]
+text = "Vous êtes hors ligne. Une fois connecté, réessayez."
+
+[addcontact_why_check]
+text = "Est-ce bien {name} ? Si vous avez un doute, vérifiez d’abord auprès de cette personne."
+
+[addcontact_read_camera]
+text = "Lu avec la caméra"
+
+[addcontact_read_image]
+text = "Lu depuis une image"
+
+[addcontact_accepted_yours]
+text = "A accepté votre demande"
+
+[addcontact_has_your_code]
+text = "A votre code"
+
+[addcontact_inc_wants]
+text = "{name} veut vous ajouter comme contact. Accepter vous permet de vous écrire et de vous appeler."
+
+[addcontact_inc_accepted]
+text = "{name} a accepté. Votre ligne avec {name} est ouverte. Dites bonjour."
+
+[addcontact_inc_open]
+text = "Votre ligne avec {name} est ouverte. Dites bonjour."
+
+[contact_calls_themselves]
+text = "Se fait appeler « {name} »"
+
+[contact_blocked_you]
+text = "Vous a bloqué"
+
+[contact_message]
+text = "Message"
+
+[contact_rename]
+text = "Renommer"
+
+[contact_unblock]
+text = "Débloquer"
+
+[contact_block]
+text = "Bloquer"
+
+[contact_what_they_can_do]
+text = "Ce que {name} peut faire"
+
+[contact_allow_calls]
+text = "Autoriser les appels"
+
+[contact_calls_sub_blocked]
+text = "Bloqué : rien ne passe tant que vous ne débloquez pas."
+
+[contact_calls_sub_on]
+text = "{name} peut faire sonner ce téléphone et vos autres appareils."
+
+[contact_calls_sub_off]
+text = "Désactivé. {name} peut vous écrire ; ses appels ne sonnent pas."
+
+[contact_calls_with]
+text = "Appels avec {name}"
+
+[contact_history_local]
+text = "L’historique reste uniquement sur ce téléphone."
+
+[contact_direct]
+text = "Direct"
+
+[contact_relayed]
+text = "Relayé"
+
+[contact_name_here]
+text = "Nom sur ce téléphone"
+
+[contact_rename_hint]
+text = "Vous seul le voyez. Cette personne se fait toujours appeler « {name} »."
+
+[contact_use_their_name]
+text = "Utiliser son nom"
+
+[contact_save]
+text = "Enregistrer"
+
+[people_on]
+text = "Activé"
+
+[people_off]
+text = "Désactivé"
+
+[people_selected]
+text = "Sélectionné"
+
+[people_hide_field]
+text = "Masquer {label}"
+
+[people_show_field]
+text = "Afficher {label}"
+
+[people_passphrase]
+text = "Phrase secrète"
+
+[people_hide_passphrase]
+text = "Masquer la phrase secrète"
+
+[people_show_passphrase]
+text = "Afficher la phrase secrète"
+
+[people_switch_light]
+text = "Passer en mode clair"
+
+[people_switch_dark]
+text = "Passer en mode sombre"
+
+[people_setup_progress]
+text = "Progression, étape {current} sur {total}"
+
+[people_setup_progress_label]
+text = "Progression, étape {current} sur {total} : {label}"
+
+[people_n_of_m]
+text = "{current} sur {total}"
+
+[qr_camera_needed]
+text = "Tinline a besoin de la caméra pour lire le code."
+
+[qr_allow_camera]
+text = "Autoriser la caméra"
+
+[call_speaker]
+text = "Haut-parleur"
+
+[call_mute]
+text = "Couper le micro"
+
+[call_muted]
+text = "Micro coupé"
+
+[call_camera]
+text = "Appareil photo"
+
+[call_end_call]
+text = "Raccrocher"
+
+[call_end]
+text = "Raccrocher"
+
+[call_flip_camera]
+text = "Changer de caméra"
+
+[call_flip]
+text = "Basculer"
+
+[call_audio_route]
+text = "Audio : {route}"
+
+[call_reconnecting]
+text = "Reconnexion de l’appel…"
+
+[call_reconnecting_plain]
+text = "Reconnexion"
+
+[call_back_continues]
+text = "Retour. L’appel continue"
+
+[call_message_continues]
+text = "Message. L’appel continue"
+
+[call_selected]
+text = "Sélectionné"
+
+[call_they]
+text = "Cette personne"
+
+[call_default_name]
+text = "Appel Tinline"
+
+[call_notif_fallback_title]
+text = "Appel Tinline"
+
+[call_answer_video_label]
+text = "Vidéo"
+
+[call_answer_with_video]
+text = "Répondre en vidéo"
+
+[call_incoming_video]
+text = "Appel vidéo Tinline"
+
+[call_incoming_voice]
+text = "Appel vocal Tinline"
+
+[call_waiting_title]
+text = "{name} vous appelle"
+
+[call_waiting_sub]
+text = "pendant votre appel"
+
+[call_waiting_desc]
+text = "{name} vous appelle pendant votre appel"
+
+[call_waiting_end_answer]
+text = "Raccrocher et répondre"
+
+[call_waiting_end_answer_desc]
+text = "Raccrocher et répondre"
+
+[call_waiting_ends_with]
+text = "Met fin à votre appel avec {name}"
+
+[call_on_hold]
+text = "En attente pendant votre autre appel"
+
+[call_route_title]
+text = "Écouter l’appel sur"
+
+[call_route_phone]
+text = "Téléphone"
+
+[call_route_headset]
+text = "Casque"
+
+[call_route_bluetooth]
+text = "Bluetooth"
+
+[call_route_other]
+text = "Autre"
+
+[call_route_bt_hint]
+text = "Autorisez les appareils à proximité et Tinline pourra afficher le nom de votre casque et passer d’un casque à l’autre."
+
+[call_route_bt_button]
+text = "Afficher le nom de mes casques"
+
+[call_route_relayed_hint]
+text = "Relayé : une ligne directe n’était pas possible sur ce réseau, un relais chiffré transmet donc l’appel. Il ne peut pas vous entendre."
+
+[video_camera_off]
+text = "La caméra de {name} est coupée"
+
+[video_connecting]
+text = "Connexion de la vidéo…"
+
+[video_starting]
+text = "Démarrage de la vidéo…"
+
+[video_hd_on]
+text = "Vidéo plus nette activée, jusqu’à 540p"
+
+[video_hd_off]
+text = "Vidéo plus nette désactivée"
+
+[video_hd_paused]
+text = "Vidéo plus nette activée, en pause tant que la connexion est faible"
+
+[video_state_on]
+text = "Activé"
+
+[video_state_off]
+text = "Désactivé"
+
+[video_camera_permission]
+text = "Autorisation de la caméra nécessaire — on vous entend toujours"
+
+[video_camera_unavailable]
+text = "Caméra indisponible"
+
+[call_about]
+text = "À propos de cet appel"
+
+[call_about_reconnecting]
+text = "À propos de cet appel. Reconnexion."
+
+[call_about_signal]
+text = "À propos de cet appel. Signal {signal}, {path}."
+
+[call_path_direct]
+text = "direct"
+
+[call_path_relayed]
+text = "relayé"
+
+[call_e2ee]
+text = "Chiffré de bout en bout"
+
+[call_e2ee_direct]
+text = "Chiffré de bout en bout · Direct"
+
+[call_e2ee_relayed]
+text = "Chiffré de bout en bout · Relayé"
+
+[call_info_e2ee]
+text = "Chiffré de bout en bout."
+
+[call_info_enc_voice]
+text = "Votre voix est chiffrée sur cet appareil et déchiffrée uniquement sur celui de {name}."
+
+[call_info_enc_video]
+text = "Votre voix et votre image sont chiffrées sur cet appareil et déchiffrées uniquement sur celui de {name}."
+
+[call_info_signal_direct]
+text = "Signal {signal} · Direct"
+
+[call_info_signal_relayed]
+text = "Signal {signal} · Relayé"
+
+[call_info_reconnect_body]
+text = "La connexion a été coupée un instant. Tinline cherche à rejoindre {name}."
+
+[call_info_direct_body]
+text = "Votre appel passe directement entre votre appareil et celui de {name}."
+
+[call_info_relay_body_voice]
+text = "Vos appareils ne peuvent pas se joindre directement pour le moment, un relais transmet donc l’appel. Il ne peut pas écouter."
+
+[call_info_relay_body_video]
+text = "Vos appareils ne peuvent pas se joindre directement pour le moment, un relais transmet donc l’appel. Il ne peut ni écouter ni regarder."
+
+[call_info_weak]
+text = "La ligne est faible, la voix de {name} peut donc être hachée."
+
+[call_info_rtt]
+text = "{rtt} ms aller-retour · {loss} % perdus"
+
+[call_info_your_video]
+text = "Votre vidéo"
+
+[call_info_their_video]
+text = "Sa vidéo"
+
+[call_got_it]
+text = "Compris"
+
+[call_strip_return]
+text = "Revenir à l’appel avec {name}"
+
+[call_strip_return_group]
+text = "Revenir à l’appel de groupe dans {name}"
+
+[call_strip_group_fallback]
+text = "Appel de groupe"
+
+[call_strip_desc]
+text = "{label}. {status}"
+
+[call_strip_return_video]
+text = "Revenir à l’appel vidéo avec {name}"
+
+[call_ended_title]
+text = "Appel terminé"
+
+[call_direct]
+text = "Direct"
+
+[call_relayed]
+text = "Relayé"
+
+[call_signal_label]
+text = "Signal {signal}"
+
+[call_again]
+text = "Rappeler"
+
+[call_ended_autoclose]
+text = "Se ferme tout seul après 4 secondes."
+
+[call_unreachable_title]
+text = "Impossible de joindre {name}"
+
+[call_unreachable_body]
+text = "{name} est peut-être hors ligne, sans réseau, ou ne prend pas d’appels en ce moment. Tinline ne peut pas laisser de message."
+
+[call_mic_needed_title]
+text = "Tinline ne peut pas utiliser le micro"
+
+[call_mic_needed_body]
+text = "Sans lui, on ne vous entendra pas. Tinline n’écoute que pendant les appels — jamais en arrière-plan."
+
+[call_open_settings]
+text = "Ouvrir les paramètres"
+
+[call_mic_needed_hint]
+text = "Allez ensuite dans Autorisations › Micro et autorisez-le."
+
+[call_mic_unavailable]
+text = "Micro indisponible — on ne peut pas vous entendre"
+
+[call_mic_permission]
+text = "Autorisation du micro nécessaire — on ne peut pas vous entendre"
+
+[avail_title]
+text = "Disponible pour les appels"
+
+[avail_subtitle]
+text = "Quand c’est activé, les appels sonnent comme sur un téléphone normal."
+
+[avail_until]
+text = "Indisponible jusqu’à {time}."
+
+[avail_until_tomorrow]
+text = "Indisponible jusqu’à demain à {time}."
+
+[avail_until_manual]
+text = "Indisponible jusqu’à ce que vous réactiviez les appels."
+
+[avail_take_break]
+text = "FAIRE UNE PAUSE"
+
+[avail_one_hour]
+text = "Pendant 1 heure"
+
+[avail_tomorrow_morning]
+text = "Jusqu’à demain matin"
+
+[avail_until_on]
+text = "Jusqu’à ce que je le réactive"
+
+[avail_note]
+text = "Pendant votre absence, les personnes qui appellent voient « Impossible de joindre {name} ». Rien n’est mis en attente et personne n’est informé de la raison."
+
+[call_status_ringing]
+text = "Sonnerie…"
+
+[call_status_calling]
+text = "Appel…"
+
+[call_status_waking]
+text = "Réveil de son téléphone…"
+
+[call_wake_connecting]
+text = "Connexion…"
+
+[call_privacy_active]
+text = "Chiffré de bout en bout. Votre voix est chiffrée sur cet appareil et déchiffrée uniquement sur celui de {name}."
+
+[call_privacy_connecting]
+text = "Connexion à {name}. Une fois l’appel connecté, il est chiffré de bout en bout."
+
+[history_kind_missed]
+text = "Manqué"
+
+[history_kind_unreached]
+text = "Injoignable"
+
+[history_kind_away]
+text = "Pendant une indisponibilité"
+
+[history_kind_incoming]
+text = "Entrant"
+
+[history_kind_outgoing]
+text = "Sortant"
+
+[history_detail_declined]
+text = "refusé"
+
+[history_detail_cancelled]
+text = "annulé"
+
+[history_detail_no_answer]
+text = "pas de réponse"
+
+[history_detail_busy]
+text = "occupé"
+
+[history_detail_answered_elsewhere]
+text = "répondu sur un autre appareil"
+
+[history_detail_declined_elsewhere]
+text = "refusé sur un autre appareil"
+
+[history_label_when]
+text = "{label} · {time}"
+
+[history_label_detail]
+text = "{label} · {detail}"
+
+[history_not_called]
+text = "Pas encore d’appel"
+
+[history_last_call]
+text = "Dernier appel {day}"
+
+[history_missed_call_when]
+text = "Appel manqué · {time}"
+
+[history_unreached_when]
+text = "Injoignable · {time}"
+
+[history_day_today]
+text = "aujourd’hui"
+
+[history_day_yesterday]
+text = "hier"
+
+[empty_hero_ready]
+text = "Votre ligne est prête"
+
+[empty_hero_open]
+text = "Votre ligne est ouverte"
+
+[empty_hero_request_waiting]
+text = "Votre demande à {name} est en attente. Votre ligne s’ouvre quand cette personne accepte."
+
+[empty_hero_add_another]
+text = "Ajouter un autre contact"
+
+[empty_hero_add_someone]
+text = "Ajoutez quelqu’un avec qui vous aimeriez parler, et vous pourrez vous écrire et vous appeler."
+
+[empty_hero_add_first]
+text = "Ajouter mon premier contact"
+
+[empty_hero_say_hello]
+text = "Dites bonjour à {name} quand vous voulez."
+
+[empty_hero_message]
+text = "Écrire à {name}"
+
+[empty_hero_pick_someone]
+text = "Choisissez quelqu’un et dites bonjour quand vous voulez."
+
+[empty_hero_start_chat]
+text = "Lancer une discussion"
+
+[empty_quiet_chats]
+text = "Vos discussions apparaissent ici."
+
+[empty_quiet_unread]
+text = "Vous êtes à jour."
+
+[empty_quiet_calls]
+text = "Les appels passés et reçus apparaissent ici."
+
+[empty_quiet_contacts]
+text = "Les personnes que vous ajoutez apparaissent ici."
+
+[components_hide_passphrase]
+text = "Masquer la phrase secrète"
+
+[components_show_passphrase]
+text = "Afficher la phrase secrète"
+
+[shell_incoming_call]
+text = "Appel entrant"
+
+[shell_incoming_video_call]
+text = "Appel vidéo entrant"
+
+[shell_calling_during_call]
+text = "Appelle pendant votre appel"
+
+[shell_settings]
+text = "Paramètres"
+
+[shell_ring_waiting_desc]
+text = "{name} vous appelle pendant votre appel"
+
+[shell_ring_desc]
+text = "{call} de {name}"
+
+[shell_ring_open]
+text = "Ouvrir l’appel de {name}"
+
+[shell_end_and_answer]
+text = "Raccrocher et répondre"
+
+[shell_tab_chats]
+text = "Discussions"
+
+[shell_tab_groups]
+text = "Groupes"
+
+[shell_tab_calls]
+text = "Appels"
+
+[shell_tab_contacts]
+text = "Contacts"
+
+[shell_badge_waiting]
+one = "{count} en attente"
+many = "{count} en attente"
+other = "{count} en attente"
+
+[shell_badge_unread]
+one = "{count} non lu"
+many = "{count} non lus"
+other = "{count} non lus"
+
+[mark_incoming_call]
+text = "Appel entrant"
+
+[mark_calling]
+text = "Appel sortant"
+
+[mark_connecting]
+text = "Connexion"
+
+[mark_in_call]
+text = "En appel"
+
+[mark_reconnecting]
+text = "Reconnexion"
+
+[mark_starting_group_call]
+text = "Lancement d’un appel de groupe"
+
+[mark_in_group_call]
+text = "En appel de groupe"
+
+[mark_no_connection]
+text = "Pas de connexion"
+
+[mark_connected]
+text = "Connecté au réseau"
+
+[home_offline_title]
+text = "Vous êtes hors ligne"
+
+[home_offline_body]
+text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
+
+[home_banner_no_ring_title]
+text = "Les appels ne sonneront pas"
+
+[home_banner_no_ring_body]
+text = "Les notifications sont désactivées pour Tinline."
+
+[home_banner_battery_title]
+text = "Des appels peuvent être manqués en veille"
+
+[home_banner_battery_body]
+text = "Android limite Tinline en arrière-plan."
+
+[home_banner_lock_title]
+text = "Les appels ne s’afficheront pas sur l’écran verrouillé"
+
+[home_banner_lock_body]
+text = "Autorisez les appels en plein écran pour que Tinline sonne comme l’application Téléphone."
+
+[home_banner_unavailable_title]
+text = "Vous êtes indisponible"
+
+[home_banner_unavailable_body]
+text = "Les appels ne sonneront pas tant que vous ne les réactiverez pas."
+
+[home_banner_turn_on]
+text = "Activer"
+
+[home_banner_fix]
+text = "Régler"
+
+[home_banner_allow]
+text = "Autoriser"
+
+[home_new_group]
+text = "Nouveau groupe"
+
+[home_new_chat]
+text = "Nouvelle discussion"
+
+[home_recent_calls]
+text = "Appels récents"
+
+[home_no_calls]
+text = "Pas encore d’appel. L’historique reste uniquement sur ce téléphone."
+
+[home_history_local]
+text = "L’historique reste uniquement sur ce téléphone."
+
+[home_search_contacts]
+text = "Rechercher des contacts"
+
+[home_close_search]
+text = "Fermer la recherche"
+
+[home_clear]
+text = "Effacer"
+
+[home_call_name]
+text = "Appeler {name}"
+
+[home_first_title]
+text = "Ajoutez votre premier contact"
+
+[home_first_lead]
+text = "Montrez votre code à un ami, ou copiez-le et envoyez-le. Ou scannez le sien."
+
+[home_first_scan]
+text = "Scanner son code"
+
+[home_first_paste]
+text = "Coller sa carte"
+
+[home_first_waiting]
+text = "En attente du scan — gardez ceci ouvert."
+
+[chats_filter_all]
+text = "Toutes"
+
+[chats_filter_unread]
+text = "Non lues"
+
+[chats_draft]
+text = "Brouillon :"
+
+[chats_waiting]
+text = "En attente"
+
+[calls_what_declined]
+text = "Refusé"
+
+[calls_what_no_answer]
+text = "Pas de réponse"
+
+[calls_what_cancelled]
+text = "Annulé"
+
+[calls_what_unreachable]
+text = "Impossible de connecter l’appel"
+
+[calls_profile_desc]
+text = "Profil de {name}"
+
+[calls_cant_call]
+text = "Appel impossible"
+
+[calls_row_desc]
+text = "{name}, {what}, {time}. {action}"
+
+[calls_row_desc_duration]
+text = "{name}, {what}, {duration}, {time}. {action}"
+
+[calls_group_info_desc]
+text = "{name}, infos du groupe"
+
+[calls_group_row_desc]
+text = "{name}, {what}, {time}. Lancer ou rejoindre un appel"
+
+[contacts_find]
+text = "Trouver un contact"
+
+[contacts_add]
+text = "Ajouter un contact"
+
+[contacts_add_sub]
+text = "Partagez votre code ou collez le sien"
+
+[contacts_waiting_for_you]
+text = "En attente de votre réponse"
+
+[contacts_wants_to_add]
+text = "Veut vous ajouter comme contact"
+
+[contacts_accepting]
+text = "Accepter vous permet de vous écrire et de vous appeler."
+
+[contacts_waiting_for_them]
+text = "En attente de leur réponse"
+
+[contacts_request_sent]
+text = "Demande envoyée. Votre ligne s’ouvre quand {name} accepte."
+
+[contacts_none_found]
+text = "Personne ne s’appelle « {query} » dans vos contacts."
+
+[contacts_count]
+one = "{count} contact"
+many = "{count} contacts"
+other = "{count} contacts"
+
+[list_tick_waiting]
+text = "En attente d’envoi"
+
+[list_tick_sent]
+text = "Envoyé"
+
+[list_tick_delivered]
+text = "Distribué à tous"
+
+[list_tick_read]
+text = "Lu par tous"
+
+[list_tick_bad]
+text = "Non distribué"
+
+[main_call_start_failed]
+text = "Impossible de lancer l’appel"
+
+[main_joined_group]
+text = "Vous avez rejoint le groupe."
+
+[main_last_message]
+text = "Dernier message {time}"
+
+[main_told_blocked]
+text = "Votre blocage est notifié à {name}"
+
+[app_save_unsafe]
+text = "Impossible d’enregistrer votre compte de façon sûre sur ce téléphone."
+
+[app_save_failed]
+text = "Impossible d’enregistrer votre compte sur ce téléphone."
+
+[app_phrase_other_identity]
+text = "Ces mots de récupération appartiennent à une autre identité"
+
+[support_err_wrong_passphrase]
+text = "Cela ne correspond pas. Vérifiez l’orthographe et les espaces."
+
+[support_err_weak_passphrase]
+text = "Saisissez une phrase secrète, ou passez cette étape"
+
+[support_err_locked]
+text = "Verrouillé — saisissez votre phrase secrète pour déverrouiller"
+
+[support_err_bad_phrase]
+text = "Ces mots de récupération ne sont pas reconnus"
+
+[support_err_account_exists]
+text = "Ce compte est déjà sur ce téléphone"
+
+[support_err_in_call]
+text = "Terminez d’abord votre appel"
+
+[support_err_generic]
+text = "Quelque chose n’a pas marché"
+
+[debuglog_send_title]
+text = "Envoyer le journal de débogage"
+
+[groupsc_sys_joined_you]
+text = "Vous avez rejoint le groupe"
+
+[groupsc_sys_joined_other]
+text = "{name} a rejoint le groupe"
+
+[groupsc_sys_joined_someone]
+text = "Quelqu’un a rejoint le groupe"
+
+[groupsc_sys_left_you]
+text = "Vous l’avez quitté"
+
+[groupsc_sys_left_other]
+text = "{name} a quitté le groupe"
+
+[groupsc_sys_left_someone]
+text = "Quelqu’un a quitté le groupe"
+
+[groupsc_removed_other_flags]
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
+
+[groupsc_removed_someone_flags]
+one = "Un membre a été retiré après {count} signalement d’admin"
+many = "Un membre a été retiré après {count} signalements d’admins"
+other = "Un membre a été retiré après {count} signalements d’admins"
+
+[groupsc_admin_granted_you]
+text = "{by} vous a donné le rôle d’admin"
+
+[groupsc_admin_granted_you_by_someone]
+text = "Quelqu’un vous a donné le rôle d’admin"
+
+[groupsc_admin_granted_by_you]
+text = "Vous avez nommé {sub} admin"
+
+[groupsc_admin_granted_by_you_someone]
+text = "Vous avez nommé quelqu’un admin"
+
+[groupsc_admin_granted_other_someone]
+text = "{by} a nommé quelqu’un admin"
+
+[groupsc_admin_granted_by_someone]
+text = "Quelqu’un a nommé {sub} admin"
+
+[groupsc_admin_granted_by_someone_someone]
+text = "Quelqu’un a nommé un membre admin"
+
+[groupsc_admin_revoked_you_by_someone]
+text = "Quelqu’un vous a retiré le rôle d’admin"
+
+[groupsc_admin_revoked_by_you]
+text = "Vous avez retiré le rôle d’admin à {sub}"
+
+[groupsc_admin_revoked_by_you_someone]
+text = "Vous avez retiré le rôle d’admin à quelqu’un"
+
+[groupsc_admin_revoked_other_someone]
+text = "{by} a retiré le rôle d’admin à quelqu’un"
+
+[groupsc_admin_revoked_by_someone]
+text = "Quelqu’un a retiré le rôle d’admin à {sub}"
+
+[groupsc_admin_revoked_by_someone_someone]
+text = "Quelqu’un a retiré le rôle d’admin à un membre"
+
+[groupsc_host_added_someone]
+text = "Un appareil d’un membre héberge maintenant le groupe"
+
+[groupsc_host_removed_someone]
+text = "Un appareil d’un membre n’héberge plus le groupe"
+
+[groupsc_removed_you_group]
+text = "Vous avez été retiré de ce groupe"
+
+[groupsc_preview_you]
+text = "Vous : {text}"
+
+[groupsc_preview_other]
+text = "{name} : {text}"
+
+[groupsc_preview_someone]
+text = "Quelqu’un : {text}"
+
+[groupsc_photo_caption_line]
+text = "Photo · {caption}"
+
+[groupsc_members]
+one = "{count} membre"
+many = "{count} membres"
+other = "{count} membres"
+
+[groupsc_status_this_device]
+text = "cet appareil héberge le groupe"
+
+[groupsc_status_no_host]
+text = "pas encore d’hôte"
+
+[groupsc_status_waiting]
+text = "en attente d’un hôte"
+
+[groupsc_status_join]
+text = "{members} · {state}"
+
+[groupsc_online_count]
+one = "{count} en ligne"
+many = "{count} en ligne"
+other = "{count} en ligne"
+
+[groupsc_online_cap]
+text = "{count}+ en ligne"
+
+[groupsc_admins_only_post]
+text = "Seuls les admins publient ici"
+
+[groupsc_admins_only_error]
+text = "Seuls les admins publient ici."
+
+[groupsc_req_pending_named]
+text = "En attente de {name} · via {group}"
+
+[groupsc_req_pending_anon]
+text = "En attente de réponse · via {group}"
+
+[groupsc_req_accepted_messages_anon]
+text = "Demande acceptée · messages uniquement"
+
+[groupsc_req_accepted_connecting_anon]
+text = "Demande acceptée · connexion"
+
+[groupsc_req_declined_named]
+text = "{name} a refusé"
+
+[groupsc_req_declined_anon]
+text = "Demande refusée"
+
+[groupsc_req_blocked_named]
+text = "{name} vous a bloqué"
+
+[groupsc_req_blocked_anon]
+text = "Cette personne vous a bloqué"
+
+[groupsc_pick_member]
+text = "Déjà membre"
+
+[groupsc_pick_invited_waiting]
+text = "Invité · en attente"
+
+[groupsc_invited_not_delivered]
+text = "Invité · pas encore distribué"
+
+[groupsc_invite_joined]
+text = "A rejoint"
+
+[groupsc_invite_declined]
+text = "Invitation refusée"
+
+[groupsc_flag_final]
+text = "Ce sera le signalement {n} sur {total}. Le retrait de {name} est immédiat : les hôtes refusent ses nouveaux messages et cette personne voit qu’elle a été retirée."
+
+[groupsc_flag_more]
+text = "Ce sera le signalement {n} sur {total}. Les signalements de tous les admins comptent, y compris un nouveau de votre part. À {total} signalements, le retrait de {name} est immédiat et cette personne voit qu’elle a été retirée."
+
+[groupsc_err_removed]
+text = "Vous avez été retiré de ce groupe."
+
+[groupsc_err_already_contact]
+text = "Cette personne est déjà dans vos contacts. Écrivez-lui depuis Discussions."
+
+[groupsc_err_timeout]
+text = "Aucun hôte n’a répondu à temps. Réessayez quand un hôte sera en ligne."
+
+[groupsc_type_first]
+text = "Écrivez d’abord un message."
+
+[groupsc_picture_too_large]
+text = "Cette image est trop lourde pour être publiée."
+
+[groupsc_pick_first]
+text = "Choisissez d’abord quelqu’un."
+
+[groupsc_invited_one_named]
+text = "Invitation envoyée à {name}. Cette personne rejoindra le groupe en acceptant."
+
+[groupsc_invited_one_anon]
+text = "Invitation envoyée. Cette personne rejoindra le groupe en acceptant."
+
+[groupsc_invited_many]
+one = "{count} invitation envoyée. Chaque personne rejoint le groupe en acceptant."
+many = "{count} invitations envoyées. Chaque personne rejoint le groupe en acceptant."
+other = "{count} invitations envoyées. Chaque personne rejoint le groupe en acceptant."
+
+[groupsc_decline_inv_named]
+text = "Refusé. {name} voit que vous avez refusé."
+
+[groupsc_decline_inv_anon]
+text = "Refusé. Cette personne voit que vous avez refusé."
+
+[groupsc_link_closed]
+text = "Le lien ouvert est fermé. Les personnes déjà présentes restent ; les nouvelles rejoignent avec une invitation."
+
+[groupsc_request_sent_named]
+text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
+
+[groupsc_request_sent_anon]
+text = "Demande envoyée. Elle attend dans Discussions jusqu’à la réponse de cette personne."
+
+[groupsc_req_accept_named]
+text = "Accepté. {name} fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[groupsc_req_accept_anon]
+text = "Accepté. Cette personne fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[groupsc_req_declined_told_anon]
+text = "Refusé. Cette personne verra « refusé »."
+
+[groupsc_req_block_named]
+text = "Vous avez bloqué {name}, qui ne peut plus envoyer de demandes."
+
+[groupsc_req_block_anon]
+text = "Cette personne est bloquée et ne peut plus envoyer de demandes."
+
+[groupsc_notice_accepted_named]
+text = "{name} a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[groupsc_notice_accepted_anon]
+text = "Cette personne a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[video_hd_line_on]
+text = "Vidéo plus nette activée"
+
+[video_hd_line_paused]
+text = "HD en pause · connexion faible"
+
+[video_hd_metered]
+text = "En données mobiles, la HD consomme plus · touchez HD"
+
+[profile_busy_unsupported]
+text = "Le statut Occupé n’est pas encore disponible. Vos réglages d’appel n’ont pas changé."
+
+[blocking_row_blocked_you]
+text = "Vous a bloqué"
+
+[link_match_body_unnamed]
+text = "Le nouvel appareil veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+
+[link_approve_title_unnamed]
+text = "Valider le nouvel appareil ?"
+
+[link_approve_warning_unnamed]
+text = "Valider envoie vos **mots de récupération** au nouvel appareil. Il devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+
+[link_linking_unnamed]
+text = "Association du nouvel appareil"
+
+[link_done_title_unnamed]
+text = "Le nouvel appareil est associé"
+
+[onboarding_linked_title_unnamed]
+text = "Associé à votre autre appareil"
+
+[onboarding_restored_title_adding_unnamed]
+text = "Votre compte est maintenant sur ce téléphone"
+
+[onboarding_restored_lead_adding_unnamed]
+text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+
+[devices_syncing_unnamed]
+text = "Synchronisation avec l’appareil…"
+
+[devices_confirm_unlink_title_unnamed]
+text = "Dissocier cet appareil ?"
+
+[devices_unlinked_msg_unnamed]
+text = "Appareil dissocié"
+
+[groupsb_join_invited_by_you]
+text = "Invité par vous"
+
+[groupsb_join_invited_by_unknown]
+text = "Invité par quelqu’un qui n’est pas dans vos contacts"
+
+[groupsb_join_owner_you]
+text = "Propriétaire : vous"
+
+[groupsb_join_owner_unknown]
+text = "Propriétaire : quelqu’un qui n’est pas dans vos contacts"
+
+[groupsb_link_note_unnamed]
+text = "Toute personne qui a ce lien ou ce QR code peut rejoindre ce groupe pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
+
+[groupsb_share_text_unnamed]
+text = "Rejoignez mon groupe sur Tinline : {link}"
+
+[card_chat_with_unnamed]
+text = "Discuter avec cette personne ?"
+
+[card_add_unnamed]
+text = "Ajouter ce contact ?"
+
+[call_unreachable_title_unnamed]
+text = "Impossible de joindre cette personne"
+
+[calls_desc_incoming]
+text = "Appel entrant"
+
+[calls_desc_outgoing]
+text = "Appel sortant"
+
+[calls_desc_away]
+text = "Appel pendant votre indisponibilité"
+
+[calls_desc_missed]
+text = "Appel manqué"
+
+[calls_desc_declined]
+text = "Appel refusé"
+
+[calls_desc_no_answer]
+text = "Appel sans réponse"
+
+[calls_desc_cancelled]
+text = "Appel annulé"
+
+[calls_desc_unreachable]
+text = "Appel qui n’a pas pu aboutir"
+
+[calls_desc_other]
+text = "Appel Tinline"
+
+[groupsb_public_link]
+text = "Lien public"
+
+[groups_list_sent_requests]
+text = "Demandes envoyées"
+
+[groupsb_host_online]
+text = "En ligne"
+
+[groupsb_host_offline]
+text = "Hors ligne"
+
+[calls_what_other]
+text = "Appel Tinline"
+
+[notif_request_text_unnamed]
+text = "Quelqu’un aimerait vous ajouter"
+
+[notif_accepted_title]
+text = "Demande acceptée"
+
+[notif_accepted_text_unnamed]
+text = "Votre contact a accepté votre demande. Votre ligne est ouverte."
+
+[gcall_host_label_device]
+text = "Hôte d’appel : appareil de {name}"
+
+[gcall_host_label_unnamed]
+text = "Hôte d’appel : appareil d’un membre"
+
+[gcall_about_this_phone]
+text = "**Ce téléphone** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_device]
+text = "**L’appareil de {name}** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_unnamed]
+text = "**L’hôte d’appel** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_started_by_unnamed]
+text = "Lancé par quelqu’un"
+
+[gcall_is_calling_group_desc_unnamed]
+text = "Quelqu’un appelle le groupe {group}"
+
+[gcall_started_call_desc_unnamed]
+text = "Quelqu’un a lancé un appel dans {group}"
+
+[notif_group_calling_unnamed]
+text = "Quelqu’un appelle le groupe"
+
+[common_list_separator]
+text = ", "
+
+[groupsb_member_desc]
+text = "{list}. Ouvrir les actions"
+
+[groupsb_role_host_lc]
+text = "hôte"
+
+[groupsb_role_callhost_lc]
+text = "hôte d’appel"
+
+[avail_note_unnamed]
+text = "Pendant votre absence, les personnes qui appellent voient qu’elles n’ont pas pu vous joindre. Rien n’est mis en attente et personne n’est informé de la raison."
+
+[onboarding_linked_lead_unnamed]
+text = "Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux."
+
+[gcall_is_calling_group_unnamed]
+text = "Quelqu’un appelle le groupe"
+
+[gcall_started_call_unnamed]
+text = "Quelqu’un a lancé un appel"

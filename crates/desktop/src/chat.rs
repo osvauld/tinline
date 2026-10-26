@@ -796,7 +796,7 @@ impl App {
                         } else if !current && submission.editing.is_none() && self.chat.compose_memory.restore(&peer).text.is_empty() {
                             self.chat.compose_memory.suspend(&peer, submission.text, submission.reply, false);
                         }
-                        self.notice = Some(format!("Could not send: {error}"));
+                        self.notice = Some(crate::i18n::tr_args("chat_could_not_send", &[("error", &(error).to_string())]));
                     }
                 }
             }
@@ -806,7 +806,7 @@ impl App {
                     self.chat.upsert(m);
                     return receipt;
                 }
-                Err(e) => self.notice = Some(format!("Could not send: {e}")),
+                Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_send", &[("error", &(e).to_string())])),
             },
             Cm::Hover(h) => self.chat.hover = h,
             Cm::Menu(id) => self.chat.menu = if self.chat.menu.as_ref() == Some(&id) { None } else { Some(id) },
@@ -865,7 +865,7 @@ impl App {
                     return Task::none();
                 }
                 return Task::perform(
-                    async { rfd::AsyncFileDialog::new().set_title("Send a file").pick_file().await.map(|h| h.path().to_path_buf()) },
+                    async { rfd::AsyncFileDialog::new().set_title(crate::i18n::tr_str("chat_send_a_file")).pick_file().await.map(|h| h.path().to_path_buf()) },
                     |p| Msg::Chat(Cm::Picked(p)),
                 );
             }
@@ -881,7 +881,7 @@ impl App {
                     return Task::none();
                 };
                 if !path.is_file() {
-                    self.notice = Some("Only files can be sent, not folders.".into());
+                    self.notice = Some(crate::i18n::tr_str("chat_only_files_can_be").into());
                     return Task::none();
                 }
                 let mime = mime_of(&path);
@@ -935,8 +935,8 @@ impl App {
                 );
             }
             Cm::Saved(r) => match r {
-                Ok(p) => self.notice = Some(format!("Saved to {p}")),
-                Err(e) => self.notice = Some(format!("Could not save: {e}")),
+                Ok(p) => self.notice = Some(crate::i18n::tr_args("chat_saved_to", &[("p", &(p).to_string())])),
+                Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_save", &[("error", &(e).to_string())])),
             },
             Cm::Older => {
                 let Some(peer) = self.chat.peer.clone() else { return Task::none() };
@@ -999,7 +999,7 @@ impl App {
                 let path = voice_dir().join(format!("rec-{stamp}.ogg"));
                 match Recorder::start(&path) {
                     Ok(r) => self.chat.rec = Some((r, path)),
-                    Err(e) => self.notice = Some(format!("Could not record: {e}")),
+                    Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_record", &[("error", &(e).to_string())])),
                 }
             }
             Cm::RecCancel => {
@@ -1020,8 +1020,8 @@ impl App {
                             r
                         });
                     }
-                    Ok(None) => self.notice = Some("Too short \u{2014} hold on a little longer.".into()),
-                    Err(e) => self.notice = Some(format!("Could not record: {e}")),
+                    Ok(None) => self.notice = Some(crate::i18n::tr_str("chat_too_short_hold_on").into()),
+                    Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_record", &[("error", &(e).to_string())])),
                 }
             }
             Cm::VoiceToggle(id) => {
@@ -1053,7 +1053,7 @@ impl App {
                     self.chat.voice_files.insert(id.clone(), p);
                     self.chat.player = Some((id, pl));
                 }
-                Err(e) => self.notice = Some(format!("Could not play: {e}")),
+                Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_play", &[("error", &(e).to_string())])),
             },
             Cm::VoiceSeek(id, f) => {
                 if let Some((pid, pl)) = &self.chat.player
@@ -1140,7 +1140,7 @@ impl App {
             }
             Cm::Opened(r) => {
                 if let Err(e) = r {
-                    self.notice = Some(format!("Could not open: {e}"));
+                    self.notice = Some(crate::i18n::tr_args("chat_could_not_open", &[("error", &(e).to_string())]));
                 }
             }
             Cm::CloseView => self.chat.viewer = None,
@@ -1236,12 +1236,12 @@ impl App {
 /// What a notification or a list row says about a message.
 pub(super) fn preview_of(m: &ChatMsg) -> String {
     if m.deleted {
-        return "Message deleted".into();
+        return crate::i18n::tr_str("chat_message_deleted").into();
     }
     let t: String = m.text.chars().take(120).collect();
     match (&m.attachment, t.is_empty()) {
         (_, false) => t,
-        (Some(a), true) if a.kind == p2pcore::AttachmentKind::Voice => "Voice message".into(),
+        (Some(a), true) if a.kind == p2pcore::AttachmentKind::Voice => crate::i18n::tr_str("chat_voice_message").into(),
         (Some(a), true) => a.name.clone(),
         (None, true) => String::new(),
     }

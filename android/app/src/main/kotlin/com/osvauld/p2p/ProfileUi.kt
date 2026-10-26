@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -62,7 +63,7 @@ fun SavedTag(offline: Boolean, modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) { a.animateTo(1f, tween(PgMotion.ENTER, easing = PgMotion.easeOut)) }
     Row(modifier.graphicsLayer { alpha = a.value }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         Icon(PgIcons.Check, null, Modifier.size(13.dp), tint = Tin.c.accentInk)
-        Text(if (offline) "Saved · syncs when connected" else "Saved", style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = Tin.c.accentInk, maxLines = 1, softWrap = false)
+        Text(if (offline) stringResource(R.string.profile_saved_offline) else stringResource(R.string.profile_saved), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = Tin.c.accentInk, maxLines = 1, softWrap = false)
     }
 }
 
@@ -137,7 +138,7 @@ enum class FieldKind { Text, Multiline, Link }
 @Composable
 fun FieldRow(
     label: String, value: Any?, kind: FieldKind = FieldKind.Text, hint: String = "", placeholder: String = "", optional: Boolean = false,
-    readonly: Boolean = false, limit: Int = 0, offline: Boolean = false, empty: String = "Not set", note: String = "",
+    readonly: Boolean = false, limit: Int = 0, offline: Boolean = false, empty: String = stringResource(R.string.profile_not_set), note: String = "",
     onSave: (suspend (String) -> String?)? = null, onRemove: (suspend () -> String?)? = null, onOpen: ((String) -> Unit)? = null,
     startEditing: Boolean = false,
 ) {
@@ -155,6 +156,7 @@ fun FieldRow(
     val url = if (kind == FieldKind.Link) ProfileInfo.safeUrl(text) else null
     val bytes = ProfileRules.utf8(draft.text)
     val near = limit > 0 && bytes > limit * 0.8
+    val editDesc = stringResource(R.string.profile_field_edit_desc, label, text.ifEmpty { empty })
 
     LaunchedEffect(saved) { if (saved > 0) { delay(SAVED_MS); saved = 0 } }
     LaunchedEffect(Unit) { if (startEditing && editable) { draft = TextFieldValue(text, TextRange(text.length)); mode = "edit" } }
@@ -192,24 +194,24 @@ fun FieldRow(
                             else if (hint.isNotEmpty()) Text(hint, style = PgType.sub, color = c.ink2)
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            if (optional && !isNull) PBtn("Remove", ::drop, variant = PVariant.DangerQuiet)
+                            if (optional && !isNull) PBtn(stringResource(R.string.common_remove), ::drop, variant = PVariant.DangerQuiet)
                             Spacer(Modifier.weight(1f))
-                            PBtn("Cancel", ::cancel, variant = PVariant.Quiet)
-                            PBtn("Save", ::save, variant = PVariant.Primary)
+                            PBtn(stringResource(R.string.common_cancel), ::cancel, variant = PVariant.Quiet)
+                            PBtn(stringResource(R.string.profile_save), ::save, variant = PVariant.Primary)
                         }
                     }
-                    if (near) Text("$bytes of $limit bytes", Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 16.dp),
+                    if (near) Text(stringResource(R.string.profile_bytes_of_limit, bytes.toString(), limit.toString()), Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 16.dp),
                         style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = if (bytes > limit) c.danger else c.ink2, maxLines = 1, softWrap = false)
                 }
             }
             "remove" -> FadeIn {
                 Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Remove “$label” from your profile?", style = PgType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                    Text("It disappears from your profile. Earlier versions can remain in synced history.", style = PgType.sub19, color = c.ink2)
+                    Text(stringResource(R.string.profile_remove_field_title, label), style = PgType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                    Text(stringResource(R.string.profile_remove_field_body), style = PgType.sub19, color = c.ink2)
                     if (error.isNotEmpty()) Text(error, Modifier.semantics { liveRegion = LiveRegionMode.Assertive }, style = PgType.sub, color = c.danger)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
-                        PBtn("Cancel", ::cancel, variant = PVariant.Quiet)
-                        PBtn("Remove", ::drop, variant = PVariant.Danger)
+                        PBtn(stringResource(R.string.common_cancel), ::cancel, variant = PVariant.Quiet)
+                        PBtn(stringResource(R.string.common_remove), ::drop, variant = PVariant.Danger)
                     }
                 }
             }
@@ -217,8 +219,8 @@ fun FieldRow(
                 val src = remember { MutableInteractionSource() }
                 Row(
                     Modifier.weight(1f).heightIn(min = if (!editable && label.isEmpty()) 0.dp else 64.dp)
-                        .let { if (editable) it.clickable(src, ripple(), role = Role.Button, onClickLabel = "Edit") { edit() } else it }
-                        .let { if (editable) it.semantics(mergeDescendants = true) { contentDescription = "$label: ${text.ifEmpty { empty }}. Edit" } else it }
+                        .let { if (editable) it.clickable(src, ripple(), role = Role.Button, onClickLabel = stringResource(R.string.profile_edit)) { edit() } else it }
+                        .let { if (editable) it.semantics(mergeDescendants = true) { contentDescription = editDesc } else it }
                         .padding(horizontal = 16.dp, vertical = if (editable) 10.dp else if (label.isEmpty()) 14.dp else 12.dp),
                     verticalAlignment = if (editable) Alignment.CenterVertically else Alignment.Top,
                 ) {
@@ -236,11 +238,11 @@ fun FieldRow(
                         if (note.isNotEmpty()) Text(note, Modifier.padding(top = 2.dp), style = PgType.sub, color = c.ink2)
                     }
                 }
-                if (url != null && onOpen != null) ToolBtn(PgIcons.Link, 20.dp, "Open $label: ${ProfileInfo.shortUrl(url)}") { onOpen(url) }
+                if (url != null && onOpen != null) ToolBtn(PgIcons.Link, 20.dp, stringResource(R.string.profile_open_link_desc, label, ProfileInfo.shortUrl(url))) { onOpen(url) }
                 if (editable) Box(Modifier.padding(end = 6.dp).let { if (url != null && onOpen != null) it.marginStart((-8).dp) else it }) {
                     ToolBtn(PgIcons.Edit, 18.dp, null, alpha = 0.8f) { edit() }
                 }
-                if (removable) ToolBtn(PgIcons.Trash, 20.dp, "Remove $label") { error = ""; mode = "remove" }
+                if (removable) ToolBtn(PgIcons.Trash, 20.dp, stringResource(R.string.profile_remove_field_desc, label)) { error = ""; mode = "remove" }
             }
         }
     }
@@ -274,7 +276,9 @@ private fun FadeIn(content: @Composable () -> Unit) {
 fun ProfileValue(v: Any?, depth: Int = 0) {
     val c = Tin.c
     fun prim(x: Any?) = x == null || x == JSONObject.NULL || x is String || x is Number || x is Boolean
-    fun show(x: Any?) = when (x) { null, JSONObject.NULL -> "—"; is Boolean -> if (x) "Yes" else "No"; else -> x.toString() }
+    val yes = stringResource(R.string.profile_value_yes)
+    val no = stringResource(R.string.profile_value_no)
+    fun show(x: Any?) = when (x) { null, JSONObject.NULL -> "—"; is Boolean -> if (x) yes else no; else -> x.toString() }
     val nest = Modifier.padding(top = 6.dp).drawBehind {
         val w = 2.dp.toPx()
         val x = if (layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl) size.width - w / 2 else w / 2

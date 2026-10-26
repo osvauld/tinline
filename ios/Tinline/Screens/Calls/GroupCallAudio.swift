@@ -17,7 +17,7 @@ import Foundation
  */
 @MainActor
 final class GroupCallAudio: ObservableObject, GroupCallEvents {
-    static let name = "Group call"
+    static var name: String { tr("call_group_call_name") }
 
     private let core: @Sendable () -> CallCore?
     private let platform: CallPlatform
@@ -112,7 +112,7 @@ final class GroupCallAudio: ObservableObject, GroupCallEvents {
     }
 
     private func micUnavailable() {
-        micProblem = platform.micGranted ? "Microphone unavailable - you can't be heard" : "Microphone permission needed - you can't be heard"
+        micProblem = platform.micGranted ? tr("call_mic_unavailable") : tr("call_mic_permission_needed")
     }
 
     /**
