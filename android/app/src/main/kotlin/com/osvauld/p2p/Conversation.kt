@@ -260,7 +260,13 @@ fun ConversationScreen(
             }
         }
     }
-    LaunchedEffect(msgs.size) { if (!find.open && searchHit == null && listState.firstVisibleItemIndex <= 2) listState.scrollToItem(0) }
+    // A new newest message: follow it when we sent it, or when the reader is already at the bottom. requestScrollToItem,
+    // not scrollToItem: the list keeps its first visible row by key when a row is inserted before it, so a scroll that
+    // measures before the new row is composed leaves the new message just below the screen.
+    val newest = msgs.lastOrNull()
+    LaunchedEffect(newest?.id) {
+        if (newest != null && !find.open && (newest.outgoing || (searchHit == null && listState.firstVisibleItemIndex <= 2))) listState.requestScrollToItem(0)
+    }
     suspend fun jumpTo(hit: FindHit) {
         if (hit.day.isNotBlank()) {
             val page = withContext(Dispatchers.IO) { source.day(peerDid, hit.day) }
@@ -336,8 +342,7 @@ fun ConversationScreen(
                     upsert(m)
                     loadReceipt(m.id)
                     if (draft == originalDraft && editing == edit && replying == reply) savedDraft.sent()
-                    if (edit == null) { TinFx.messageSent(); Cues.sent() }
-                    listState.scrollToItem(0)
+                    if (edit == null) { TinFx.messageSent(); Cues.sent(); listState.requestScrollToItem(0) }
                 }.onFailure { toast(friendly(it)) }
             } finally { sending = false }
         }
@@ -345,7 +350,7 @@ fun ConversationScreen(
     fun sendFile(file: File, mime: String) {
         scope.launch(Dispatchers.IO) {
             runCatching { source.sendFile(peerDid, file.path, mime, null) }
-                .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.animateScrollToItem(0) } }
+                .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.requestScrollToItem(0) } }
                 .onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_send_file_failed)) } }
             file.parentFile?.takeIf { it.parentFile?.name == "chat_out" }?.deleteRecursively()
         }
