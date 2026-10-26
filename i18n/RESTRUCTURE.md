@@ -163,6 +163,41 @@ Fix: join with the platform list formatter (Android `ListFormatter`, iOS
 - Bidi code fixes (FSI/PDI isolation, RLM) are parked: no RTL work for now
   (user, 2026-10-25). See `i18n/review/ar.md`.
 
+## 9i. Found in review (bn, ta, ml, mr)
+
+- **"They" / "your other device" in a name slot.** Android fills `{name}` with `call_they` in
+  `call_unreachable_body`, and with `link_fallback_other_device` in `link_same_code_lead`. Case and
+  number then break (mr आहे/आहेत, ml "അവർ എന്നയാളെ", ta/bn possessive). Fix: use the unnamed
+  variants iOS and desktop already have, then delete `call_they`.
+- **`{permission}` / `{label}` slots** ("Allow {permission}", "Remove {label}", hide/show a field)
+  put a translated word inside a translated sentence. Fix: one string per permission ("Allow
+  microphone", "Microphone allowed") and per field, or "Remove this field".
+- **Signal word + "signal"** (about 13 call keys) glue a strength word in front of "signal"; Tamil needs
+  the adjective form. Fix: one string per level ("Strong signal", "Weak signal", plus the
+  Direct/Relayed variants).
+- **Hard-coded numbers** in English (7 days, 2 days, 2 GB, 5 minutes, 30/4 seconds, 2 characters, the
+  busy chips). Phones set to Bengali and others show their own digits, so a typed "7" stands out next
+  to formatted counts. Fix: placeholders formatted with the locale ("Valid for {days} days" as a
+  plural, "Up to {size} each", "Hides after {seconds} seconds.", "Type {min} or more characters…").
+  This extends §9h.
+- **"On their device"** is both the group receipt label (several members) and the one-to-one tick (one
+  person). Fix: "On members' devices" for groups.
+- **Sent / Delivered / Read** are shared by messages and group posts, which have different
+  grammatical genders in mr, hi, gu, pa and fr. Fix: separate keys for posts, or mark them as fixed labels.
+- **Buttons that don't exist** are quoted in three strings: "Link to an existing account" (desktop
+  `link_on_the_new_device`), "Host from this device", and "Host from this computer in the members pane". Fix:
+  quote the real button names (e.g. "Link my other device").
+- **Android `profile_until_tomorrow`** ("tomorrow {time}") is slotted into "Busy until {time}".
+  Fix: the whole sentence "Busy until tomorrow {time}", as iOS and desktop already have.
+- **Placeholder names.** Desktop notes often say "{value} is a value filled in by the app", or call a
+  device or account name "a person's name". Malayalam and Tamil pick a different helper noun for each
+  kind. Fix: name placeholders `{person}`, `{device}`, `{account}` and `{group}`, or correct the notes.
+- **Dates:** merge `date_day_month` and `date_month_day` into one per-language "date without year"
+  pattern, or use the platform date formatter (§5, §8).
+- **Tab and chip labels** must fit one line in every language: Malayalam "Contacts" wrapped the Android
+  tab bar. Fixed in code: tab labels shrink to fit (`Shell.kt`). Check chips and short buttons on screen
+  for each new language.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
