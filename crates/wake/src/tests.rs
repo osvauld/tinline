@@ -2,17 +2,17 @@ use super::*;
 use wake_relay_core::api::IssuedToken;
 use wake_relay_core::hint::{Hint, STALE_CALL_MS, seal};
 
-const NOW: u64 = 1_000_000_000;
-const KEY: [u8; 32] = [7; 32];
+pub(super) const NOW: u64 = 1_000_000_000;
+pub(super) const KEY: [u8; 32] = [7; 32];
 const DEV: [u8; 32] = [9; 32];
 
-fn target(n: u8) -> Target {
+pub(super) fn target(n: u8) -> Target {
     Target::Fcm {
         token: format!("synthetic-fcm-token-{n:04}"),
     }
 }
 
-fn state() -> WakeState {
+pub(super) fn state() -> WakeState {
     let mut s = WakeState::new(KEY);
     s.set_target(target(1));
     s
@@ -62,7 +62,7 @@ fn register(
     s.apply_register(pending, resp)
 }
 
-fn hint_text(key: &[u8; 32], tag: u8, kind: Kind, sent_at_ms: u64) -> String {
+pub(super) fn hint_text(key: &[u8; 32], tag: u8, kind: Kind, sent_at_ms: u64) -> String {
     let hint = Hint {
         tag: [tag; 16],
         kind,
@@ -71,7 +71,7 @@ fn hint_text(key: &[u8; 32], tag: u8, kind: Kind, sent_at_ms: u64) -> String {
     seal(key, &hint, [3; 12]).unwrap()
 }
 
-fn never(_: &str) -> bool {
+pub(super) fn never(_: &str) -> bool {
     false
 }
 
@@ -448,7 +448,7 @@ fn relay_202_429_and_5xx_change_nothing() {
 // ---- being woken ----
 
 /// A state that issued tags 1 (msg+call) and 2 (msg only) to two contacts.
-fn woken_state() -> WakeState {
+pub(super) fn woken_state() -> WakeState {
     let mut s = state();
     let cs = vec![
         ("did:test:a".to_owned(), Kinds::ALL),
@@ -464,7 +464,7 @@ fn is_a(did: &str) -> bool {
 
 #[test]
 fn msg_wake_dials_back() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 1, Kind::Msg, NOW);
     assert_eq!(
         s.on_wake(&h, NOW, never),
@@ -476,7 +476,7 @@ fn msg_wake_dials_back() {
 
 #[test]
 fn call_wake_rings_and_never_dials() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 1, Kind::Call, NOW);
     assert_eq!(
         s.on_wake(&h, NOW + 5_000, never),
@@ -488,7 +488,7 @@ fn call_wake_rings_and_never_dials() {
 
 #[test]
 fn blocked_contacts_are_ignored() {
-    let s = woken_state();
+    let mut s = woken_state();
     let msg = hint_text(&KEY, 1, Kind::Msg, NOW);
     let call = hint_text(&KEY, 1, Kind::Call, NOW);
     assert_eq!(s.on_wake(&msg, NOW, is_a), WakeAction::Ignore);
@@ -497,7 +497,7 @@ fn blocked_contacts_are_ignored() {
 
 #[test]
 fn a_stale_call_is_not_rung() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 1, Kind::Call, NOW);
     assert_eq!(
         s.on_wake(&h, NOW + STALE_CALL_MS, never),
@@ -513,7 +513,7 @@ fn a_stale_call_is_not_rung() {
 
 #[test]
 fn a_stale_msg_wake_still_dials_back() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 1, Kind::Msg, NOW);
     assert!(matches!(
         s.on_wake(&h, NOW + 10 * STALE_CALL_MS, never),
@@ -523,7 +523,7 @@ fn a_stale_msg_wake_still_dials_back() {
 
 #[test]
 fn a_call_wake_on_a_msg_only_token_is_refused() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 2, Kind::Call, NOW);
     assert_eq!(s.on_wake(&h, NOW, never), WakeAction::IgnoreCall);
 }
@@ -540,14 +540,14 @@ fn a_revoked_tag_is_ignored() {
 
 #[test]
 fn an_unknown_tag_is_ignored() {
-    let s = woken_state();
+    let mut s = woken_state();
     let h = hint_text(&KEY, 77, Kind::Msg, NOW);
     assert_eq!(s.on_wake(&h, NOW, never), WakeAction::Ignore);
 }
 
 #[test]
 fn garbage_and_wrong_key_are_ignored() {
-    let s = woken_state();
+    let mut s = woken_state();
     assert_eq!(s.on_wake("", NOW, never), WakeAction::Ignore);
     assert_eq!(s.on_wake("not a hint!", NOW, never), WakeAction::Ignore);
     assert_eq!(s.on_wake(&"A".repeat(1000), NOW, never), WakeAction::Ignore);

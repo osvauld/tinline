@@ -106,6 +106,7 @@ fn welcome_grant_wrong_holder_or_issuer() {
         name: name.clone(),
         grant_for_you: issue_grant(&a.id, m.id.did(), M0, GTTL),
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_welcome(&b.id, &pending, &bad, a.dev, M0).err(),
@@ -116,6 +117,7 @@ fn welcome_grant_wrong_holder_or_issuer() {
         name,
         grant_for_you: issue_grant(&m.id, b.id.did(), M0, GTTL),
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_welcome(&b.id, &pending, &bad, a.dev, M0).err(),
@@ -143,6 +145,7 @@ fn binding_for_different_device_or_invite() {
         binding: enc(sig),
         grant_for_you: grant.clone(),
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
@@ -161,6 +164,7 @@ fn binding_for_different_device_or_invite() {
         binding: binding2,
         grant_for_you: grant,
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
@@ -185,6 +189,7 @@ fn binding_signed_by_wrong_key() {
         binding: enc(sig),
         grant_for_you: grant,
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
@@ -206,6 +211,7 @@ fn hello_grant_wrong_holder_and_expired() {
         binding: binding.clone(),
         grant_for_you: g,
         call_grant_for_you: None,
+        wake: None,
     };
     let wrong_holder = mk(issue_grant(&b.id, m.id.did(), M0, GTTL));
     assert_eq!(
