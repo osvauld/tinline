@@ -142,11 +142,19 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
           rustup target add aarch64-linux-android x86_64-linux-android
+      - name: Native cache key
+        id: native
+        # The NDK pin and the ABI list, not the whole build.gradle.kts: every release bumps the version
+        # in that file, which would miss the native caches on every release.
+        run: |
+          ndk=$(sed -n 's/^ *ndkVersion = "\(.*\)"/\1/p' android/app/build.gradle.kts)
+          test -n "$ndk" || { echo 'ndkVersion not found in android/app/build.gradle.kts'; exit 1; }
+          echo "key=ndk$ndk-x86_64,arm64-v8a-${{ hashFiles('scripts/build_libaom.py') }}" >> "$GITHUB_OUTPUT"
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: release-android
           # Include native toolchain/build wiring as well as rust-cache's Rust/compiler keys.
-          key: ${{ hashFiles('android/app/build.gradle.kts', 'scripts/build_libaom.py') }}
+          key: ${{ steps.native.outputs.key }}
       - name: Cache cargo-ndk
         id: cargo-ndk-cache
         uses: actions/cache@v4
@@ -161,7 +169,7 @@ jobs:
         with:
           path: ~/build-cache/p2p_chat/libaom
           # Do not restore a host-only cache: every ABI must be present before saving this key.
-          key: release-android-aom-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_libaom.py', 'android/app/build.gradle.kts') }}
+          key: release-android-aom-${{ runner.os }}-${{ runner.arch }}-${{ steps.native.outputs.key }}
       - name: Build static libaom per ABI (pinned, sha256-verified source)
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
