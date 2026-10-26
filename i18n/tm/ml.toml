@@ -1927,7 +1927,7 @@ where = [
   "ios shell_empty_message: Home hero button with one contact. {name} is their first name.",
   "desktop signup_message: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} എന്നയാൾക്ക് സന്ദേശം അയയ്ക്കുക"
+text = "{name} എന്നയാൾക്ക് സന്ദേശമയയ്ക്കുക"
 
 [t_fd3e384186]
 en = "You blocked {name}"
@@ -2578,7 +2578,7 @@ where = [
   "ios unlock_forgot: Button on the unlock screen.",
   "desktop signup_i_forgot_it: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = "എനിക്ക് അത് ഓർമ്മയില്ല"
+text = "ഞാൻ മറന്നുപോയി"
 
 [t_8b71bbd070]
 en = "Passphrase"
@@ -2995,7 +2995,7 @@ en = "{used} of {limit} bytes"
 where = [
   "android profile_bytes_of_limit: Counter shown when a profile text is close to its size limit. {used} bytes used, {limit} the maximum.",
 ]
-text = "{limit} ബൈറ്റിൽ {used}"
+text = "{used} / {limit} ബൈറ്റ്"
 
 [t_4e0cc89b5d]
 en = "Remove “{label}” from your profile?"
@@ -3664,7 +3664,7 @@ where = [
   "ios people_rule_name_empty: Profile check: the name is empty.",
   "desktop profile_err_name_empty: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when saving an empty name.",
 ]
-text = "പേര് ശൂന്യമാകരുത്."
+text = "പേര് ശൂന്യമായി വിടാൻ കഴിയില്ല."
 
 [t_a7eb6e3908]
 en = "The name can’t contain control or text-direction characters."
@@ -4136,7 +4136,7 @@ where = [
   "ios onboarding_emergency: Bold line on the first screen.",
   "desktop signup_not_for_emergency_calls: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "എമർജൻസി കോളുകൾക്കുള്ളതല്ല."
+text = "അടിയന്തര കോളുകൾക്കുള്ളതല്ല."
 
 [t_224dd02d53]
 en = "Use your phone’s dialer to reach emergency services."
@@ -4144,7 +4144,7 @@ where = [
   "android onboarding_dialer_note: Second line of the emergency-calls note on the first screen.",
   "ios onboarding_emergency_rest: Second line under Not for emergency calls. on the first screen.",
 ]
-text = "എമർജൻസി സേവനങ്ങളെ വിളിക്കാൻ നിങ്ങളുടെ ഫോണിന്റെ ഡയലർ ഉപയോഗിക്കുക."
+text = "അടിയന്തര സേവനങ്ങളെ വിളിക്കാൻ നിങ്ങളുടെ ഫോണിന്റെ ഡയലർ ഉപയോഗിക്കുക."
 
 [t_1ddc7c9468]
 en = "Use your account here"
@@ -5139,7 +5139,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = "കോളുകൾ ശബ്ദം മാത്രം"
+text = "വോയ്‌സ് കോളുകൾ മാത്രം"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5381,7 +5381,7 @@ where = [
   "android settings_sound_triad: Name of a call sound set.",
   "ios settings_sound_triad: Ringtone choice name.",
 ]
-text = "മൂന്ന് സ്വരമുട്ട്"
+text = "മൂന്ന് സ്വരത്തിൽ മുട്ട്"
 
 [t_83563d2f55]
 en = "Three rising notes, like a knock."
@@ -6495,7 +6495,7 @@ where = [
   "ios devices_working: Confirm button text while the unlink runs.",
   "desktop group_working: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "ചെയ്തുകൊണ്ടിരിക്കുന്നു…"
+text = "നടക്കുന്നു…"
 
 [t_0ae9b16e47]
 en = "Unlink"
@@ -6528,7 +6528,7 @@ where = [
   "android devices_remove_others: Reassurance in the remove dialog when other devices have the account.",
   "ios devices_others_keep: Line in the remove-account dialog.",
 ]
-text = "നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ എല്ലാം സുരക്ഷിതമായിരിക്കും."
+text = "നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ എല്ലാം അതേപടി ഉണ്ടാകും."
 
 [t_cac1a71b2b]
 en = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
@@ -6781,7 +6781,7 @@ where = [
   "android link_no_match: Button: the codes are different, cancel linking.",
   "ios link_no_match: Button when the codes differ.",
 ]
-text = "ഒന്നല്ല"
+text = "വ്യത്യസ്തമാണ്"
 
 [t_fd08f40778]
 en = "They match"
@@ -7906,7 +7906,7 @@ where = [
   "ios shell_call_what_no_answer: Call list: outgoing call nobody picked up.",
   "desktop common_no_answer: Shared label, used in several places (chat, reason, view).",
 ]
-text = "മറുപടിയില്ല"
+text = "എടുത്തില്ല"
 
 [t_e3837cdde5]
 en = "Declined"
@@ -9143,7 +9143,7 @@ where = [
   "ios call_group_ended_host_lost: Reason shown when a group call ends because its call host disappeared.",
   "desktop gcall_call_ended_host_lost: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = "കോൾ അവസാനിച്ചു — ഹോസ്റ്റ് പോയി"
+text = "കോൾ അവസാനിച്ചു — ഹോസ്റ്റ് ലഭ്യമല്ലാതായി"
 
 [t_dd457a86c8]
 en = "Battery under {percent} %. Hosting is limited: only one person is heard at a time, and no one new can join."
@@ -9253,7 +9253,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "ഗ്രൂപ്പ് അഡ്മിൻ തിരഞ്ഞെടുക്കുകയും അത് സമ്മതിക്കുകയും ചെയ്ത ഒരു ഉപകരണമാണ് കോൾ ഹോസ്റ്റ്. ഇത് ഗ്രൂപ്പ് ഹോസ്റ്റിംഗിൽ നിന്ന് വ്യത്യസ്തമാണ്. ഗ്രൂപ്പ് വിവരങ്ങളിൽ അഡ്മിൻമാർക്ക് കോൾ ഹോസ്റ്റുകളെ മാറ്റാം."
+text = "ഗ്രൂപ്പ് അഡ്മിൻ തിരഞ്ഞെടുക്കുകയും അത് സമ്മതിക്കുകയും ചെയ്ത ഒരു ഉപകരണമാണ് കോൾ ഹോസ്റ്റ്. ഇത് ചാറ്റ് ഹോസ്റ്റിംഗിൽ നിന്ന് വ്യത്യസ്തമാണ്. ഗ്രൂപ്പ് വിവരങ്ങളിൽ അഡ്മിൻമാർക്ക് കോൾ ഹോസ്റ്റുകളെ മാറ്റാം."
 
 [t_c38df51058]
 en = "Got it"
@@ -10551,7 +10551,7 @@ en = "For 1 hour"
 where = [
   "android avail_one_hour: Break option in the availability sheet.",
 ]
-text = "1 മണിക്കൂറിലേക്ക്"
+text = "1 മണിക്കൂർ നേരത്തേക്ക്"
 
 [t_4e8ac174be]
 en = "Until tomorrow morning"
@@ -10616,7 +10616,7 @@ where = [
   "ios shell_call_what_missed: Call list: incoming call the user did not answer.",
   "desktop common_missed: Shared label, used in several places (reason, view).",
 ]
-text = "മിസ്‌ഡ്"
+text = "മിസ്‌ഡ് കോൾ"
 
 [t_19971946a3]
 en = "Couldn’t reach"
@@ -10641,7 +10641,7 @@ where = [
   "ios shell_call_what_incoming: Call list: answered incoming call.",
   "desktop common_incoming: Shared label, used in several places (reason, view).",
 ]
-text = "വന്നത്"
+text = "വന്ന കോൾ"
 
 [t_9258e751e3]
 en = "Outgoing"
@@ -10650,7 +10650,7 @@ where = [
   "ios shell_call_what_outgoing: Call list: answered outgoing call.",
   "desktop common_outgoing: Shared label, used in several places (reason, view).",
 ]
-text = "പോയത്"
+text = "വിളിച്ച കോൾ"
 
 [t_8fbe164bcf]
 en = "declined"
@@ -10671,7 +10671,7 @@ en = "no answer"
 where = [
   "android history_detail_no_answer: Lowercase detail after the call title, e.g. 'Outgoing · no answer'.",
 ]
-text = "മറുപടിയില്ല"
+text = "എടുത്തില്ല"
 
 [t_5f9763c953]
 en = "busy"
@@ -11389,7 +11389,7 @@ where = [
   "ios group_sys_left_named: System line in a group chat (the centred grey line). {name} is the member who left.",
   "desktop group_sys_left: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} left.",
 ]
-text = "{name} പുറത്തുപോയി"
+text = "{name} പുറത്തുകടന്നു"
 
 [t_4cb9ecb704]
 en = "Someone left"
@@ -11398,7 +11398,7 @@ where = [
   "ios group_sys_left_someone: System line in a group chat (the centred grey line). A member whose name is unknown left.",
   "desktop group_sys_left_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name left.",
 ]
-text = "ഒരാൾ പുറത്തുപോയി"
+text = "ഒരാൾ പുറത്തുകടന്നു"
 
 [t_ebc520d3f7]
 en_one = "{name} was removed after {count} admin flag"
@@ -12156,7 +12156,7 @@ where = [
   "android calls_desc_outgoing: Spoken kind of a Calls row: a call I made and was answered.",
   "ios shell_call_desc_outgoing: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”.",
 ]
-text = "പോയ കോൾ"
+text = "വിളിച്ച കോൾ"
 
 [t_3c2da8482e]
 en = "Call while you were not available"
@@ -13001,7 +13001,7 @@ en = "Call with no answer"
 where = [
   "ios shell_call_desc_no_answer: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
 ]
-text = "മറുപടി ലഭിക്കാത്ത കോൾ"
+text = "ആരും എടുക്കാത്ത കോൾ"
 
 [t_b70d3c6bb5]
 en = "Call couldn’t connect"
@@ -13161,7 +13161,7 @@ where = [
   "ios people_ui_bytes: Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum.",
   "desktop profile_of_bytes: Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = "{limit} ബൈറ്റിൽ {bytes}"
+text = "{bytes} / {limit} ബൈറ്റ്"
 
 [t_930ce5bfa9]
 en = "Open {label}: {url}"
@@ -13709,7 +13709,7 @@ en = "Working..."
 where = [
   "desktop common_working: Shared label, used in several places (link, view).",
 ]
-text = "ചെയ്തുകൊണ്ടിരിക്കുന്നു..."
+text = "നടക്കുന്നു..."
 
 [t_3a211114f7]
 en = "Account removed from this computer"
@@ -13870,7 +13870,7 @@ en = "The two passphrases differ."
 where = [
   "desktop app_the_two_passphrases_differ: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = "രണ്ട് പാസ്‌ഫ്രേസുകളും ഒന്നല്ല."
+text = "രണ്ട് പാസ്‌ഫ്രേസുകളും വ്യത്യസ്തമാണ്."
 
 [t_e9d46ff847]
 en = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
@@ -14605,7 +14605,7 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളായി മാറാം. അവ എഴുതിവച്ച് സുരക്ഷിതമായ ഒരിടത്ത് സൂക്ഷിക്കുക."
+text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം. അവ എഴുതിവച്ച് സുരക്ഷിതമായ ഒരിടത്ത് സൂക്ഷിക്കുക."
 
 [t_83fb73677c]
 en = "I have saved it"
@@ -15095,7 +15095,7 @@ en = "Message privately"
 where = [
   "desktop group_message_privately: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "സ്വകാര്യമായി സന്ദേശം അയയ്ക്കുക"
+text = "സ്വകാര്യമായി സന്ദേശമയയ്ക്കുക"
 
 [t_e63bb44c2f]
 en = "No group matches."
@@ -15524,7 +15524,7 @@ en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "ലിങ്ക് ചെയ്ത ഉപകരണം നിങ്ങളായി മാറുന്നു"
+text = "ലിങ്ക് ചെയ്ത ഉപകരണത്തിന് നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
@@ -15783,7 +15783,7 @@ en = "Show this to the device you want to add. It becomes you, so only link your
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "നിങ്ങൾ ചേർക്കാൻ ആഗ്രഹിക്കുന്ന ഉപകരണത്തിന് ഇത് കാണിക്കുക. അത് നിങ്ങളായി മാറും, അതിനാൽ നിങ്ങളുടേത് മാത്രം ലിങ്ക് ചെയ്യുക."
+text = "നിങ്ങൾ ചേർക്കാൻ ആഗ്രഹിക്കുന്ന ഉപകരണത്തിന് ഇത് കാണിക്കുക. അതിന് നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാനാകും, അതിനാൽ നിങ്ങളുടേത് മാത്രം ലിങ്ക് ചെയ്യുക."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
@@ -16141,8 +16141,8 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
-one = "{count} ദിവസം മുമ്പ് അവസാനം കണ്ടു"
-other = "{count} ദിവസം മുമ്പ് അവസാനം കണ്ടു"
+one = "അവസാനം കണ്ടത്: {count} ദിവസം മുമ്പ്"
+other = "അവസാനം കണ്ടത്: {count} ദിവസം മുമ്പ്"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -16150,15 +16150,15 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
-one = "{count} മണിക്കൂർ മുമ്പ് അവസാനം കണ്ടു"
-other = "{count} മണിക്കൂർ മുമ്പ് അവസാനം കണ്ടു"
+one = "അവസാനം കണ്ടത്: {count} മണിക്കൂർ മുമ്പ്"
+other = "അവസാനം കണ്ടത്: {count} മണിക്കൂർ മുമ്പ്"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = "ഇപ്പോൾ അവസാനം കണ്ടു"
+text = "അവസാനം കണ്ടത്: അൽപം മുമ്പ്"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -16166,8 +16166,8 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
-one = "{count} മിനിറ്റ് മുമ്പ് അവസാനം കണ്ടു"
-other = "{count} മിനിറ്റ് മുമ്പ് അവസാനം കണ്ടു"
+one = "അവസാനം കണ്ടത്: {count} മിനിറ്റ് മുമ്പ്"
+other = "അവസാനം കണ്ടത്: {count} മിനിറ്റ് മുമ്പ്"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
@@ -16666,14 +16666,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളായി മാറാം. ആരും നോക്കുന്നില്ലെന്ന് ഉറപ്പാക്കിയ ശേഷം കാണിക്കുക."
+text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം. ആരും നോക്കുന്നില്ലെന്ന് ഉറപ്പാക്കിയ ശേഷം കാണിക്കുക."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളായി മാറാം. ആരും നോക്കുന്നില്ലെന്ന് ഉറപ്പാക്കുക."
+text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം. ആരും നോക്കുന്നില്ലെന്ന് ഉറപ്പാക്കുക."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
@@ -16995,7 +16995,7 @@ en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = "{value} എന്നയാൾക്ക് സന്ദേശം അയയ്ക്കുക"
+text = "{value} എന്നയാൾക്ക് സന്ദേശമയയ്ക്കുക"
 
 [t_e55f51ab05]
 en = "{filled} of {total}"
@@ -17079,7 +17079,7 @@ en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "എമർജൻസി സേവനങ്ങളെ വിളിക്കാൻ നിങ്ങളുടെ ഫോൺ ഉപയോഗിക്കുക."
+text = "അടിയന്തര സേവനങ്ങളെ വിളിക്കാൻ നിങ്ങളുടെ ഫോൺ ഉപയോഗിക്കുക."
 
 [t_f72f9d664d]
 en = "Word {value} isn’t in the recovery word list. Check the spelling."
