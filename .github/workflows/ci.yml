@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     outputs:
       run: ${{ steps.choose.outputs.result }}
     steps:
@@ -26,7 +27,28 @@ jobs:
         id: choose
         with:
           script: |
-            // PRs always test the merge commit. Pushes without a matching PR still test the branch.
+            // A PR whose head already passed CI on its push, and whose merge is a fast-forward (the base
+            // has nothing of its own), would test the same tree again: skip it. Any other PR is tested.
+            if (context.eventName === 'pull_request') {
+              const pr = context.payload.pull_request;
+              try {
+                const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
+                  ...context.repo, basehead: `${pr.base.sha}...${pr.head.sha}`,
+                });
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  ...context.repo, workflow_id: 'ci.yml', event: 'push', head_sha: pr.head.sha,
+                  status: 'success', per_page: 100,
+                });
+                const passed = runs.some(r => r.id !== context.runId);
+                const fastForward = cmp.behind_by === 0;
+                core.info(`push run passed: ${passed}, fast-forward: ${fastForward}`);
+                return !(passed && fastForward);
+              } catch (error) {
+                core.warning(`Could not check earlier runs; running tests: ${error.message}`);
+                return true;
+              }
+            }
+            // Pushes without a matching open PR test the branch.
             if (context.eventName !== 'push') return true;
             try {
               const prs = await github.paginate(github.rest.pulls.list, {
