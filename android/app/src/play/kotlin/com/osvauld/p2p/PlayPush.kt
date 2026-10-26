@@ -68,8 +68,9 @@ internal object PlayPush : PushProvider {
         if (!available(ctx)) { done(null); return }
         try {
             FirebaseMessaging.getInstance().token.addOnCompleteListener { t ->
-                done(t.result?.takeIf { t.isSuccessful && it.isNotBlank() }?.let { PushTarget.Fcm(it) })
-                if (!t.isSuccessful) Log.w(TAG, "token: ${t.exception?.javaClass?.simpleName}")
+                // t.result throws on a failed task (e.g. INVALID_SENDER), and this runs on the main thread.
+                if (!t.isSuccessful) { Log.w(TAG, "token: ${t.exception?.javaClass?.simpleName}"); done(null); return@addOnCompleteListener }
+                done(t.result?.takeIf { it.isNotBlank() }?.let { PushTarget.Fcm(it) })
             }
         } catch (e: Throwable) { Log.w(TAG, "token: ${e.javaClass.simpleName}"); done(null) }
     }
