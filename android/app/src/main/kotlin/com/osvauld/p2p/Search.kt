@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
@@ -199,15 +200,15 @@ fun SearchScreen(app: P2pApp, onBack: () -> Unit, onChat: (String) -> Unit, onGr
         Box(Modifier.weight(1f).fillMaxWidth().statusBarsPadding().padding(top = 12.dp)) {
             if (q.isBlank()) RecentResults(recents, onPick = { q = it; applied = it }, onClear = { recents = emptyList() })
             else Column(Modifier.fillMaxSize()) {
-                ResultsHeader("People & groups")
+                ResultsHeader(stringResource(R.string.search_people_groups))
                 Box(Modifier.fillMaxWidth().height(100.dp)) {
                     LazyRow(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                         items(names.size, key = { it }) { i -> NameTile(names[i], t, me) { openName(names[i]) } }
                     }
                     val none by animateFloatAsState(if (error == null && doneFor == t && t.isNotEmpty() && names.isEmpty()) 1f else 0f, tween(Motion.CROSSFADE), label = "none")
-                    Text("No people or groups match", Modifier.align(Alignment.Center).alpha(none), style = TinFs.sub, color = c.ink2)
+                    Text(stringResource(R.string.search_no_people), Modifier.align(Alignment.Center).alpha(none), style = TinFs.sub, color = c.ink2)
                 }
-                ResultsHeader("Messages")
+                ResultsHeader(stringResource(R.string.search_messages))
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 12.dp)) {
                         items(msgs.size, key = { it }) { i -> MessageRow(msgs[i], me) { openHit(msgs[i]) } }
@@ -215,8 +216,8 @@ fun SearchScreen(app: P2pApp, onBack: () -> Unit, onChat: (String) -> Unit, onGr
                     val hint = when {
                         error != null -> error!!
                         t.isEmpty() -> ""
-                        !msgsOk -> "Type 2 or more characters to search messages."
-                        doneFor == t && msgs.isEmpty() -> "No messages match “$t”"
+                        !msgsOk -> stringResource(R.string.search_type_more)
+                        doneFor == t && msgs.isEmpty() -> stringResource(R.string.search_no_messages, t)
                         else -> ""
                     }
                     var shownHint by remember { mutableStateOf(hint) }
@@ -231,7 +232,7 @@ fun SearchScreen(app: P2pApp, onBack: () -> Unit, onChat: (String) -> Unit, onGr
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
             Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                PgIconButton(PgIcons.Back, "Back", { fm.clearFocus(); onBack() })
+                PgIconButton(PgIcons.Back, stringResource(R.string.common_back), { fm.clearFocus(); onBack() })
                 SearchField(q, { q = it }, Modifier.weight(1f), focus, onSubmit = {
                     if (names.isNotEmpty()) openName(names[0]) else if (msgs.isNotEmpty()) openHit(msgs[0]) else keepRecent()
                 })
@@ -248,12 +249,13 @@ fun SearchField(value: String, onChange: (String) -> Unit, modifier: Modifier, f
     val bg by animateColorAsState(if (focused) c.sf else c.sf2, tween(Motion.SWITCH, easing = Motion.EaseOut), label = "fbg")
     val ring by animateColorAsState(if (focused) c.accent else Color.Transparent, tween(Motion.SWITCH, easing = Motion.EaseOut), label = "fring")
     val shape = RoundedCornerShape((height / 2).dp)
+    val searchLabel = stringResource(R.string.common_search)
     Row(modifier.height(height.dp).clip(shape).background(bg).border(2.dp, ring, shape), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(44.dp), contentAlignment = Alignment.Center) { Icon(PgIcons.Search, null, tint = c.ink2, modifier = Modifier.size(20.dp)) }
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-            if (value.isEmpty()) Text("Search", style = TinFs.body, color = c.ink2, maxLines = 1)
+            if (value.isEmpty()) Text(searchLabel, style = TinFs.body, color = c.ink2, maxLines = 1)
             BasicTextField(
-                value, onChange, Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { focused = it.isFocused }.semantics { contentDescription = "Search" },
+                value, onChange, Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { focused = it.isFocused }.semantics { contentDescription = searchLabel },
                 singleLine = true, textStyle = TinFs.body.copy(color = c.ink), cursorBrush = SolidColor(c.accentInk),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
@@ -261,7 +263,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, modifier: Modifier, f
         }
         val a by animateFloatAsState(if (value.isNotEmpty()) 1f else 0f, tween(Motion.CROSSFADE, easing = Motion.EaseOut), label = "clr")
         Box(Modifier.padding(start = 2.dp, end = 4.dp).size(44.dp).alpha(a)) {
-            if (value.isNotEmpty()) PgIconButton(PgIcons.X, "Clear search", { onChange(""); runCatching { focus.requestFocus() } }, tint = c.ink2, size = 44.dp, iconSize = 18.dp)
+            if (value.isNotEmpty()) PgIconButton(PgIcons.X, stringResource(R.string.search_clear_field), { onChange(""); runCatching { focus.requestFocus() } }, tint = c.ink2, size = 44.dp, iconSize = 18.dp)
         }
     }
 }
@@ -279,8 +281,8 @@ private fun RecentResults(recents: List<String>, onPick: (String) -> Unit, onCle
     val c = Tin.c
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            ResultsHeader("Recent") {
-                if (recents.isNotEmpty()) Text("Clear", Modifier.pressable(onClear, RoundedCornerShape(8.dp), wash = Color.Transparent).padding(horizontal = 10.dp, vertical = 12.dp),
+            ResultsHeader(stringResource(R.string.search_recent)) {
+                if (recents.isNotEmpty()) Text(stringResource(R.string.search_clear), Modifier.pressable(onClear, RoundedCornerShape(8.dp), wash = Color.Transparent).padding(horizontal = 10.dp, vertical = 12.dp),
                     style = TinFs.sub.copy(fontWeight = FontWeight(650)), color = c.accentInk)
             }
             Column(Modifier.padding(horizontal = 8.dp)) {
@@ -295,8 +297,8 @@ private fun RecentResults(recents: List<String>, onPick: (String) -> Unit, onCle
         }
         val a by animateFloatAsState(if (recents.isEmpty()) 1f else 0f, tween(Motion.CROSSFADE), label = "blank")
         Column(Modifier.align(Alignment.Center).padding(horizontal = 32.dp).alpha(a), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Search messages, people and groups.", style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
-            Text("Everything stays on this device.", style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.search_blank_1), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.search_blank_2), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
         }
     }
 }
@@ -305,9 +307,10 @@ private fun RecentResults(recents: List<String>, onPick: (String) -> Unit, onCle
 @Composable
 private fun NameTile(n: NameHit, q: String, me: String?, onClick: () -> Unit) {
     val c = Tin.c
-    val what = when (n.kind) { SearchNameKind.GROUP -> "group"; SearchNameKind.ME -> "your profile"; SearchNameKind.CONTACT -> "contact" }
+    val what = stringResource(when (n.kind) { SearchNameKind.GROUP -> R.string.search_kind_group; SearchNameKind.ME -> R.string.search_kind_me; SearchNameKind.CONTACT -> R.string.search_kind_contact })
+    val tileDesc = stringResource(R.string.search_tile_desc, n.name, what)
     Column(
-        Modifier.size(78.dp, 92.dp).pressable(onClick, RoundedCornerShape(14.dp)).semantics(mergeDescendants = true) { contentDescription = "${n.name}, $what" }
+        Modifier.size(78.dp, 92.dp).pressable(onClick, RoundedCornerShape(14.dp)).semantics(mergeDescendants = true) { contentDescription = tileDesc }
             .padding(start = 4.dp, end = 4.dp, top = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -322,7 +325,9 @@ private fun NameTile(n: NameHit, q: String, me: String?, onClick: () -> Unit) {
 private fun MessageRow(h: MessageHit, me: String?, onClick: () -> Unit) {
     val c = Tin.c
     val mine = h.author == me
-    val by = if (h.kind == SearchConvKind.GROUP) (if (mine) "You" else firstName(h.authorName.ifBlank { "Someone" })) + ": " else if (mine) "You: " else ""
+    val you = stringResource(R.string.common_you)
+    val someone = stringResource(R.string.common_someone)
+    val by = if (h.kind == SearchConvKind.GROUP) stringResource(R.string.search_author_prefix, if (mine) you else firstName(h.authorName.ifBlank { someone })) + " " else if (mine) stringResource(R.string.search_author_prefix, you) + " " else ""
     val snip = h.snippet.replace('\n', ' ')
     Row(
         Modifier.fillMaxWidth().height(64.dp).pressable(onClick, RoundedCornerShape(14.dp)).padding(horizontal = 8.dp, vertical = 11.dp),

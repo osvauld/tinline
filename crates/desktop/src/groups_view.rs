@@ -12,26 +12,18 @@ fn local_fmt(ms: u64, fmt: &str) -> String {
 
 /// "Oct 10, 15:20".
 pub(super) fn when(ms: u64) -> String {
-    local_fmt(ms, "%b %-d, %H:%M")
+    Local.timestamp_millis_opt(ms as i64).single().map(|d| crate::i18n::date::month_day_time(&d)).unwrap_or_default()
 }
 
 /// "Oct 12".
 pub(super) fn day(ms: u64) -> String {
-    local_fmt(ms, "%b %-d")
+    crate::i18n::date::local_month_day(ms)
 }
 
 pub(super) fn hhmm(ms: u64) -> String {
     local_fmt(ms, "%H:%M")
 }
 
-/// "Sam Rao, Meera K and Priya N".
-pub(super) fn and_list(names: &[String]) -> String {
-    match names {
-        [] => String::new(),
-        [a] => a.clone(),
-        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
-    }
-}
 
 pub(super) fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
@@ -71,15 +63,6 @@ pub(super) fn footer<'a>(t: Tok, body: El<'a>) -> El<'a> {
     column![rule(t), container(body).padding([12, 20]).width(Fill)].into()
 }
 
-pub(super) fn ordinal(n: usize) -> String {
-    match n {
-        1 => "1st".into(),
-        2 => "2nd".into(),
-        3 => "3rd".into(),
-        n => format!("{n}th"),
-    }
-}
-
 /// The time today, else the day, like the real chat list.
 pub(super) fn short_time(ms: u64) -> String {
     if ms == 0 {
@@ -88,8 +71,8 @@ pub(super) fn short_time(ms: u64) -> String {
     let today = Local::now().date_naive();
     match Local.timestamp_millis_opt(ms as i64).single() {
         Some(d) if d.date_naive() == today => d.format("%H:%M").to_string(),
-        Some(d) if (today - d.date_naive()).num_days() == 1 => "Yesterday".into(),
-        Some(d) => d.format("%b %-d").to_string(),
+        Some(d) if (today - d.date_naive()).num_days() == 1 => crate::i18n::tr_str("common_yesterday").into(),
+        Some(d) => crate::i18n::date::month_day(chrono::Datelike::month(&d), chrono::Datelike::day(&d)),
         None => String::new(),
     }
 }
@@ -101,27 +84,27 @@ pub(super) fn message_body<'a>(s: &str, fg: Color) -> El<'a> {
 impl App {
     /// Settings › Privacy: the people I block (real, from the core).
     pub(super) fn privacy_page(&self, t: Tok) -> El<'_> {
-        let mut real = column![tx("One list across all your devices: a block made on another device shows here too.", 13.0, t.ink2)].spacing(10);
+        let mut real = column![tx(crate::i18n::tr_str("group_one_list_across_all"), 13.0, t.ink2)].spacing(10);
         for b in &self.blocks.list {
             let name = self.contacts.iter().find(|c| c.did == b.did).map(Self::display).unwrap_or_else(|| b.name.clone());
-            let name = if name.is_empty() { "Someone".to_string() } else { name };
+            let name = if name.is_empty() { crate::i18n::tr_str("common_someone").to_string() } else { name };
             real = real.push(line(
                 t,
                 &name,
-                &format!("Blocked {}", day(b.blocked_at.saturating_mul(1000))),
-                btn(t, Kind::Quiet, "Unblock", Some(Msg::Unblock(b.did.clone()))),
+                &crate::i18n::tr_args("group_blocked_2", &[("value", &(day(b.blocked_at.saturating_mul(1000))).to_string())]),
+                btn(t, Kind::Quiet, crate::i18n::tr_str("common_unblock"), Some(Msg::Unblock(b.did.clone()))),
             ));
         }
         if self.blocks.list.is_empty() {
-            real = real.push(tx("Nobody is blocked. To block someone, open them in Contacts and choose Block.", 14.0, t.ink2));
+            real = real.push(tx(crate::i18n::tr_str("group_nobody_is_blocked_to"), 14.0, t.ink2));
         }
         real = real.push(
-            container(column![semi("Unblocking", 13.0, t.ink), tx(present::block::unblock_note(), 13.0, t.ink2)].spacing(4))
+            container(column![semi(crate::i18n::tr_str("group_unblocking"), 13.0, t.ink), tx(present::block::unblock_note(), 13.0, t.ink2)].spacing(4))
                 .padding(12)
                 .width(Fill)
                 .style(ui::plain(t.surface2, 12.0)),
         );
-        let real = section(t, "Blocked people", real.into());
+        let real = section(t, crate::i18n::tr_str("common_blocked_people"), real.into());
         real
     }
 }

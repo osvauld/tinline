@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -139,7 +140,7 @@ fun HomeScreen(
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
         onSearch = onSearch, history = history, groupCalls = groupCalls,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
-        isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
+        isBlocked = { did -> blocks.of(did).blockedByMe }, isBlockedMe = { did -> blocks.blockedMeAt(did) != null }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
         waitingIn = waitingIn.filter { it.did !in hiddenRequests }, waitingOut = waitingOut,
         onAcceptRequest = { did -> app.scope.launch { app.acceptRequest(did) } }, onNotNowRequest = { did -> hiddenRequests = hiddenRequests + did },
     )
@@ -153,11 +154,11 @@ fun HomeScreen(
 @Composable
 private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit, available: Boolean, onTurnOn: () -> Unit) {
     when {
-        !online && !grace -> Banner(BannerKind.Error, PgIcons.Off, "You’re offline", "Your calls come through again once you’re back online.")
-        Need.Notifications in missing -> Banner(BannerKind.Warn, PgIcons.Mute, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
-        Need.Battery in missing -> Banner(BannerKind.Warn, PgIcons.Battery, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
-        Need.FullScreen in missing -> Banner(BannerKind.Warn, PgIcons.Lock, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
-        !available -> Banner(BannerKind.Neutral, PgIcons.Callend, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
+        !online && !grace -> Banner(BannerKind.Error, PgIcons.Off, stringResource(R.string.home_offline_title), stringResource(R.string.home_offline_body))
+        Need.Notifications in missing -> Banner(BannerKind.Warn, PgIcons.Mute, stringResource(R.string.home_banner_no_ring_title), stringResource(R.string.home_banner_no_ring_body), stringResource(R.string.home_banner_turn_on)) { onFix(Need.Notifications) }
+        Need.Battery in missing -> Banner(BannerKind.Warn, PgIcons.Battery, stringResource(R.string.home_banner_battery_title), stringResource(R.string.home_banner_battery_body), stringResource(R.string.home_banner_fix)) { onFix(Need.Battery) }
+        Need.FullScreen in missing -> Banner(BannerKind.Warn, PgIcons.Lock, stringResource(R.string.home_banner_lock_title), stringResource(R.string.home_banner_lock_body), stringResource(R.string.home_banner_allow)) { onFix(Need.FullScreen) }
+        !available -> Banner(BannerKind.Neutral, PgIcons.Callend, stringResource(R.string.home_banner_unavailable_title), stringResource(R.string.home_banner_unavailable_body), stringResource(R.string.home_banner_turn_on), onTurnOn)
         // "Set a passphrase" slots in after this; it is a blocking screen today.
     }
 }
@@ -189,6 +190,7 @@ fun HomeContent(
     groupCalls: GroupCallsUi? = null,
     canCall: (String) -> Boolean = { true },
     isBlocked: (String) -> Boolean = { false },
+    isBlockedMe: (String) -> Boolean = { false },
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
     callLook: CallPhase = CallPhase.None,
     /** Contact requests: made with my code (Contacts › "Waiting for you"), and mine waiting for theirs. */
@@ -196,6 +198,8 @@ fun HomeContent(
     onAcceptRequest: (String) -> Unit = {}, onNotNowRequest: (String) -> Unit = {},
 ) {
     val c = Tin.c
+    val blockedWord = stringResource(R.string.common_blocked)
+    val blockedYouWord = stringResource(R.string.blocking_row_blocked_you)
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
     val byDid = remember(contacts) { contacts.associateBy { it.did } }
     // No contacts yet: Chats and Contacts are the add screen (my code, Copy, Share, Scan, Paste).
@@ -217,7 +221,7 @@ fun HomeContent(
                             top = { Column { banner(); requestsBlock?.invoke() } }, empty = hero)
                         HomeTab.Groups -> groupsBody?.invoke()
                         HomeTab.Calls -> CallsTabBody(
-                            history, groupCalls = groupCalls, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
+                            history, groupCalls = groupCalls, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { appString(R.string.common_unknown) } }, canCall = canCall, state = state,
                             onProfile = { did -> byDid[did]?.let(onContact) }, onCall = { did -> byDid[did]?.let(onCall) },
                             top = {
                                 Column {
@@ -228,7 +232,7 @@ fun HomeContent(
                             empty = if (contacts.isEmpty()) hero else null,
                         )
                         HomeTab.Contacts -> ContactsTabBody(
-                            contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) "Blocked" else subLines[did]?.takeIf { it.startsWith("Blocked") }.orEmpty() },
+                            contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) blockedWord else if (isBlockedMe(did)) blockedYouWord else "" },
                             state = state, onOpen = onContact, onAdd = { onAdd(false) }, top = { banner() },
                             waitingIn = waitingIn, waitingOut = waitingOut, onAccept = onAcceptRequest, onNotNow = onNotNowRequest,
                         )
@@ -236,7 +240,7 @@ fun HomeContent(
                 }
             }
         }
-        if (dock) SearchDock(if (tab == HomeTab.Groups) "New group" else "New chat", onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
+        if (dock) SearchDock(if (tab == HomeTab.Groups) stringResource(R.string.home_new_group) else stringResource(R.string.home_new_chat), onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
         TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null, groupBadge = groupBadge, contactBadge = contactBadge)
     }
 }
@@ -257,26 +261,26 @@ fun HistoryScreen(app: P2pApp, onBack: () -> Unit, onContact: (Contact) -> Unit)
     val rows = remember(history, byDid) { history.map { it.toRecent(byDid, now) } }
     val c = Tin.c
     Page {
-        TopBar("Recent calls", onBack)
-        if (rows.isEmpty()) Hint("No calls yet. History stays on this phone only.", Modifier.padding(24.dp))
+        TopBar(stringResource(R.string.home_recent_calls), onBack)
+        if (rows.isEmpty()) Hint(stringResource(R.string.home_no_calls), Modifier.padding(24.dp))
         else LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(rows, key = { it.callId + it.whenLong }) { r ->
                 val red = r.kind == RecentCall.Kind.Missed
                 RowItem(r.name, r.did, subIcon = recentIcon(r.kind), sub = r.whenText, nameColor = if (red) c.er else c.ink, subColor = if (red) c.er else c.ink2,
                     onClick = { byDid[r.did]?.let(onContact) }, onCall = null)
             }
-            item { Hint("History stays on this phone only.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
+            item { Hint(stringResource(R.string.home_history_local), Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
         }
     }
 }
 
 @Composable
-fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit, hint: String = "Search contacts") {
+fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit, hint: String = stringResource(R.string.home_search_contacts)) {
     val c = Tin.c
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconBtn(PgIcons.Back, "Close search", onClose)
+        IconBtn(PgIcons.Back, stringResource(R.string.home_close_search), onClose)
         Box(Modifier.weight(1f).heightIn(min = 48.dp), contentAlignment = Alignment.CenterStart) {
             if (query.isEmpty()) Text(hint, style = TinType.bodyL.copy(fontSize = 18.sp), color = c.ink2)
             BasicTextField(
@@ -285,7 +289,7 @@ fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit, hi
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(),
             )
         }
-        if (query.isNotEmpty()) IconBtn(PgIcons.X, "Clear", { onChange("") })
+        if (query.isNotEmpty()) IconBtn(PgIcons.X, stringResource(R.string.home_clear), { onChange("") })
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
 }
@@ -317,7 +321,7 @@ private fun RowItem(
                 Text(sub, style = TinType.bodyM, color = subColor)
             }
         }
-        if (onCall != null) IconBtn(PgIcons.Phone, "Call $name", onCall, tint = c.pr) else Spacer(Modifier.width(12.dp))
+        if (onCall != null) IconBtn(PgIcons.Phone, stringResource(R.string.home_call_name, name), onCall, tint = c.pr) else Spacer(Modifier.width(12.dp))
     }
 }
 
@@ -330,17 +334,17 @@ private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp), horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        H1("Add your first contact", align = TextAlign.Center)
-        Lead("Show your code to a friend, or copy it and send it. Or scan theirs.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
+        H1(stringResource(R.string.home_first_title), align = TextAlign.Center)
+        Lead(stringResource(R.string.home_first_lead), Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
         MyCodeBlock(app, meName, qr = 220.dp, showNewCode = false)
-        TinButton("Scan their code", onScan, icon = PgIcons.Scan)
-        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = PgIcons.Paste)
+        TinButton(stringResource(R.string.home_first_scan), onScan, icon = PgIcons.Scan)
+        TinButton(stringResource(R.string.home_first_paste), onPaste, style = BtnStyle.Outlined, icon = PgIcons.Paste)
         Row(
             Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Dot(c.pr, 10.dp)
-            Text("Waiting for them to scan — keep this open.", style = TinType.bodyM, color = c.ink2)
+            Text(stringResource(R.string.home_first_waiting), style = TinType.bodyM, color = c.ink2)
         }
     }
 }

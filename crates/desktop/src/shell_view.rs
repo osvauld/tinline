@@ -10,8 +10,9 @@ use crate::pg_icons::pgi;
 
 /// Sidebar nav rows: 44px with a 2px gap (`nav { gap: 2px }`, `.nav { min-height: 44px }`).
 const NAV_STEP: f32 = 46.0;
-pub(super) const TABS: [(SideTab, &str, &str); 4] =
-    [(SideTab::Chats, "Chats", "chat"), (SideTab::Groups, "Groups", "users"), (SideTab::Calls, "Calls", "phone"), (SideTab::Contacts, "Contacts", "contact")];
+pub(super) fn tabs() -> [(SideTab, &'static str, &'static str); 4] {
+    [(SideTab::Chats, crate::i18n::tr_str("common_chats"), "chat"), (SideTab::Groups, crate::i18n::tr_str("common_groups"), "users"), (SideTab::Calls, crate::i18n::tr_str("common_calls"), "phone"), (SideTab::Contacts, crate::i18n::tr_str("common_contacts"), "contact")]
+}
 
 /// tokens.css `.t-badge`: 18px pill, 11px/700 tabular, accent fill (muted: hairline ring, no fill).
 pub(super) fn t_badge<'a>(t: Tok, n: u32, muted: bool) -> El<'a> {
@@ -46,7 +47,7 @@ pub(super) fn wash(t: Tok, fill: Option<Color>, hover: Option<Color>, radius: f3
 impl App {
     /// Keeps the nav highlight gliding to the current tab (`.hl` transform, --dur-indicator, ease-out).
     pub(in crate::app) fn settle_motion(&mut self) {
-        let index = TABS.iter().position(|(tab, ..)| *tab == self.chat.tab).unwrap_or(0) as f32;
+        let index = tabs().iter().position(|(tab, ..)| *tab == self.chat.tab).unwrap_or(0) as f32;
         let y = index * NAV_STEP;
         if self.fx.nav.target() != y {
             let now = Instant::now();
@@ -72,7 +73,7 @@ impl App {
         };
         let brand = container(brand_row).padding(Padding { top: 4.0, right: 8.0, bottom: 16.0, left: 8.0 });
         let mut items = column![].spacing(2);
-        for (tab, label, icon) in TABS {
+        for (tab, label, icon) in tabs() {
             let on = self.chat.tab == tab;
             let color = if on { t.accent_ink } else { t.ink2 };
             // DesktopShell `unread`: every chat's unread, 1:1 and group (no mute in the core yet).
@@ -96,11 +97,11 @@ impl App {
         let y = self.fx.nav.at(self.fx.now);
         // The stack takes its size from this first layer: all four rows.
         let highlight = column![Space::new().height(y), container(Space::new()).width(Fill).height(44).style(ui::plain(t.accent_soft, 14.0))]
-            .height(NAV_STEP * TABS.len() as f32 - 2.0);
+            .height(NAV_STEP * tabs().len() as f32 - 2.0);
         let nav = stack![highlight, items];
         let first = self.profile_name.split_whitespace().next().unwrap_or(&self.profile_name).to_string();
         let me = button(row![self.profile_avatar(t, &self.profile_name, "me", 36.0),
-                column![bold(first, 15.0, t.ink).line_height(lh(21.0)), tx("Your account", 13.0, t.ink2).line_height(lh(21.0))]]
+                column![bold(first, 15.0, t.ink).line_height(lh(21.0)), tx(crate::i18n::tr_str("common_your_account"), 13.0, t.ink2).line_height(lh(21.0))]]
                 .spacing(10).align_y(Alignment::Center))
             .padding(8).width(Fill).style(wash(t, None, None, 14.0)).on_press(Msg::OpenSettings);
         row![container(column![brand, nav, Space::new().height(Fill), me].spacing(8))
@@ -111,7 +112,7 @@ impl App {
     /// DesktopField + SearchField: 40px pill on --surface-2; focus turns it --surface with a 2px
     /// inset accent ring. The clear button keeps its place and only fades, so typing never moves text.
     pub(super) fn desktop_search_field(&self, t: Tok) -> El<'_> {
-        let input = text_input("Search (Ctrl+K)", &self.search).id(SEARCH_ID).on_input(Msg::SearchIn)
+        let input = text_input(crate::i18n::tr_str("shell_search_ctrl_k"), &self.search).id(SEARCH_ID).on_input(Msg::SearchIn)
             .padding(Padding { top: 9.5, right: 42.0, bottom: 9.5, left: 44.0 }).size(15).line_height(lh(21.0)).font(ui::SANS).width(Fill)
             .style(move |_, status| {
                 let focused = matches!(status, iced::widget::text_input::Status::Focused { .. });
@@ -156,7 +157,7 @@ impl App {
             .padding(0).width(36).height(36).style(wash(t, Some(t.accent_soft), Some(ui::mix(t.accent_soft, Color::BLACK, 0.03)), 18.0))
             .on_press(Msg::ShellSearch(Action::NewChat(true)));
         // With no chats at all the filters mean nothing yet: only the + stays (desktop).
-        let chips: El = if self.has_chats() { row![chip("All", !unread, false), chip("Unread", unread, true)].spacing(8).into() } else { Space::new().height(32).into() };
+        let chips: El = if self.has_chats() { row![chip(crate::i18n::tr_str("shell_all"), !unread, false), chip(crate::i18n::tr_str("shell_unread"), unread, true)].spacing(8).into() } else { Space::new().height(32).into() };
         container(row![chips, Space::new().width(Fill), new_chat].spacing(8).align_y(Alignment::Center))
             .padding(Padding { top: 4.0, right: 16.0, bottom: 8.0, left: 16.0 }).width(Fill).into()
     }
@@ -176,7 +177,7 @@ impl App {
         }
         let names: El = if result.is_some_and(|r| !r.names.is_empty()) {
             scroll(t, tiles).direction(iced::widget::scrollable::Direction::Horizontal(Default::default())).height(100).into()
-        } else { container(tx(if self.search.trim().is_empty() { "Search messages, people and groups." } else { "No people or groups match" }, 13.0, t.ink2)).height(100).center_x(Fill).center_y(100).into() };
+        } else { container(tx(if self.search.trim().is_empty() { crate::i18n::tr_str("shell_search_messages_people_and") } else { crate::i18n::tr_str("shell_no_people_or_groups") }, 13.0, t.ink2)).height(100).center_x(Fill).center_y(100).into() };
         let mut messages = column![].spacing(0);
         if let Some(result) = result {
             for hit in &result.messages {
@@ -193,20 +194,20 @@ impl App {
             }
         }
         let hint = if let Some(error) = &self.shell_search.error { error.as_str() }
-            else if self.shell_search.busy { "Searching…" }
-            else if self.search.trim().chars().count() < 2 && !self.search.is_empty() { "Type 2 or more characters to search messages." }
-            else if result.is_some_and(|r| r.messages.is_empty()) { "No messages match" } else { "" };
-        let more = button(tx("More messages", 13.0, t.primary)).height(44).padding([0, 16])
+            else if self.shell_search.busy { crate::i18n::tr_str("shell_searching") }
+            else if self.search.trim().chars().count() < 2 && !self.search.is_empty() { crate::i18n::tr_str("shell_type_2_or_more") }
+            else if result.is_some_and(|r| r.messages.is_empty()) { crate::i18n::tr_str("shell_no_messages_match") } else { "" };
+        let more = button(tx(crate::i18n::tr_str("shell_more_messages"), 13.0, t.primary)).height(44).padding([0, 16])
             .style(ui::button_style(t, Kind::Ghost, 14.0)).on_press_maybe(
                 (!self.shell_search.busy && result.is_some_and(|r| r.next.is_some())).then_some(Msg::ShellSearch(Action::More)));
-        column![heading("People & groups"), names, heading("Messages"),
+        column![heading(crate::i18n::tr_str("shell_people_groups")), names, heading(crate::i18n::tr_str("common_messages")),
             container(tx(hint, 13.0, t.ink2)).height(44).width(Fill).center_x(Fill).center_y(44),
             scroll(t, messages).height(Fill), more].width(Fill).height(Fill).into()
     }
 
     /// `.empty`: the still mark (56), 6px gaps, title 15/21 bold ink, line 13/21 muted.
     pub(super) fn shell_empty_detail(&self, t: Tok) -> El<'_> {
-        container(column![ui::logo(56.0, t), bold("Choose a chat", 15.0, t.ink).line_height(lh(21.0)), tx("Messages stay on your devices.", 13.0, t.ink2).line_height(lh(21.0))]
+        container(column![ui::logo(56.0, t), bold(crate::i18n::tr_str("shell_choose_a_chat"), 15.0, t.ink).line_height(lh(21.0)), tx(crate::i18n::tr_str("shell_messages_stay_on_your"), 13.0, t.ink2).line_height(lh(21.0))]
             .spacing(6).align_x(Alignment::Center)).width(Fill).height(Fill).center_x(Fill).center_y(Fill).style(ui::plain(t.bg, 0.0)).into()
     }
 }
@@ -234,7 +235,7 @@ impl App {
     pub(super) fn new_chat_overlay(&self, t: Tok) -> Option<El<'_>> {
         let q = self.shell_search.new_chat.as_ref()?;
         let needle = q.trim().to_lowercase();
-        let find = text_input("Find a contact", q).id(super::super::shell_search::NEW_CHAT_ID)
+        let find = text_input(crate::i18n::tr_str("shell_find_a_contact"), q).id(super::super::shell_search::NEW_CHAT_ID)
             .on_input(|v| Msg::ShellSearch(Action::NewChatFind(v))).padding(Padding { top: 11.5, right: 14.0, bottom: 11.5, left: 40.0 })
             .size(15).line_height(lh(21.0)).font(ui::SANS)
             .style(move |_, status| {
@@ -246,7 +247,7 @@ impl App {
                 }
             });
         let find = stack![find, container(pgi("search", 18.0, t.ink2)).padding(Padding { left: 14.0, ..Padding::ZERO }).height(44).center_y(44)];
-        let head = container(column![bold("New chat", 17.0, t.ink).line_height(lh(24.0)), find].spacing(12))
+        let head = container(column![bold(crate::i18n::tr_str("shell_new_chat"), 17.0, t.ink).line_height(lh(24.0)), find].spacing(12))
             .padding(Padding { top: 18.0, right: 20.0, bottom: 8.0, left: 20.0 });
         let act = |icon: &'static str, title: &'static str, sub: &'static str, msg: Msg| -> El<'_> {
             button(row![container(pgi(icon, 22.0, t.accent_ink)).width(44).height(44).center_x(44).center_y(44).style(ui::plain(t.accent_soft, 22.0)),
@@ -256,9 +257,9 @@ impl App {
         };
         let mut list = column![].spacing(0);
         if needle.is_empty() {
-            list = list.push(act("users", "New group", "You\u{2019}ll be the owner", Msg::ShellSearch(Action::NewChatGroup)))
-                .push(act("userplus", "Add contact", "Scan a code or paste an invite", Msg::ShellSearch(Action::NewChatAdd)))
-                .push(container(label(t, "Contacts").font(ui::SANS_BOLD).line_height(lh(16.0))).padding(Padding { top: 14.0, right: 20.0, bottom: 4.0, left: 20.0 }));
+            list = list.push(act("users", crate::i18n::tr_str("common_new_group"), crate::i18n::tr_str("common_youll_be_the_owner"), Msg::ShellSearch(Action::NewChatGroup)))
+                .push(act("userplus", crate::i18n::tr_str("common_add_contact"), crate::i18n::tr_str("shell_scan_a_code_or"), Msg::ShellSearch(Action::NewChatAdd)))
+                .push(container(label(t, crate::i18n::tr_str("common_contacts")).font(ui::SANS_BOLD).line_height(lh(16.0))).padding(Padding { top: 14.0, right: 20.0, bottom: 4.0, left: 20.0 }));
         }
         let mut people: Vec<&p2pcore::Contact> = self.contacts.iter()
             .filter(|c| !self.blocks.blocked_by_me(&c.did) && (needle.is_empty() || Self::display(c).to_lowercase().contains(&needle)))
@@ -269,7 +270,7 @@ impl App {
             let name = Self::display(c);
             let status = self.profiles.cache.get(&c.did).and_then(|p| p.fields.get("status")).and_then(serde_json::Value::as_str).unwrap_or("").to_string();
             let has_chat = self.chat.chats.iter().any(|r| r.peer_did == c.did && r.last_activity > 0);
-            let sub = if !status.is_empty() || has_chat { status } else { "No messages yet".to_string() };
+            let sub = if !status.is_empty() || has_chat { status } else { crate::i18n::tr_str("common_no_messages_yet").to_string() };
             list = list.push(button(row![self.profile_avatar(t, &name, &c.did, 44.0),
                     column![semi(name, 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None),
                         tx(sub, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].spacing(1).width(Fill)]
@@ -277,7 +278,7 @@ impl App {
                 .padding([0, 20]).width(Fill).style(wash(t, None, Some(t.surface2), 14.0))
                 .on_press(Msg::ShellSearch(Action::NewChatPick(c.did.clone()))));
         }
-        let none = if any { String::new() } else { format!("No contact called \u{201c}{}\u{201d}.", q.trim()) };
+        let none = if any { String::new() } else { crate::i18n::tr_args("shell_no_contact_called", &[("trim", &(q.trim()).to_string())]) };
         list = list.push(container(tx(none, 13.0, t.ink2).line_height(lh(19.0))).padding(Padding { top: 12.0, right: 20.0, bottom: 8.0, left: 20.0 }).width(Fill).center_x(Fill));
         let body = column![head, scroll(t, list).height(Fill)].height(Fill);
         Some(pg_dialog(t, 1.0, Some(540.0), body.into(), Msg::ShellSearch(Action::NewChat(false))))
@@ -290,7 +291,7 @@ impl App {
     pub(super) fn contacts_list(&self, t: Tok) -> El<'_> {
         use crate::fit::ellipsize;
         let q = self.shell_search.contacts_q.trim().to_lowercase();
-        let find = text_input("Find a contact", &self.shell_search.contacts_q).on_input(|v| Msg::ShellSearch(Action::ContactsFind(v)))
+        let find = text_input(crate::i18n::tr_str("shell_find_a_contact"), &self.shell_search.contacts_q).on_input(|v| Msg::ShellSearch(Action::ContactsFind(v)))
             .padding(Padding { top: 11.5, right: 14.0, bottom: 11.5, left: 40.0 }).size(15).line_height(lh(21.0)).font(ui::SANS)
             .style(move |_, status| {
                 let focused = matches!(status, iced::widget::text_input::Status::Focused { .. });
@@ -303,7 +304,7 @@ impl App {
         let find = container(stack![find, container(pgi("search", 18.0, t.ink2)).padding(Padding { left: 14.0, ..Padding::ZERO }).height(44).center_y(44)])
             .padding(Padding { top: 4.0, right: 16.0, bottom: 8.0, left: 16.0 });
         let add = button(row![container(pgi("userplus", 22.0, t.accent_ink)).width(44).height(44).center_x(44).center_y(44).style(ui::plain(t.accent_soft, 22.0)),
-                column![semi("Add contact", 15.0, t.ink).line_height(lh(21.0)), tx("Share your code or paste theirs", 13.0, t.ink2).line_height(lh(18.0))].spacing(1)]
+                column![semi(crate::i18n::tr_str("common_add_contact"), 15.0, t.ink).line_height(lh(21.0)), tx(crate::i18n::tr_str("shell_share_your_code_or"), 13.0, t.ink2).line_height(lh(18.0))].spacing(1)]
                 .spacing(12).align_y(Alignment::Center).height(64))
             .padding([0, 8]).width(Fill).style(wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::OpenAdd);
         let mut col = column![find, container(add).padding([0, 8])].spacing(0);
@@ -320,7 +321,7 @@ impl App {
         };
         let row_ = |c: &p2pcore::Contact, dim: bool| -> El<'_> {
             let name = Self::display(c);
-            let sub = if dim { "Blocked".to_string() } else { self.profiles.cache.get(&c.did).and_then(|p| p.fields.get("status")).and_then(serde_json::Value::as_str).unwrap_or("").to_string() };
+            let sub = if dim { crate::i18n::tr_str("common_blocked").to_string() } else { self.profiles.cache.get(&c.did).and_then(|p| p.fields.get("status")).and_then(serde_json::Value::as_str).unwrap_or("").to_string() };
             // 380 - 16 list margin - 16 row padding - 44 avatar - 12 gap
             let w = 380.0 - 1.0 - 32.0 - 44.0 - 12.0;
             let fade = |c: Color| if dim { ui::alpha(c, 0.6) } else { c };
@@ -335,7 +336,7 @@ impl App {
         // People waiting for my answer (cards: Accept / Not now), then requests I sent.
         let waiting: Vec<&p2pcore::ContactRequest> = self.requests_in.iter().filter(|r| !self.hidden_requests.contains(&r.did)).collect();
         if !waiting.is_empty() {
-            col = col.push(sec("WAITING FOR YOU".into()));
+            col = col.push(sec(crate::i18n::tr_str("shell_waiting_for_you").into()));
             let btn = |label_: &'static str, primary: bool, on: Msg| -> El<'static> {
                 let style = move |_: &Theme, st: button::Status| {
                     let hover = matches!(st, button::Status::Hovered);
@@ -347,13 +348,13 @@ impl App {
             let mut cards = column![].spacing(12);
             for r in waiting {
                 let busy = self.add_ui.answering;
-                let accept: El = if busy { container(semi("Accept", 15.0, t.on_accent)).padding([12, 18]).style(ui::plain(ui::alpha(t.accent, 0.45), 22.0)).into() } else { btn("Accept", true, Msg::Gate(super::super::signup::Gs::CardAccept(r.did.clone()))) };
+                let accept: El = if busy { container(semi(crate::i18n::tr_str("common_accept"), 15.0, t.on_accent)).padding([12, 18]).style(ui::plain(ui::alpha(t.accent, 0.45), 22.0)).into() } else { btn(crate::i18n::tr_str("common_accept"), true, Msg::Gate(super::super::signup::Gs::CardAccept(r.did.clone()))) };
                 let card = column![
-                    row![avatar(t, &r.name, &r.did, 44.0), column![semi(r.name.clone(), 15.0, t.ink).line_height(lh(21.0)), tx("Wants to add you as a contact", 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                    row![avatar(t, &r.name, &r.did, 44.0), column![semi(r.name.clone(), 15.0, t.ink).line_height(lh(21.0)), tx(crate::i18n::tr_str("shell_wants_to_add_you"), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
                         .spacing(12)
                         .align_y(Alignment::Center),
-                    row![accept, btn("Not now", false, Msg::Gate(super::super::signup::Gs::CardNotNow(r.did.clone())))].spacing(8),
-                    tx("Accepting lets you message and call each other.", 13.0, t.ink2).line_height(lh(19.0)),
+                    row![accept, btn(crate::i18n::tr_str("common_not_now"), false, Msg::Gate(super::super::signup::Gs::CardNotNow(r.did.clone())))].spacing(8),
+                    tx(crate::i18n::tr_str("shell_accepting_lets_you_message"), 13.0, t.ink2).line_height(lh(19.0)),
                 ]
                 .spacing(10);
                 cards = cards.push(container(card).padding(14).width(Fill).style(move |_: &Theme| container::Style {
@@ -366,13 +367,13 @@ impl App {
         }
         if !self.requests_out.is_empty() {
             // No "declined": an unanswered request just waits (kind to both).
-            col = col.push(sec("WAITING FOR THEM".into()));
+            col = col.push(sec(crate::i18n::tr_str("shell_waiting_for_them").into()));
             let mut g = column![].spacing(0);
             for x in &self.requests_out {
                 let f = super::super::signup::first_name(&x.name);
                 let w = 380.0 - 1.0 - 32.0 - 40.0 - 12.0;
                 g = g.push(container(row![avatar(t, &x.name, &x.did, 40.0), column![semi(ellipsize(&x.name, ui::SANS_SEMI, 15.0, w), 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None),
-                    tx(format!("Request sent. Your line opens when {f} accepts."), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                    tx(crate::i18n::tr_args("common_request_sent_your_line", &[("name", &(f).to_string())]), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
                     .spacing(12).align_y(Alignment::Center)).padding([12, 8]).width(Fill));
             }
             col = col.push(container(g).padding([0, 8]));
@@ -395,7 +396,7 @@ impl App {
             col = col.push(container(group).padding([0, 8]));
         }
         if !blocked.is_empty() {
-            col = col.push(sec("BLOCKED".into()));
+            col = col.push(sec(crate::i18n::tr_str("shell_blocked").into()));
             let mut g = column![].spacing(0);
             for c in &blocked {
                 g = g.push(row_(c, true));
@@ -404,14 +405,14 @@ impl App {
         }
         if total == 0 && blocked.is_empty() && self.requests_out.is_empty() && q.is_empty() {
             // EmptyLine `contacts`: replaces "0 contacts"; the Add contact row above is the action.
-            return col.push(self.empty_quiet(t, "The people you add show up here.")).into();
+            return col.push(self.empty_quiet(t, crate::i18n::tr_str("shell_the_people_you_add"))).into();
         }
         let foot = if total == 0 && q.is_empty() {
             String::new()
         } else if !q.is_empty() && mine.is_empty() && blocked.is_empty() {
-            format!("No one called \u{201c}{}\u{201d} in your contacts.", self.shell_search.contacts_q.trim())
+            crate::i18n::tr_args("shell_no_one_called_in", &[("trim", &(self.shell_search.contacts_q.trim()).to_string())])
         } else {
-            format!("{total} {}", if total == 1 { "contact" } else { "contacts" })
+            crate::i18n::tr_count("shell_contacts_count", total as u64, &[])
         };
         col = col.push(container(tx(foot, 13.0, t.ink2).line_height(lh(19.0))).padding(Padding { top: 14.0, right: 16.0, bottom: 24.0, left: 16.0 }).width(Fill).center_x(Fill));
         col.into()

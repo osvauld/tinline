@@ -22,7 +22,8 @@ class BlockingTest {
         val b = blocks(mapOf("ann" to BlockView(blockedByMe = true, blockedAtSecs = 100)), listOf(BlockedRow("ann", "Ann Lee", 100)))
         assertEquals(ComposerState.BlockedByMe, b.composer("ann", contact = true))
         assertFalse(b.canCall("ann", contact = true))
-        assertEquals("Blocked", b.status("ann"))
+        assertEquals(R.string.common_blocked, b.statusRes("ann"))
+        assertEquals(appString(R.string.common_blocked), b.status("ann"))
         assertEquals(listOf("ann"), b.list.map { it.did })
     }
 
@@ -39,7 +40,7 @@ class BlockingTest {
         val b = blocks(mapOf("meera" to BlockView(blockedMeAtSecs = 1_791_640_200)))
         assertEquals(ComposerState.BlockedMe, b.composer("meera", contact = false))
         assertFalse(b.canCall("meera", contact = false))
-        assertEquals("Blocked you", b.status("meera"))
+        assertEquals(R.string.blocking_row_blocked_you, b.statusRes("meera"))
         assertTrue(b.list.isEmpty())
     }
 
@@ -64,7 +65,10 @@ class BlockingTest {
         assertEquals(CallGate.Closed, blocked.callGate("ann", contact = true))
     }
 
-    @Test fun blockDateIsEnglishMonthDayTime() {
-        assertEquals("Oct 10, 13:50", BlockCopy.date(1_791_640_200, ZoneOffset.UTC))
+    @Test fun blockDateFollowsTheLocale() {
+        val en = BlockCopy.date(1_791_640_200, ZoneOffset.UTC, java.util.Locale.US)
+        val de = BlockCopy.date(1_791_640_200, ZoneOffset.UTC, java.util.Locale.GERMANY)
+        assertTrue(en, en.startsWith("Oct 10"))
+        assertTrue(de, de.contains("10.") && de.contains("13:50"))
     }
 }

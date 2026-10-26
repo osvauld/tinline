@@ -14,7 +14,6 @@ private enum InfoSheet: Identifiable {
 }
 
 /// "n members" / "1 member".
-func groupsPlural(_ n: Int, _ one: String, _ many: String? = nil) -> String { "\(n) \(n == 1 ? one : (many ?? one + "s"))" }
 
 struct GroupInfoView: View {
     let groupId: String
@@ -33,7 +32,7 @@ private struct GroupInfoScreen: View {
         let ctl = session.ctl
         let o = ctl.opened.flatMap { $0.id == id ? $0 : nil }
         Group {
-            if let d = o?.detail { content(d) } else { InfoPage(title: "Group info", onBack: { dismiss() }) { EmptyView() } }
+            if let d = o?.detail { content(d) } else { InfoPage(title: tr("group_info_title"), onBack: { dismiss() }) { EmptyView() } }
         }
         .groupsToasts(session)
         .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
@@ -42,19 +41,19 @@ private struct GroupInfoScreen: View {
     /// The name of a DID, with "You" replaced by my profile name where the screen names me.
     private func name(_ did: String, _ fb: String) -> String {
         let n = session.name(did, fb)
-        return n == "You" ? (session.dir.myName.flatMap { $0.groupsIsBlank ? nil : $0 } ?? "You") : n
+        return n == groupsYou ? (session.dir.myName.flatMap { $0.groupsIsBlank ? nil : $0 } ?? groupsYou) : n
     }
 
     @ViewBuilder private func content(_ d: GroupDetail) -> some View {
         let ctl = session.ctl
         let admin = GroupText.isAdmin(d.myRole)
         let sent = ctl.sent, outgoing = ctl.outgoing
-        InfoPage(title: d.myRole == .removed ? "Removed" : "Group info", onBack: { dismiss() }) {
+        InfoPage(title: d.myRole == .removed ? tr("group_info_removed_title") : tr("group_info_title"), onBack: { dismiss() }) {
             hero(d)
             switch d.myRole {
             case .removed: RemovalBody(session: session, removal: d.removal) { dismiss() }
             case .left:
-                GroupsNote("You can still read the posts on this device. To come back, someone in the group has to invite you again.").padding(.horizontal, 20).padding(.vertical, 24)
+                GroupsNote(tr("group_info_left_note")).padding(.horizontal, 20).padding(.vertical, 24)
             default:
                 if let mine = d.members.first(where: { $0.isMe }), mine.flags > 0, !mine.isOwner { FlagsOnMe(n: Int(mine.flags)) }
                 if admin { invites(d, sent: sent) }
@@ -63,8 +62,8 @@ private struct GroupInfoScreen: View {
                 members(d, admin: admin, outgoing: outgoing)
                 VStack(spacing: 0) {
                     GroupsCard {
-                        if d.myRole != .owner { ActRow(icon: GroupsIcons.leave, title: "Leave group", danger: true) { sheet = .leave } }
-                        else { ActRow(icon: GroupsIcons.leave, title: "Leave group", sub: "The owner can’t leave yet", enabled: false, off: true) {} }
+                        if d.myRole != .owner { ActRow(icon: GroupsIcons.leave, title: tr("group_info_leave"), danger: true) { sheet = .leave } }
+                        else { ActRow(icon: GroupsIcons.leave, title: tr("group_info_leave"), sub: tr("group_info_owner_cant_leave"), enabled: false, off: true) {} }
                     }
                 }.padding(.init(top: 24, leading: 16, bottom: 0, trailing: 16))
             }
@@ -86,11 +85,11 @@ private struct GroupInfoScreen: View {
     private func hero(_ d: GroupDetail) -> some View {
         let line: String = {
             switch d.myRole {
-            case .owner: return "\(groupsPlural(d.members.count, "member")) · You are the owner"
-            case .admin: return "\(groupsPlural(d.members.count, "member")) · You are an admin"
-            case .member: return "\(groupsPlural(d.members.count, "member")) · You are a member"
-            case .left: return "You left this group"
-            case .removed: return "You’re no longer a member"
+            case .owner: return trn("group_info_hero_owner", d.members.count)
+            case .admin: return trn("group_info_hero_admin", d.members.count)
+            case .member: return trn("group_info_hero_member", d.members.count)
+            case .left: return tr("group_info_hero_left")
+            case .removed: return tr("group_info_hero_removed")
             }
         }()
         return VStack(spacing: 0) {
@@ -104,13 +103,13 @@ private struct GroupInfoScreen: View {
     private func invites(_ d: GroupDetail, sent: [GroupInvitation]) -> some View {
         let shownSent = sent.filter { inv in inv.groupId == id && !d.members.contains(where: { m in m.did == inv.inviteeDid }) }
         let noHost = d.hosts.isEmpty && !d.amHost
-        return InfoSec(title: "Invites") {
+        return InfoSec(title: tr("group_invites_title")) {
             GroupsCard {
-                ActRow(icon: GroupsIcons.userPlus, title: "Invite contacts", sub: "A private invite to each person", trailing: GroupsIcons.chevR) { sheet = .invite }
+                ActRow(icon: GroupsIcons.userPlus, title: tr("group_invites_contacts"), sub: tr("group_invites_contacts_sub"), trailing: GroupsIcons.chevR) { sheet = .invite }
                 GroupsRule()
                 NavigationLink(value: GroupsRoute.link(id)) {
-                    ActRowLabel(icon: GroupsIcons.link, title: "Create invite link",
-                                sub: noHost ? "Appoint a host first. A link names one host." : "Valid for 7 days", trailing: GroupsIcons.plus)
+                    ActRowLabel(icon: GroupsIcons.link, title: tr("group_invites_link"),
+                                sub: noHost ? tr("group_invites_link_need_host") : tr("group_invites_link_valid"), trailing: GroupsIcons.plus)
                 }.buttonStyle(GroupsPressStyle()).disabled(noHost).opacity(noHost ? 0.55 : 1)
             }
             if !shownSent.isEmpty {
@@ -132,11 +131,11 @@ private struct GroupInfoScreen: View {
     private func memberSub(_ since: String, flags: Int?, blocked: Bool, reqNote: String?) -> AttributedString {
         var sub = AttributedString(since)
         if let flags {
-            var f = AttributedString(" · \(flags) of \(GroupText.flagsToRemove) flags")
+            var f = AttributedString(" · " + trn("group_member_flags", flags, String(GroupText.flagsToRemove)))
             f.foregroundColor = tin.er; f.font = GroupsType.subStrong
             sub += f
         }
-        if blocked { sub += AttributedString(" · Blocked by you") } else if let reqNote { sub += AttributedString(" · \(reqNote)") }
+        if blocked { sub += AttributedString(" · " + tr("group_member_blocked_by_you")) } else if let reqNote { sub += AttributedString(" · \(reqNote)") }
         return sub
     }
 
@@ -148,35 +147,34 @@ private struct GroupInfoScreen: View {
             if ka.1 != kb.1 { return !ka.1 }
             return a.offset < b.offset
         }.map { $0.element }
-        return InfoSec(title: "Members", count: d.members.count) {
+        return InfoSec(title: tr("group_members_title"), count: d.members.count) {
             ForEach(sorted, id: \.did) { m in
                 let n = name(m.did, m.name)
                 let req = outgoing.filter { $0.peerDid == m.did }.max(by: { $0.at < $1.at })
                 let reqNote: String? = {
                     switch req?.state {
-                    case .pending: return "Chat request sent"
-                    case .declined: return "Declined your chat request"
-                    case .blocked: return "Blocked"
+                    case .pending: return tr("group_member_req_pending")
+                    case .declined: return tr("group_member_req_declined")
+                    case .blocked: return tr("group_member_req_blocked")
                     default: return nil
                     }
                 }()
-                let since = m.invitedBy.map { "Invited by \(groupsFirstName(name($0, ""))) · \(GroupsTime.dayOnly(m.joinedAt))" } ?? "Since \(GroupsTime.dayOnly(m.joinedAt))"
+                let since = m.invitedBy.map { tr("group_member_invited_by", groupsFirstName(name($0, "")), GroupsTime.dayOnly(m.joinedAt)) } ?? tr("group_member_since", GroupsTime.dayOnly(m.joinedAt))
                 let showFlags = (admin || m.isMe) && m.flags > 0 && !m.isOwner
                 let isCallHost = d.callHosts.contains(where: { $0.did == m.did })
-                let desc = "\(n)\(m.isMe ? " (you)" : ""), \(m.isOwner ? "owner" : (m.isAdmin ? "admin" : "member"))" +
-                    (m.isHost ? ", host" : "") + (isCallHost ? ", call host" : "") + ". Open actions"
+                let desc = GroupText.memberDesc(m.isMe ? tr("group_member_name_you", n) : n, owner: m.isOwner, admin: m.isAdmin, host: m.isHost, callHost: isCallHost)
                 let sub = memberSub(since, flags: showFlags ? Int(m.flags) : nil, blocked: session.dir.blockedByMe(m.did), reqNote: reqNote)
                 MRow(onTap: { sheet = .member(m.did) }, desc: desc) {
                     TinAvatar(did: m.did, size: 40)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(m.isMe ? "\(n) (you)" : n).font(GroupsType.bodyStrong).foregroundStyle(tin.ink).lineLimit(1)
+                        Text(m.isMe ? tr("group_member_name_you", n) : n).font(GroupsType.bodyStrong).foregroundStyle(tin.ink).lineLimit(1)
                         Text(sub).font(GroupsType.sub).foregroundStyle(tin.ink2).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                     HStack(spacing: 4) {
-                        if m.isOwner { GroupsPill(text: "Owner", tone: .owner) } else if m.isAdmin { GroupsPill(text: "Admin", tone: .admin) }
-                        if m.isHost { GroupsMark(icon: GroupsIcons.server, desc: "Host") }
-                        if isCallHost { GroupsMark(icon: GroupsIcons.phone, desc: "Call host", call: true) }
+                        if m.isOwner { GroupsPill(text: tr("group_role_owner"), tone: .owner) } else if m.isAdmin { GroupsPill(text: tr("group_role_admin"), tone: .admin) }
+                        if m.isHost { GroupsMark(icon: GroupsIcons.server, desc: tr("group_role_host")) }
+                        if isCallHost { GroupsMark(icon: GroupsIcons.phone, desc: tr("group_role_call_host"), call: true) }
                     }
                 }
             }
@@ -322,45 +320,44 @@ private struct HostsSection: View {
         let online = d.hosts.filter { $0.online || $0.isMe }.count
         let line = noHost ? 0 : (up ? 1 : 2)
         let dev = { (h: GroupHost) -> String in
-            if h.isMe { return "This device" }
+            if h.isMe { return tr("group_this_device") }
             let several = (d.members.first(where: { $0.did == h.did })?.deviceIds.count ?? 1) > 1
             return name(h.did, h.name) + (several ? " · \(GroupText.shortDev(h.deviceId))" : "")
         }
-        InfoSec(title: "Hosts") {
+        InfoSec(title: tr("group_hosts_title")) {
             StatusLine(lines: [
-                "This group has no host. Posts wait until a host is appointed.",
-                "\(groupsPlural(max(online, 1), "host")) online. Posts go through right away.",
-                "No host is online. Your posts are saved and send when one is.",
+                tr("group_hosts_none"),
+                trn("group_hosts_online", max(online, 1)),
+                tr("group_hosts_offline"),
             ], current: line, on: line == 1)
             ForEach(d.hosts, id: \.deviceId) { h in
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: (on ? "Online" : "Offline") + (d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? " · also hosts calls" : ""), dot: on)
-                    if admin { TrailBtn(text: "Remove", desc: "Remove \(dev(h)) as host") { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
+                    TwoLine(title: dev(h), sub: d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? (on ? tr("group_host_online_calls") : tr("group_host_offline_calls")) : (on ? tr("group_host_online") : tr("group_host_offline")), dot: on)
+                    if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_host_desc", dev(h))) { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
             ForEach(d.hostRequests, id: \.deviceId) { h in
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: "Waiting to accept")
+                    TwoLine(title: dev(h), sub: tr("group_waiting_accept"))
                     if h.isMe && d.hostRequestedHere {
-                        GroupsButton(text: "Decline", kind: .quiet) { session.exec({ session.ctl.acceptHost(d.id, accept: false) }, session.sayDone) }
-                        GroupsButton(text: "Accept", kind: .primary) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }
+                        GroupsButton(text: tr("group_decline"), kind: .quiet) { session.exec({ session.ctl.acceptHost(d.id, accept: false) }, session.sayDone) }
+                        GroupsButton(text: tr("group_accept"), kind: .primary) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }
                     } else if admin {
-                        TrailBtn(text: "Cancel", desc: "Cancel host request to \(dev(h))") { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) }
+                        TrailBtn(text: tr("group_cancel"), desc: tr("group_cancel_host_request_desc", dev(h))) { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) }
                     }
                 }
             }
             ForEach(d.hostOffers, id: \.deviceId) { h in
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: "Offered to host · needs an admin")
-                    if admin { GroupsButton(text: "Appoint", kind: .primary) { session.exec({ session.ctl.appoint(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
+                    TwoLine(title: dev(h), sub: tr("group_host_offered"))
+                    if admin { GroupsButton(text: tr("group_appoint"), kind: .primary) { session.exec({ session.ctl.appoint(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
-            GroupsNote("Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group." +
-                (admin ? " Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it." : ""))
+            GroupsNote(admin ? tr("group_hosts_note_admin") : tr("group_hosts_note_base"))
                 .padding(.horizontal, 4).padding(.top, 10)
         }
     }
@@ -377,45 +374,43 @@ private struct CallHostsSection: View {
         // This phone is said in words, not listed as a row: "Stop hosting calls on this phone" below stands for it.
         let onlyMe = d.amCallHost && d.callHosts.count == 1
         let line = d.callHosts.isEmpty ? 0 : (onlyMe ? 3 : (ready > 0 ? 1 : 2))
-        let dev = { (h: GroupHost) -> String in h.isMe ? "This device" : name(h.did, h.name) }
-        InfoSec(title: "Call hosts") {
+        let dev = { (h: GroupHost) -> String in h.isMe ? tr("group_this_device") : name(h.did, h.name) }
+        InfoSec(title: tr("group_callhosts_title")) {
             StatusLine(lines: [
-                "This group has no call host. Nobody can start a call until an admin appoints one.",
-                "\(groupsPlural(max(ready, 1), "call host")) ready. Calls start through \(ready == 1 ? "it" : "them").",
-                "No call host is available right now. A call can’t start until one is back.",
-                "This phone carries the calls you start.",
+                tr("group_callhosts_none"),
+                trn("group_callhosts_ready", max(ready, 1)),
+                tr("group_callhosts_unavailable"),
+                tr("group_callhosts_this_phone"),
             ], current: line, on: line == 1 || line == 3)
             ForEach(d.callHosts.filter { !$0.isMe }, id: \.deviceId) { h in
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: on ? "Online" : "Offline", dot: on)
-                    if admin { TrailBtn(text: "Remove", desc: "Remove \(dev(h)) as call host") { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
+                    TwoLine(title: dev(h), sub: on ? tr("group_host_online") : tr("group_host_offline"), dot: on)
+                    if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_callhost_desc", dev(h))) { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
             ForEach(d.callHostRequests, id: \.deviceId) { h in
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: "Waiting to accept")
+                    TwoLine(title: dev(h), sub: tr("group_waiting_accept"))
                     if h.isMe && d.callHostRequestedHere {
-                        GroupsButton(text: "Decline", kind: .quiet) { session.exec({ session.ctl.acceptCallHost(d.id, accept: false) }, session.sayDone) }
-                        GroupsButton(text: "Accept", kind: .primary) { session.exec({ session.ctl.acceptCallHost(d.id, accept: true) }, session.sayDone) }
+                        GroupsButton(text: tr("group_decline"), kind: .quiet) { session.exec({ session.ctl.acceptCallHost(d.id, accept: false) }, session.sayDone) }
+                        GroupsButton(text: tr("group_accept"), kind: .primary) { session.exec({ session.ctl.acceptCallHost(d.id, accept: true) }, session.sayDone) }
                     } else if admin {
-                        TrailBtn(text: "Cancel", desc: "Cancel call host request to \(dev(h))") { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) }
+                        TrailBtn(text: tr("group_cancel"), desc: tr("group_cancel_callhost_request_desc", dev(h))) { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) }
                     }
                 }
             }
             // This phone: carry the calls it starts (admin: appoint + accept in one go; asked: the Accept above; already: stop).
             if d.amCallHost {
-                ActRow(icon: GroupsIcons.phone, title: "Stop hosting calls on this phone") { session.exec({ session.ctl.acceptCallHost(d.id, accept: false) }, session.sayDone) }
+                ActRow(icon: GroupsIcons.phone, title: tr("group_callhost_stop_here")) { session.exec({ session.ctl.acceptCallHost(d.id, accept: false) }, session.sayDone) }
             } else if admin && !d.callHostRequestedHere && GroupText.active(d.myRole) {
-                ActRow(icon: GroupsIcons.phone, title: "Host calls on this phone", sub: "Carries the calls you start here. A computer that stays on can carry everyone’s.") {
+                ActRow(icon: GroupsIcons.phone, title: tr("group_callhost_here"), sub: tr("group_callhost_here_sub")) {
                     session.exec({ session.ctl.hostCallsHere(d.id, requested: false) }, session.sayDone)
                 }
             }
-            GroupsNote("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: " +
-                "a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept." +
-                (admin ? " Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts." : ""))
+            GroupsNote(admin ? tr("group_callhosts_note_admin") : tr("group_callhosts_note_base"))
                 .padding(.horizontal, 4).padding(.top, 10)
         }
     }
@@ -428,9 +423,9 @@ private struct FlagsOnMe: View {
     var body: some View {
         let total = GroupText.flagsToRemove
         let left = max(total - n, 0)
-        InfoSec(title: "Flags on you", countText: "\(n) of \(total)", countColor: tin.er) {
-            GroupsFlagMeter(filled: n, total: total, desc: "\(n) of \(total) flags").padding(.init(top: 2, leading: 4, bottom: 4, trailing: 4))
-            GroupsNote((left == 1 ? "One more flag" : "\(left) more flags") + " from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then.")
+        InfoSec(title: tr("group_flags_on_you"), countText: tr("group_flags_count", n, String(total)), countColor: tin.er) {
+            GroupsFlagMeter(filled: n, total: total, desc: trn("group_flags_count_desc", n, String(total))).padding(.init(top: 2, leading: 4, bottom: 4, trailing: 4))
+            GroupsNote(trn("group_flags_left", left))
                 .padding(.horizontal, 4).padding(.top, 6)
         }
     }
@@ -443,12 +438,12 @@ private struct RemovalBody: View {
     let removal: GroupRemoval?
     let onBack: () -> Void
     var body: some View {
-        let ord = ["First flag", "Second flag", "Third flag"]
+        let ord = [tr("group_removal_flag_first"), tr("group_removal_flag_second"), tr("group_removal_flag_third")]
         let now = UInt64(Date().timeIntervalSince1970 * 1000)
         VStack(alignment: .leading, spacing: 0) {
-            Text("Removed after \(GroupText.flagsToRemove) admin flags").font(GroupsType.hero).foregroundStyle(tin.ink).padding(.top, 8).padding(.bottom, 2).accessibilityAddTraits(.isHeader)
+            Text(tr("group_removal_title", String(GroupText.flagsToRemove))).font(GroupsType.hero).foregroundStyle(tin.ink).padding(.top, 8).padding(.bottom, 2).accessibilityAddTraits(.isHeader)
             if let r = removal, r.at > 0 { Text(GroupsTime.dayAndTime(r.at, now)).font(GroupsType.note).foregroundStyle(tin.ink2) }
-            RemSec("Who flagged you")
+            RemSec(tr("group_removal_who"))
             if let r = removal {
                 ForEach(Array(r.flags.enumerated()), id: \.offset) { i, f in
                     let who = session.name(f.byDid, f.byName)
@@ -456,18 +451,18 @@ private struct RemovalBody: View {
                         TinAvatar(did: f.byDid, size: 40)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(who).font(GroupsType.bodyStrong).foregroundStyle(tin.ink)
-                            Text((i < ord.count ? ord[i] : "Flag") + (f.at > 0 ? " · " + GroupsTime.dayAndTime(f.at, now) : "")).font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2)
+                            Text((i < ord.count ? ord[i] : tr("group_removal_flag")) + (f.at > 0 ? " · " + GroupsTime.dayAndTime(f.at, now) : "")).font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2)
                         }
                         Spacer(minLength: 0)
                     }.frame(minHeight: 60)
                     if i < r.flags.count - 1 { GroupsRule() }
                 }
             }
-            GroupsNote("Each flag was made by an admin of the group, and this device checked them before showing this.").padding(.top, 6)
-            RemSec("What this means")
-            Text("You keep the posts already on this device, and you can read them. You can’t post, and the group’s hosts no longer accept anything from you. Removal is final: to come back, an admin has to invite you again.")
+            GroupsNote(tr("group_removal_checked")).padding(.top, 6)
+            RemSec(tr("group_removal_means"))
+            Text(tr("group_removal_text"))
                 .font(GroupsType.body).lineSpacing(7).foregroundStyle(tin.ink).fixedSize(horizontal: false, vertical: true)
-            GroupsButton(text: "Read the posts", kind: .outline, action: onBack).padding(.top, 20)
+            GroupsButton(text: tr("group_removal_read"), kind: .outline, action: onBack).padding(.top, 20)
         }
         .padding(.init(top: 8, leading: 20, bottom: 32, trailing: 20)).frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -488,7 +483,7 @@ private struct RemovalScreen: View {
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         let r = session.ctl.opened.flatMap { $0.id == id ? $0.detail.removal : nil }
-        InfoPage(title: "Removed", onBack: { dismiss() }) { RemovalBody(session: session, removal: r) { dismiss() } }
+        InfoPage(title: tr("group_info_removed_title"), onBack: { dismiss() }) { RemovalBody(session: session, removal: r) { dismiss() } }
             .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
     }
 }
@@ -500,12 +495,12 @@ private struct LeaveSheet: View {
     let onLeft: () -> Void
     var body: some View {
         ScrollView {
-            GroupsDialogBody(title: "Leave \(d.name)?") {
-                GroupsPara("You’ll stop getting posts. What’s already on this device stays, and you can read it. To come back, someone in the group has to invite you again.", top: 4)
-                if d.myRole == .admin { GroupsPara("You’re an admin. The owner and the other admins stay.") }
+            GroupsDialogBody(title: tr("group_leave_title", d.name)) {
+                GroupsPara(tr("group_leave_text"), top: 4)
+                if d.myRole == .admin { GroupsPara(tr("group_leave_admin")) }
                 GroupsActs {
-                    GroupsButton(text: "Cancel", kind: .quiet) { dismiss() }
-                    GroupsButton(text: "Leave", kind: .danger) {
+                    GroupsButton(text: tr("group_cancel"), kind: .quiet) { dismiss() }
+                    GroupsButton(text: tr("group_leave"), kind: .danger) {
                         session.exec({ session.ctl.leave(d.id) }) { r in
                             session.sayDone(r)
                             if case .success = r { onLeft() }
@@ -532,7 +527,7 @@ private struct InviteSheet: View {
         let choices = GroupText.pickRows(dir.contacts.map { InviteCandidate(did: $0.did, name: $0.name) }, d, sent,
                                          blockedByMe: { dir.blockedByMe($0) }, blocksMe: { dir.blocksMe($0) }).filter { $0.why == nil }
         ScrollView {
-            GroupsDialogBody(title: "Invite to \(d.name)") {
+            GroupsDialogBody(title: tr("group_invite_title", d.name)) {
                 if !choices.isEmpty {
                     VStack(spacing: 0) {
                         ForEach(choices, id: \.did) { p in
@@ -551,20 +546,20 @@ private struct InviteSheet: View {
                             .accessibilityElement(children: .combine).accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
                         }
                     }.padding(.top, 8).padding(.horizontal, -8)
-                    GroupsPara("Each person gets a private invite that works for 7 days. Anyone you invite can read the group’s posts once they join.", top: 10)
+                    GroupsPara(tr("group_invite_text"), top: 10)
                 } else {
-                    GroupsPara("Everyone in your contacts is already in this group or has an invite waiting.", top: 10)
+                    GroupsPara(tr("group_invite_none"), top: 10)
                 }
                 GroupsActs {
-                    GroupsButton(text: "Cancel", kind: .quiet) { dismiss() }
-                    GroupsButton(text: busy ? "Sending…" : (picked.isEmpty ? "Invite" : "Invite \(groupsPlural(picked.count, "person", "people"))"), kind: .primary, enabled: !picked.isEmpty && !busy) {
+                    GroupsButton(text: tr("group_cancel"), kind: .quiet) { dismiss() }
+                    GroupsButton(text: busy ? tr("group_invite_sending") : (picked.isEmpty ? tr("group_invite_button") : trn("group_invite_people", picked.count)), kind: .primary, enabled: !picked.isEmpty && !busy) {
                         busy = true
                         let dids = picked, gid = d.id
                         session.exec({ session.ctl.inviteContacts(gid, dids: dids) }) { r in
                             busy = false
                             switch r {
                             case .success(let s): session.say(s); dismiss()
-                            case .failure(let e): session.say(e.message.groupsIfBlank("Couldn’t invite"))
+                            case .failure(let e): session.say(e.message.groupsIfBlank(tr("group_invite_failed")))
                             }
                         }
                     }
@@ -602,7 +597,7 @@ private struct MemberSheet: View {
             }
             .animation(reduced ? nil : GroupsMotion.easeOut(GroupsMotion.crossfade), value: view)
         }
-        .accessibilityLabel(m.isMe ? "Your role in this group" : "\(n) in \(d.name)")
+        .accessibilityLabel(m.isMe ? tr("group_member_role_desc_you") : tr("group_member_in_group_desc", n, d.name))
     }
 
     private func run(_ work: @escaping () -> GroupResult<String>) { session.exec(work, session.sayDone); dismiss() }
@@ -617,41 +612,41 @@ private struct MemberSheet: View {
             HStack(spacing: 12) {
                 TinAvatar(did: m.did, size: 48)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(m.isMe ? "\(n) (you)" : n).font(GroupsType.title).foregroundStyle(tin.ink).lineLimit(1)
-                    Text(m.invitedBy.map { "Invited by \(groupsFirstName(session.name($0, ""))) · \(GroupsTime.dayOnly(m.joinedAt))" } ?? "Member since \(GroupsTime.dayOnly(m.joinedAt))")
+                    Text(m.isMe ? tr("group_member_name_you", n) : n).font(GroupsType.title).foregroundStyle(tin.ink).lineLimit(1)
+                    Text(m.invitedBy.map { tr("group_member_invited_by", groupsFirstName(session.name($0, "")), GroupsTime.dayOnly(m.joinedAt)) } ?? tr("group_member_since_long", GroupsTime.dayOnly(m.joinedAt)))
                         .font(GroupsType.sub).foregroundStyle(tin.ink2).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 HStack(spacing: 4) {
-                    GroupsPill(text: m.isOwner ? "Owner" : (m.isAdmin ? "Admin" : "Member"), tone: m.isOwner ? .owner : (m.isAdmin ? .admin : .muted))
-                    if m.isHost { GroupsPill(text: "Host", tone: .host) }
-                    if d.callHosts.contains(where: { $0.did == m.did }) { GroupsPill(text: "Call host", tone: .call) }
+                    GroupsPill(text: m.isOwner ? tr("group_role_owner") : (m.isAdmin ? tr("group_role_admin") : tr("group_role_member")), tone: m.isOwner ? .owner : (m.isAdmin ? .admin : .muted))
+                    if m.isHost { GroupsPill(text: tr("group_role_host"), tone: .host) }
+                    if d.callHosts.contains(where: { $0.did == m.did }) { GroupsPill(text: tr("group_role_call_host"), tone: .call) }
                 }
             }.padding(.init(top: 18, leading: 20, bottom: 10, trailing: 20))
             if admin && !m.isMe && !m.isOwner {
-                Text("\(m.flags) of \(GroupText.flagsToRemove) flags").font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2).padding(.horizontal, 20).padding(.bottom, 4)
+                Text(trn("group_member_flags", Int(m.flags), String(GroupText.flagsToRemove))).font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2).padding(.horizontal, 20).padding(.bottom, 4)
             }
             VStack(spacing: 0) {
                 if !m.isMe {
-                    if contact && !blockedByMe { MItem(icon: GroupsIcons.chat, title: "Message \(fn)") { dismiss(); onChat(m.did) } }
-                    else if blockedByMe { MItem(icon: GroupsIcons.off, title: "You blocked \(fn)", sub: "They stay in the group. Unblock them in Contacts to chat.", off: true) {} }
-                    else if req?.state == .pending { MItem(icon: GroupsIcons.clock, title: "Request sent", sub: "Waiting for \(fn) to answer", off: true) {} }
-                    else if req?.state == .blocked { MItem(icon: GroupsIcons.off, title: "Blocked", sub: "\(fn) can’t receive requests from you.", off: true) {} }
+                    if contact && !blockedByMe { MItem(icon: GroupsIcons.chat, title: tr("group_member_message", fn)) { dismiss(); onChat(m.did) } }
+                    else if blockedByMe { MItem(icon: GroupsIcons.off, title: tr("group_member_you_blocked", fn), sub: tr("group_member_blocked_sub"), off: true) {} }
+                    else if req?.state == .pending { MItem(icon: GroupsIcons.clock, title: tr("group_member_request_sent"), sub: tr("group_member_request_waiting", fn), off: true) {} }
+                    else if req?.state == .blocked { MItem(icon: GroupsIcons.off, title: tr("group_member_blocked_title"), sub: tr("group_member_cant_receive", fn), off: true) {} }
                     else if acts.contains(.message) {
-                        MItem(icon: GroupsIcons.chat, title: req?.state == .declined ? "Ask \(fn) again" : "Ask \(fn) for a private chat",
-                              sub: req?.state == .declined ? "\(fn) declined your last request" : "Sends a chat request through the group’s host") { view = .ask }
+                        MItem(icon: GroupsIcons.chat, title: req?.state == .declined ? tr("group_member_ask_again", fn) : tr("group_member_ask", fn),
+                              sub: req?.state == .declined ? tr("group_member_declined_last", fn) : tr("group_member_ask_sub")) { view = .ask }
                     }
                 }
                 ForEach(Array(acts.enumerated()), id: \.offset) { _, a in
                     switch a {
-                    case .makeAdmin: MItem(icon: GroupsIcons.shield, title: "Make admin") { run { session.ctl.setAdmin(d.id, did: m.did, admin: true) } }
-                    case .revokeAdmin: MItem(icon: GroupsIcons.shield, title: "Remove admin") { run { session.ctl.setAdmin(d.id, did: m.did, admin: false) } }
+                    case .makeAdmin: MItem(icon: GroupsIcons.shield, title: tr("group_member_make_admin")) { run { session.ctl.setAdmin(d.id, did: m.did, admin: true) } }
+                    case .revokeAdmin: MItem(icon: GroupsIcons.shield, title: tr("group_member_remove_admin")) { run { session.ctl.setAdmin(d.id, did: m.did, admin: false) } }
                     case .appoint(let dev):
-                        MItem(icon: GroupsIcons.server, title: several ? "Make device \(GroupText.shortDev(dev)) a host" : "Make host", sub: "Asks \(fn) to host. They have to accept.") {
+                        MItem(icon: GroupsIcons.server, title: several ? tr("group_member_make_device_host", GroupText.shortDev(dev)) : tr("group_member_make_host"), sub: tr("group_member_make_host_sub", fn)) {
                             run { session.ctl.appoint(d.id, did: m.did, dev: dev) }
                         }
                     case .revoke(let dev):
-                        MItem(icon: GroupsIcons.server, title: several ? "Stop device \(GroupText.shortDev(dev)) hosting" : "Remove as host") { run { session.ctl.revoke(d.id, did: m.did, dev: dev) } }
+                        MItem(icon: GroupsIcons.server, title: several ? tr("group_member_stop_device_host", GroupText.shortDev(dev)) : tr("group_member_remove_host")) { run { session.ctl.revoke(d.id, did: m.did, dev: dev) } }
                     default: EmptyView()
                     }
                 }
@@ -659,24 +654,23 @@ private struct MemberSheet: View {
                     ForEach(m.deviceIds, id: \.self) { dev in
                         let isCh = d.callHosts.contains(where: { $0.did == m.did && $0.deviceId == dev })
                         let pend = d.callHostRequests.contains(where: { $0.did == m.did && $0.deviceId == dev })
-                        let suffix = several ? " · \(GroupText.shortDev(dev))" : ""
-                        if pend { MItem(icon: GroupsIcons.phone, title: "Cancel call host request\(suffix)", sub: "Waiting for \(fn)’s device to accept") { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
-                        else if isCh { MItem(icon: GroupsIcons.phone, title: "Remove as call host\(suffix)") { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
-                        else { MItem(icon: GroupsIcons.phone, title: "Make call host\(suffix)", sub: "Asks \(fn) to carry group calls. They have to accept.") { run { session.ctl.appointCall(d.id, did: m.did, dev: dev) } } }
+                        if pend { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_cancel_callhost_device", GroupText.shortDev(dev)) : tr("group_member_cancel_callhost"), sub: tr("group_member_cancel_callhost_sub", fn)) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
+                        else if isCh { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_remove_callhost_device", GroupText.shortDev(dev)) : tr("group_member_remove_callhost")) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
+                        else { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_make_callhost_device", GroupText.shortDev(dev)) : tr("group_member_make_callhost"), sub: tr("group_member_make_callhost_sub", fn)) { run { session.ctl.appointCall(d.id, did: m.did, dev: dev) } } }
                     }
                 }
                 if m.isMe && GroupText.active(d.myRole) {
-                    if d.amHost { MItem(icon: GroupsIcons.server, title: "Stop hosting on this device") { run { session.ctl.acceptHost(d.id, accept: false) } } }
+                    if d.amHost { MItem(icon: GroupsIcons.server, title: tr("group_host_stop_device")) { run { session.ctl.acceptHost(d.id, accept: false) } } }
                     else if !d.hostOffers.contains(where: { $0.isMe }) {
-                        MItem(icon: GroupsIcons.server, title: "Host on this device", sub: "An admin has to appoint it too. A computer that stays on is a better host.") { run { session.ctl.acceptHost(d.id, accept: true) } }
+                        MItem(icon: GroupsIcons.server, title: tr("group_host_device"), sub: tr("group_host_device_sub")) { run { session.ctl.acceptHost(d.id, accept: true) } }
                     }
-                    if d.amCallHost { MItem(icon: GroupsIcons.phone, title: "Stop hosting calls on this device") { run { session.ctl.acceptCallHost(d.id, accept: false) } } }
+                    if d.amCallHost { MItem(icon: GroupsIcons.phone, title: tr("group_callhost_stop_device")) { run { session.ctl.acceptCallHost(d.id, accept: false) } } }
                 }
                 if acts.contains(.flag) {
-                    MItem(icon: GroupsIcons.flag, title: "Flag for removal", sub: "\(GroupText.flagsToRemove) flags remove \(fn) from the group", danger: true) { view = .flag }
-                } else if m.isOwner && !m.isMe { MItem(icon: GroupsIcons.flag, title: "The owner can’t be flagged", off: true) {} }
+                    MItem(icon: GroupsIcons.flag, title: tr("group_member_flag"), sub: tr("group_member_flag_sub", String(GroupText.flagsToRemove), fn), danger: true) { view = .flag }
+                } else if m.isOwner && !m.isMe { MItem(icon: GroupsIcons.flag, title: tr("group_member_owner_no_flag"), off: true) {} }
             }.padding(.horizontal, 8).padding(.top, 4)
-            HStack { Spacer(); GroupsButton(text: "Close", kind: .quiet) { dismiss() } }.padding(.init(top: 8, leading: 16, bottom: 14, trailing: 16))
+            HStack { Spacer(); GroupsButton(text: tr("group_close"), kind: .quiet) { dismiss() } }.padding(.init(top: 8, leading: 16, bottom: 14, trailing: 16))
         }
     }
 
@@ -684,14 +678,14 @@ private struct MemberSheet: View {
         let fn = groupsFirstName(n)
         let (next, lead) = GroupText.flagCopy(n, flagsSoFar: Int(m.flags))
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Flag \(fn) for removal?").font(GroupsType.title).foregroundStyle(tin.ink).padding(.bottom, 12).accessibilityAddTraits(.isHeader)
-            GroupsFlagMeter(filled: Int(m.flags), total: GroupText.flagsToRemove, yours: true, desc: "Flag \(next) of \(GroupText.flagsToRemove)")
+            Text(tr("group_flag_title", fn)).font(GroupsType.title).foregroundStyle(tin.ink).padding(.bottom, 12).accessibilityAddTraits(.isHeader)
+            GroupsFlagMeter(filled: Int(m.flags), total: GroupText.flagsToRemove, yours: true, desc: tr("group_flag_meter_desc", String(next), String(GroupText.flagsToRemove)))
             GroupsPara(lead, top: 12, color: tin.ink, font: GroupsType.body)
-            GroupsPara("Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts.")
-            GroupsPara("Flagging is a decision for the group. It is separate from blocking, which only affects you. \(fn) sees each flag: who made it and when.")
+            GroupsPara(tr("group_flag_text1"))
+            GroupsPara(tr("group_flag_text2", fn))
             GroupsActs {
-                GroupsButton(text: "Back", kind: .quiet) { view = .actions }
-                GroupsButton(text: "Flag \(fn)", kind: next >= GroupText.flagsToRemove ? .danger : .outline) { run { session.ctl.flag(d.id, did: m.did) } }
+                GroupsButton(text: tr("group_back"), kind: .quiet) { view = .actions }
+                GroupsButton(text: tr("group_flag_button", fn), kind: next >= GroupText.flagsToRemove ? .danger : .outline) { run { session.ctl.flag(d.id, did: m.did) } }
             }
         }.padding(.init(top: 20, leading: 20, bottom: 16, trailing: 20))
     }
@@ -699,12 +693,12 @@ private struct MemberSheet: View {
     private var ask: some View {
         let fn = groupsFirstName(n)
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Ask \(fn) for a private chat").font(GroupsType.title).foregroundStyle(tin.ink).padding(.bottom, 4).accessibilityAddTraits(.isHeader)
-            GroupsPara("\(fn) sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it.")
-            GroupsPara("If \(fn) accepts, you can message each other directly. Calls stay off until one of you allows them. A request expires after 7 days.")
+            Text(tr("group_ask_title", fn)).font(GroupsType.title).foregroundStyle(tin.ink).padding(.bottom, 4).accessibilityAddTraits(.isHeader)
+            GroupsPara(tr("group_ask_text1", fn))
+            GroupsPara(tr("group_ask_text2", fn))
             GroupsActs {
-                GroupsButton(text: "Back", kind: .quiet) { view = .actions }
-                GroupsButton(text: "Send request", kind: .primary) { run { session.ctl.request(d.id, did: m.did) } }
+                GroupsButton(text: tr("group_back"), kind: .quiet) { view = .actions }
+                GroupsButton(text: tr("group_ask_send"), kind: .primary) { run { session.ctl.request(d.id, did: m.did) } }
             }
         }.padding(.init(top: 20, leading: 20, bottom: 16, trailing: 20))
     }

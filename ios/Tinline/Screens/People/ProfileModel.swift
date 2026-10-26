@@ -29,34 +29,34 @@ enum ProfileRules {
         s.unicodeScalars.contains { let v = $0.value; return (0x00...0x08).contains(v) || v == 0x0b || v == 0x0c || (0x0e...0x1f).contains(v) || v == 0x7f }
     }
 
-    static func checkName(_ raw: String, what: String = "name") -> String? {
+    static func checkName(_ raw: String) -> String? {
         let s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if s.isEmpty { return "The \(what) can\u{2019}t be empty." }
-        if hasControl(s) || hasBidi(s) { return "The \(what) can\u{2019}t contain control or text-direction characters." }
-        if utf8(s) > nameLimit { return "That \(what) is too long. Up to \(nameLimit) bytes; some characters take more than one." }
+        if s.isEmpty { return tr("people_rule_name_empty") }
+        if hasControl(s) || hasBidi(s) { return tr("people_rule_name_control") }
+        if utf8(s) > nameLimit { return tr("people_rule_name_long", String(nameLimit)) }
         return nil
     }
 
     static func checkText(_ s: String, what: String) -> String? {
-        if utf8(s) > textLimit { return "That is too long for \(what): up to \(textLimit) bytes, and some characters take more than one." }
-        if hasTextControl(s) || hasBidi(s) { return what.prefix(1).uppercased() + what.dropFirst() + " can\u{2019}t contain control or text-direction characters." }
+        if utf8(s) > textLimit { return tr(what == "about" ? "people_rule_about_long" : "people_rule_status_long", String(textLimit)) }
+        if hasTextControl(s) || hasBidi(s) { return tr(what == "about" ? "people_rule_about_control" : "people_rule_status_control") }
         return nil
     }
 
     static func checkKey(_ key: String) -> String? {
-        if key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Give the information a name." }
-        if hasControl(key) || utf8(key) > keyLimit { return "That name can\u{2019}t be used. Keep it short, without control characters." }
+        if key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return tr("people_rule_key_empty") }
+        if hasControl(key) || utf8(key) > keyLimit { return tr("people_rule_key_bad") }
         return nil
     }
 
     /// profile.ts checkValue: per value 16 KiB, 64 fields, 64 KiB in all. `json` is the value's JSON text.
     static func checkValue(key: String, json: String, fields obj: PeopleObject) -> String? {
         let size = utf8(json)
-        if size > valueLimit { return "That is too long. Each piece of information can be up to 16 KiB." }
+        if size > valueLimit { return tr("people_rule_value_long", "\(valueLimit / 1024) KiB") }
         let others = obj.keys.filter { $0 != key }
-        if others.count >= fields && !obj.has(key) { return "You\u{2019}ve reached 64 pieces of information. Remove one to add another." }
+        if others.count >= fields && !obj.has(key) { return tr("people_rule_too_many", String(fields)) }
         let total = others.reduce(0) { $0 + utf8($1) + utf8((obj[$1] ?? .null).text) } + utf8(key) + size
-        if total > allLimit { return "Your profile is full. Remove some information to add more." }
+        if total > allLimit { return tr("people_rule_full") }
         return nil
     }
 
@@ -64,8 +64,8 @@ enum ProfileRules {
     static func checkField(key: String, value: String?, fields obj: PeopleObject) -> String? {
         if let m = checkKey(key) { return m }
         if key == "name" { return value.flatMap { checkName($0) } }
-        if key == "picture" { return "Use the picture controls for that." }
-        guard let value else { return key == "availability" ? "Availability can be changed but not removed." : nil }
+        if key == "picture" { return tr("people_rule_picture") }
+        guard let value else { return key == "availability" ? tr("people_rule_availability") : nil }
         if key == "status" || key == "about" {
             if let m = checkText(value, what: key == "status" ? "a status" : "about") { return m }
         }
@@ -83,11 +83,11 @@ struct KnownField {
 enum PeopleProfileInfo {
     /// In display order.
     static let knownKeys = ["pronouns", "location", "website"]
-    static let known: [String: KnownField] = [
-        "pronouns": KnownField(label: "Pronouns", link: false, hint: "For example, she/her"),
-        "location": KnownField(label: "Location", link: false, hint: "City or region"),
-        "website": KnownField(label: "Website", link: true, hint: "https://"),
-    ]
+    static var known: [String: KnownField] { [
+        "pronouns": KnownField(label: tr("people_info_pronouns"), link: false, hint: tr("people_info_pronouns_hint")),
+        "location": KnownField(label: tr("people_info_location"), link: false, hint: tr("people_info_location_hint")),
+        "website": KnownField(label: tr("people_info_website"), link: true, hint: "https://"),
+    ] }
 
     /// "work-title" / "work_title" -> "Work title". The stored key is never changed.
     static func humanize(_ key: String) -> String {
@@ -132,17 +132,28 @@ enum PeopleProfileInfo {
         return s
     }
 
-    /// "18:00", "tomorrow 08:00", "Friday 08:00": a deadline as people say it. `atMs`, `nowMs` in milliseconds.
-    static func untilLabel(atMs: Int64, nowMs: Int64 = nowMillis(), calendar: Calendar = .current, locale: Locale = .current) -> String {
+    /// "Busy until 18:00", "Busy until tomorrow 08:00", "Busy until Friday 08:00": a deadline as people say it, one whole
+    /// sentence per relative day (the weekday is part of the sentence, not a slot). The clock time is formatted for the
+    /// region. `atMs`, `nowMs` in milliseconds.
+    static func busyUntil(atMs: Int64, nowMs: Int64 = nowMillis(), calendar: Calendar = .current, locale: Locale = .current) -> String {
         let a = Date(timeIntervalSince1970: Double(atMs) / 1000)
         let now = Date(timeIntervalSince1970: Double(nowMs) / 1000)
-        let c = calendar.dateComponents([.hour, .minute], from: a)
-        let hm = String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
-        if calendar.isDate(a, inSameDayAs: now) { return hm }
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(a, inSameDayAs: tomorrow) { return "tomorrow \(hm)" }
         let f = DateFormatter()
-        f.locale = locale; f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateFormat = "EEEE"
-        return "\(f.string(from: a)) \(hm)"
+        f.locale = locale; f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateStyle = .none; f.timeStyle = .short
+        let time = f.string(from: a)
+        if calendar.isDate(a, inSameDayAs: now) { return tr("people_busy_until_today", time) }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(a, inSameDayAs: tomorrow) { return tr("people_busy_until_tomorrow", time) }
+        let key: String
+        switch calendar.component(.weekday, from: a) {
+        case 1: key = "people_busy_until_sun"
+        case 2: key = "people_busy_until_mon"
+        case 3: key = "people_busy_until_tue"
+        case 4: key = "people_busy_until_wed"
+        case 5: key = "people_busy_until_thu"
+        case 6: key = "people_busy_until_fri"
+        default: key = "people_busy_until_sat"
+        }
+        return tr(key, time)
     }
 
     static func nowMillis() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
@@ -155,19 +166,19 @@ struct BusyChoice {
     let until: (Int64) -> Int64?
 }
 
-let busyChoices: [BusyChoice] = [
-    BusyChoice(id: "30m", label: "30 minutes") { $0 + 30 * 60_000 },
-    BusyChoice(id: "1h", label: "1 hour") { $0 + 3_600_000 },
-    BusyChoice(id: "4h", label: "4 hours") { $0 + 4 * 3_600_000 },
-    BusyChoice(id: "tom", label: "Tomorrow morning") { now in
+var busyChoices: [BusyChoice] { [
+    BusyChoice(id: "30m", label: tr("people_busy_30m")) { $0 + 30 * 60_000 },
+    BusyChoice(id: "1h", label: tr("people_busy_1h")) { $0 + 3_600_000 },
+    BusyChoice(id: "4h", label: tr("people_busy_4h")) { $0 + 4 * 3_600_000 },
+    BusyChoice(id: "tom", label: tr("people_busy_tom")) { now in
         let cal = Calendar.current
         let d = Date(timeIntervalSince1970: Double(now) / 1000)
         guard let next = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: d)),
               let eight = cal.date(bySettingHour: 8, minute: 0, second: 0, of: next) else { return now + 12 * 3_600_000 }
         return Int64(eight.timeIntervalSince1970 * 1000)
     },
-    BusyChoice(id: "open", label: "No end time") { _ in nil },
-]
+    BusyChoice(id: "open", label: tr("people_busy_open")) { _ in nil },
+] }
 
 /// The availability field ({available, until?} with until in unix seconds) at this moment: a passed deadline is Available again.
 struct Avail: Equatable {
@@ -185,11 +196,11 @@ func effectiveAvailability(_ fields: PeopleObject?, nowMs: Int64 = PeopleProfile
 }
 
 /// copy.ts, verbatim.
-let pictureHelp = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
-let fieldHelp = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."
+var pictureHelp: String { tr("people_picture_help") }
+var fieldHelp: String { tr("people_field_help") }
 
 /// ProfilePolicy.kt: Busy is not honoured by the core's call path yet, so the UI refuses it instead of pretending.
 enum ProfilePolicy {
-    static let busyUnsupported = "Busy is not available yet. Your call settings are unchanged."
+    static var busyUnsupported: String { tr("people_busy_unsupported") }
     static func availabilityProblem(available: Bool) -> String? { available ? nil : busyUnsupported }
 }

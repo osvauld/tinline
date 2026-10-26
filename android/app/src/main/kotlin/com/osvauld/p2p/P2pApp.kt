@@ -102,6 +102,8 @@ class P2pApp : Application(), NodeEvents {
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
 
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     override fun onCreate() = Startup.trace("P2pApp.onCreate") {
         super.onCreate()
         instance = this
@@ -324,9 +326,9 @@ class P2pApp : Application(), NodeEvents {
      */
     fun persistIdentity(): String? {
         val saved = rememberKey()
-        if (!saved && !node.hasPassphrase()) return "Couldn’t save your account safely on this phone."
+        if (!saved && !node.hasPassphrase()) return appString(R.string.app_save_unsafe)
         if (!saved) Log.w(TAG, "key not remembered; passphrase will be asked at startup")
-        return try { node.commitIdentity(); null } catch (e: Exception) { Log.w(TAG, "commitIdentity: ${e.javaClass.simpleName}"); "Couldn’t save your account on this phone." }
+        return try { node.commitIdentity(); null } catch (e: Exception) { Log.w(TAG, "commitIdentity: ${e.javaClass.simpleName}"); appString(R.string.app_save_failed) }
     }
 
     private fun newNode() = Node(filesDir.resolve("core").also { it.mkdirs() }.absolutePath, this)
@@ -408,7 +410,7 @@ class P2pApp : Application(), NodeEvents {
     private fun restoreOverLockedNow(phrase: String, name: String, passphrase: String) {
         val oldDid = currentDid() ?: throw IllegalStateException("no account")
         if (uniffi.p2pcore.didOfPhrase(phrase) != oldDid) {
-            throw IllegalArgumentException("That recovery phrase belongs to a different identity")
+            throw IllegalArgumentException(appString(R.string.app_phrase_other_identity))
         }
         profiles.invalidate()
         node.beginNewAccount()

@@ -137,8 +137,8 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     }
 
     private fun micUnavailable() {
-        _micProblem.value = if (Perms.granted(app, Manifest.permission.RECORD_AUDIO)) "Microphone unavailable - you can't be heard"
-        else "Microphone permission needed - you can't be heard"
+        _micProblem.value = if (Perms.granted(app, Manifest.permission.RECORD_AUDIO)) appString(R.string.gcall_mic_unavailable)
+        else appString(R.string.gcall_mic_permission)
     }
 
     /**
@@ -169,6 +169,6 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     companion object {
         const val TAG = "GroupCall"
         /** The in-call notification title. */
-        const val NAME = "Group call"
+        val NAME: String get() = appString(R.string.gcall_name)
     }
 }

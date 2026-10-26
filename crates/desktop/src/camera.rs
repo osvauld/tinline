@@ -46,9 +46,9 @@ pub fn hd_paused(hd_on: bool, sent: Option<(u32, u32)>) -> bool {
 /// The short line the HD chip puts in the picture label for 2.6 s.
 pub fn hd_line(on: bool, paused: bool) -> &'static str {
     match (on, paused) {
-        (false, _) => "Sharper video off",
-        (true, true) => "HD paused \u{b7} weak connection",
-        (true, false) => "Sharper video on",
+        (false, _) => crate::i18n::tr_str("common_sharper_video_off"),
+        (true, true) => crate::i18n::tr_str("video_hd_paused_weak_connection"),
+        (true, false) => crate::i18n::tr_str("video_sharper_video_on"),
     }
 }
 

@@ -103,7 +103,7 @@ struct ChatMeta: View {
     let color: Color
     var body: some View {
         HStack(spacing: 3) {
-            if meta.edited { Text("edited").font(ChatText.meta).foregroundStyle(color).lineLimit(1) }
+            if meta.edited { Text(tr("chat_edited")).font(ChatText.meta).foregroundStyle(color).lineLimit(1) }
             Text(meta.time).font(ChatText.meta).foregroundStyle(color).lineLimit(1)
             ChatReceiptMark(mark: meta.receipt, color: color)
         }
@@ -281,7 +281,7 @@ struct ChatQuote: View {
         .overlay(alignment: .leading) { Rectangle().fill(p.accentFill).frame(width: 3) }
         .clipShape(SmoothRoundedRectangle(cornerRadius: 12))
         .padding(.top, 2).padding(.bottom, 6)
-        if let onTap { Button(action: onTap) { content }.buttonStyle(.plain).accessibilityHint("Jump to message") } else { content }
+        if let onTap { Button(action: onTap) { content }.buttonStyle(.plain).accessibilityHint(tr("chat_jump_hint")) } else { content }
     }
 }
 
@@ -303,7 +303,7 @@ struct ChatUnreadDivider: View {
     @Environment(\.tin) private var tin
     var body: some View {
         let ink = ChatPalette(tin).accentInk
-        let label = "\(n) new \(n == 1 ? "message" : "messages")"
+        let label = trn("chat_unread_divider", n)
         HStack(spacing: 10) {
             Rectangle().fill(ink.opacity(0.35)).frame(height: 1)
             Text(label).font(ChatText.font(11, weight: .bold)).foregroundStyle(ink)
@@ -367,7 +367,7 @@ struct ChatComposer<Recording: View, Trailing: View>: View {
                 }
             }
             HStack(alignment: .bottom, spacing: 6) {
-                if let onAttach { ChatIconButton(glyph: .clip, label: "Attach a file", tint: tin.ink2, enabled: !editing, dimAlpha: 0.38, action: onAttach) }
+                if let onAttach { ChatIconButton(glyph: .clip, label: tr("chat_attach"), tint: tin.ink2, enabled: !editing, dimAlpha: 0.38, action: onAttach) }
                 if recording { recordingBar().frame(maxWidth: .infinity) }
                 else { ChatField(draft: $draft, placeholder: placeholder, focus: focus, ctxActive: ctx != nil, onSend: { if !empty { onSend() } }, onEscape: onCancelCtx) }
                 if empty && !editing && showTrailing { trailing() } else { ChatSendButton(editing: editing, empty: empty, onSend: onSend) }
@@ -390,7 +390,7 @@ struct ChatSendButton: View {
                 .frame(width: 44, height: 44).background(p.accentFill, in: Circle())
         }
         .buttonStyle(ChatPressStyle()).disabled(empty).opacity(empty ? 0.38 : 1)
-        .frame(width: 48, height: 48).accessibilityLabel(editing ? "Save edit" : "Send")
+        .frame(width: 48, height: 48).accessibilityLabel(editing ? tr("chat_save_edit") : tr("chat_send"))
     }
 }
 

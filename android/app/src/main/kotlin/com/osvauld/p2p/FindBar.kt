@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -144,6 +145,8 @@ fun FindBar(state: FindState, onQuery: (String) -> Unit, onOlder: () -> Unit, on
     LaunchedEffect(state.focusReq) { runCatching { focus.requestFocus() } }
     val count = state.hits.size
     val shown = if (count == 0) 0 else state.cur + 1
+    val findLabel = stringResource(R.string.find_in_chat)
+    val matchDesc = state.error ?: if (count > 0) stringResource(R.string.find_match_of, shown, count) else stringResource(R.string.find_no_matches)
     val ring by animateColorAsState(if (focused) c.accentFill else c.sf2, tween(PgMotion.SWITCH, easing = PgMotion.Out), label = "findRing")
     Row(modifier.fillMaxSize().background(c.sf).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
@@ -152,11 +155,11 @@ fun FindBar(state: FindState, onQuery: (String) -> Unit, onOlder: () -> Unit, on
         ) {
             Box(Modifier.width(44.dp), contentAlignment = Alignment.Center) { Icon(Pg.Search, null, tint = c.ink2, modifier = Modifier.size(18.dp)) }
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (state.q.isEmpty()) Text("Find in this chat", style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = c.ink2, maxLines = 1)
+                if (state.q.isEmpty()) Text(findLabel, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = c.ink2, maxLines = 1)
                 BasicTextField(
                     state.q, { state.q = it; onQuery(it) },
                     Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { focused = it.isFocused }
-                        .semantics { contentDescription = "Find in this chat" }
+                        .semantics { contentDescription = findLabel }
                         .onPreviewKeyEvent { e ->
                             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             when (e.key) {
@@ -175,14 +178,14 @@ fun FindBar(state: FindState, onQuery: (String) -> Unit, onOlder: () -> Unit, on
                 if (state.error != null) "—" else "$shown/$count" + if (state.next != null) "+" else "",
                 Modifier.width(64.dp).padding(end = 14.dp).semantics {
                     liveRegion = LiveRegionMode.Polite
-                    contentDescription = state.error ?: if (count > 0) "Match $shown of $count" else "No matches"
+                    contentDescription = matchDesc
                 },
                 style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp, fontFeatureSettings = "tnum"), color = c.ink2, textAlign = TextAlign.End, maxLines = 1,
             )
         }
-        PgIconBtn(Pg.ChevUp, "Older match", onOlder, enabled = count > 0 || state.next != null, iconSize = 20.dp)
-        PgIconBtn(Pg.Chev, "Newer match", onNewer, enabled = count > 0, iconSize = 20.dp)
-        PgIconBtn(Pg.X, "Close find", onClose, iconSize = 20.dp)
+        PgIconBtn(Pg.ChevUp, stringResource(R.string.find_older), onOlder, enabled = count > 0 || state.next != null, iconSize = 20.dp)
+        PgIconBtn(Pg.Chev, stringResource(R.string.find_newer), onNewer, enabled = count > 0, iconSize = 20.dp)
+        PgIconBtn(Pg.X, stringResource(R.string.find_close), onClose, iconSize = 20.dp)
     }
 }
 

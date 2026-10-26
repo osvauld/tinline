@@ -9,14 +9,18 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 
 /** What the app needs to be reachable, and the intents that ask for each. */
-enum class Need(val title: String, val why: String) {
-    Mic("Microphone", "So the other person can hear you"),
-    Notifications("Notifications", "To show incoming calls"),
-    Battery("Run in background", "Exempt from battery optimisation so calls arrive when idle"),
-    FullScreen("Full-screen calls", "Show incoming calls over the lock screen"),
+enum class Need(@StringRes val titleRes: Int, @StringRes val whyRes: Int) {
+    Mic(R.string.perms_mic_title, R.string.perms_mic_why),
+    Notifications(R.string.perms_notifications_title, R.string.perms_notifications_why),
+    Battery(R.string.perms_battery_need_title, R.string.perms_battery_need_why),
+    FullScreen(R.string.perms_fullscreen_title, R.string.perms_fullscreen_why);
+
+    val title: String get() = appString(titleRes)
+    val why: String get() = appString(whyRes)
 }
 
 object Perms {

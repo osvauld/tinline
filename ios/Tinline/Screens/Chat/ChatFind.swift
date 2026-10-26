@@ -129,23 +129,23 @@ struct ChatFindBar: View {
             HStack(spacing: 0) {
                 ChatIcon(glyph: .search, size: 18, color: tin.ink2).frame(width: 44)
                 ZStack(alignment: .leading) {
-                    if state.q.isEmpty { Text("Find in this chat").font(TinType.bodyL).foregroundStyle(tin.ink2).lineLimit(1) }
+                    if state.q.isEmpty { Text(tr("chat_find_placeholder")).font(TinType.bodyL).foregroundStyle(tin.ink2).lineLimit(1) }
                     TextField("", text: $state.q)
                         .focused($focused).font(TinType.bodyL).foregroundStyle(tin.ink).tint(tin.pr)
                         .submitLabel(.search).onSubmit(onOlder).textInputAutocapitalization(.never).autocorrectionDisabled()
-                        .accessibilityLabel("Find in this chat")
+                        .accessibilityLabel(tr("chat_find_placeholder"))
                         .onChange(of: state.q) { _, v in onQuery(v) }
                 }
                 Text(state.countLabel).font(TinType.bodyM.monospacedDigit()).foregroundStyle(tin.ink2).lineLimit(1)
                     .frame(width: 64, alignment: .trailing).padding(.trailing, 14)
-                    .accessibilityLabel(state.error ?? (count > 0 ? "Match \(shown) of \(count)" : "No matches"))
+                    .accessibilityLabel(state.error ?? (count > 0 ? tr("chat_find_match_of", String(shown), String(count)) : tr("chat_find_none")))
             }
             .frame(height: 44).background(tin.sf2, in: Capsule())
             .overlay(Capsule().strokeBorder(focused ? p.accentFill : tin.sf2, lineWidth: 2))
             .animation(ChatMotion.animation(ChatMotion.switch), value: focused)
-            ChatIconButton(glyph: .chevUp, label: "Older match", enabled: count > 0 || state.next != nil, iconSize: 20, action: onOlder)
-            ChatIconButton(glyph: .chev, label: "Newer match", enabled: count > 0, iconSize: 20, action: onNewer)
-            ChatIconButton(glyph: .x, label: "Close find", iconSize: 20, action: onClose)
+            ChatIconButton(glyph: .chevUp, label: tr("chat_find_older"), enabled: count > 0 || state.next != nil, iconSize: 20, action: onOlder)
+            ChatIconButton(glyph: .chev, label: tr("chat_find_newer"), enabled: count > 0, iconSize: 20, action: onNewer)
+            ChatIconButton(glyph: .x, label: tr("chat_find_close"), iconSize: 20, action: onClose)
         }
         .padding(.horizontal, 8).frame(maxWidth: .infinity, maxHeight: .infinity).background(tin.sf)
         .onChange(of: state.focusReq) { _, _ in focused = true }

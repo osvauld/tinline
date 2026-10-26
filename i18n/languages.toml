@@ -1,0 +1,126 @@
+# Every language Tinline ships. `tag` is the BCP-47 tag used by Android
+# (values-b+...), iOS (String Catalog) and the desktop table.
+# `rtl` languages need mirrored layouts; `font` names a script the OS may not
+# carry, so the app bundles a Noto font for it.
+# `review` = machine draft that a native speaker has not checked yet.
+
+[[language]]
+tag = "en"
+name = "English"
+source = true
+
+[[language]]
+tag = "fi"
+name = "Suomi"
+
+[[language]]
+tag = "fr"
+name = "Français"
+
+[[language]]
+tag = "de"
+name = "Deutsch"
+
+[[language]]
+tag = "ar"
+name = "العربية"
+rtl = true
+
+# India: the 22 scheduled languages, plus Tulu.
+
+[[language]]
+tag = "as"
+name = "অসমীয়া"
+
+[[language]]
+tag = "bn"
+name = "বাংলা"
+
+[[language]]
+tag = "brx"
+name = "बड़ो"
+
+[[language]]
+tag = "doi"
+name = "डोगरी"
+
+[[language]]
+tag = "gu"
+name = "ગુજરાતી"
+
+[[language]]
+tag = "hi"
+name = "हिन्दी"
+
+[[language]]
+tag = "kn"
+name = "ಕನ್ನಡ"
+
+[[language]]
+tag = "ks"
+name = "کٲشُر"
+rtl = true
+
+[[language]]
+tag = "kok"
+name = "कोंकणी"
+
+[[language]]
+tag = "mai"
+name = "मैथिली"
+
+[[language]]
+tag = "ml"
+name = "മലയാളം"
+
+[[language]]
+tag = "mni"
+name = "ꯃꯤꯇꯩꯂꯣꯟ"
+font = "Noto Sans Meetei Mayek"
+
+[[language]]
+tag = "mr"
+name = "मराठी"
+
+[[language]]
+tag = "ne"
+name = "नेपाली"
+
+[[language]]
+tag = "or"
+name = "ଓଡ଼ିଆ"
+
+[[language]]
+tag = "pa"
+name = "ਪੰਜਾਬੀ"
+
+[[language]]
+tag = "sa"
+name = "संस्कृतम्"
+
+[[language]]
+tag = "sat"
+name = "ᱥᱟᱱᱛᱟᱲᱤ"
+font = "Noto Sans Ol Chiki"
+
+[[language]]
+tag = "sd"
+name = "سنڌي"
+rtl = true
+
+[[language]]
+tag = "ta"
+name = "தமிழ்"
+
+[[language]]
+tag = "te"
+name = "తెలుగు"
+
+[[language]]
+tag = "ur"
+name = "اردو"
+rtl = true
+
+[[language]]
+tag = "tcy"
+name = "ತುಳು"

@@ -73,16 +73,16 @@ func sniff(_ h: Data) -> String? {
 func inspectImage(_ bytes: Data, size: Int? = nil) -> PickResult {
     let total = size ?? bytes.count
     if total > ImageLimits.maxBytes {
-        return .refused("That picture is \(mb(total)) MB. Pictures can be up to \(mb(ImageLimits.maxBytes)) MB.")
+        return .refused(tr("people_pic_too_big", mb(total), mb(ImageLimits.maxBytes)))
     }
-    if sniff(bytes) == nil { return .refused("Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file.") }
-    let unreadable = "That file couldn\u{2019}t be read as a picture. It may be damaged."
+    if sniff(bytes) == nil { return .refused(tr("people_pic_bad_type")) }
+    let unreadable = tr("people_pic_unreadable")
     guard let src = CGImageSourceCreateWithData(bytes as CFData, nil),
           let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
           let pw = props[kCGImagePropertyPixelWidth] as? Int, let ph = props[kCGImagePropertyPixelHeight] as? Int, pw > 0, ph > 0
     else { return .refused(unreadable) }
     if pw > ImageLimits.maxSide || ph > ImageLimits.maxSide {
-        return .refused("That picture is \(pw) \u{00D7} \(ph) pixels. Tinline accepts up to \(ImageLimits.maxSide) pixels on a side.")
+        return .refused(tr("people_pic_too_large_px", String(pw), String(ph), String(ImageLimits.maxSide)))
     }
     guard let img = UIImage(data: bytes) else { return .refused(unreadable) }
     return .ok(Picked(image: img))

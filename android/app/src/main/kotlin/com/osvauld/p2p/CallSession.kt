@@ -86,7 +86,7 @@ class CallSession(
 
     private suspend fun run(cm: CallsManager) {
         val attrs = CallAttributesCompat(
-            displayName = name.ifBlank { "Tinline call" },
+            displayName = name.ifBlank { appString(R.string.call_default_name) },
             address = ADDRESS,
             direction = if (incoming) CallAttributesCompat.DIRECTION_INCOMING else CallAttributesCompat.DIRECTION_OUTGOING,
             callType = callType(),

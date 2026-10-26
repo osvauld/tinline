@@ -306,7 +306,7 @@ struct CallScrimCard<Content: View>: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("About this call")
+            .accessibilityLabel(tr("call_about_title"))
         }
     }
 }

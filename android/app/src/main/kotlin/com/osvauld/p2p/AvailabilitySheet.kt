@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,28 +31,28 @@ fun AvailabilitySheet(
     TinSheet(onDismiss) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(Modifier.weight(1f)) {
-                Text("Available for calls", style = TinType.titleL.copy(fontSize = 20.sp, lineHeight = 26.sp), color = c.ink)
+                Text(stringResource(R.string.avail_title), style = TinType.titleL.copy(fontSize = 20.sp, lineHeight = 26.sp), color = c.ink)
                 Text(
-                    "When this is on, calls ring like a normal phone.",
+                    stringResource(R.string.avail_subtitle),
                     Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2,
                 )
             }
-            TinSwitch(available, { onPick(it, null) }, "Available for calls")
+            TinSwitch(available, { onPick(it, null) }, stringResource(R.string.avail_title))
         }
         if (!available) Text(
-            if (until != null) "Not available until ${clockTime(until)}${if (until - System.currentTimeMillis() / 1000 > 12 * 3600) " tomorrow" else ""}."
-            else "Not available until you turn it back on.",
+            if (until != null) stringResource(
+                if (until - System.currentTimeMillis() / 1000 > 12 * 3600) R.string.avail_until_tomorrow else R.string.avail_until, clockTime(until))
+            else stringResource(R.string.avail_until_manual),
             Modifier.padding(top = 12.dp), style = TinType.bodyM.copy(fontWeight = FontWeight.SemiBold), color = c.ink,
         )
         HorizontalDivider(Modifier.padding(vertical = 14.dp), color = c.ln)
-        Text("TAKE A BREAK", style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.04.sp), color = c.ink2)
+        Text(stringResource(R.string.avail_take_break), style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.04.sp), color = c.ink2)
         val now = System.currentTimeMillis() / 1000
-        BreakOption("For 1 hour", false) { onPick(false, now + 3600) }
-        BreakOption("Until tomorrow morning", false) { onPick(false, tomorrowMorning(now)) }
-        BreakOption("Until I turn it back on", !available && until == null) { onPick(false, null) }
-        val who = myName.ifBlank { "you" }
+        BreakOption(stringResource(R.string.avail_one_hour), false) { onPick(false, now + 3600) }
+        BreakOption(stringResource(R.string.avail_tomorrow_morning), false) { onPick(false, tomorrowMorning(now)) }
+        BreakOption(stringResource(R.string.avail_until_on), !available && until == null) { onPick(false, null) }
         Hint(
-            "While you’re away, people who call see “Couldn’t reach $who”. Nothing is queued and nobody is told why.",
+            if (myName.isBlank()) stringResource(R.string.avail_note_unnamed) else stringResource(R.string.avail_note, myName),
             Modifier.padding(top = 8.dp),
         )
     }

@@ -23,16 +23,16 @@ private struct NewGroupScreen: View {
     @State private var err: String?
 
     var body: some View {
-        GroupsPage(title: "New group") {
+        GroupsPage(title: tr("group_new_title")) {
             ScrollView {
                 VStack(spacing: 16) {
-                    GroupsField(label: "Group name", text: $name, error: err, look: .form, limit: 100)
-                    GroupsInfoCard(text: "This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined.",
+                    GroupsField(label: tr("group_name_label"), text: $name, error: err, look: .form, limit: 100)
+                    GroupsInfoCard(text: tr("group_new_info"),
                                    icon: GroupsIcons.server, kind: .warn)
-                    GroupsHint("You’ll own the group. Invite people from Group info.")
+                    GroupsHint(tr("group_new_owner_hint"))
                 }.padding(.horizontal, 20)
             }
-            GroupsFlowButton(text: busy ? "Making…" : "Create group", enabled: !name.groupsIsBlank && !busy) {
+            GroupsFlowButton(text: busy ? tr("group_making") : tr("group_create_button"), enabled: !name.groupsIsBlank && !busy) {
                 busy = true; err = nil
                 let n = name
                 session.exec({ session.ctl.create(n) }) { r in
@@ -71,23 +71,23 @@ private struct AddMembersScreen: View {
         if let d = ctl.opened.flatMap({ $0.id == id ? $0.detail : nil }) {
             let rows = GroupText.pickRows(dir.contacts.map { InviteCandidate(did: $0.did, name: $0.name) }, d, ctl.sent,
                                           blockedByMe: { dir.blockedByMe($0) }, blocksMe: { dir.blocksMe($0) })
-            GroupsPage(title: "Add to \(d.name)") {
+            GroupsPage(title: tr("group_add_to_title", d.name)) {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        GroupsSectionLabel("CONTACTS · \(picked.count) SELECTED")
-                        if rows.isEmpty { GroupsHint("No contacts to add. People you block, or who block you, aren’t listed.") }
+                        GroupsSectionLabel(trn("group_contacts_selected", picked.count))
+                        if rows.isEmpty { GroupsHint(tr("group_add_no_contacts")) }
                         ForEach(rows, id: \.did) { r in row(r) }
-                        GroupsHint("Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days.").padding(.top, 8)
+                        GroupsHint(tr("group_add_hint")).padding(.top, 8)
                     }.padding(.horizontal, 20).padding(.vertical, 8)
                 }
-                GroupsFlowButton(text: busy ? "Sending…" : (picked.count > 1 ? "Invite \(picked.count) people" : "Invite"), enabled: !picked.isEmpty && !busy) {
+                GroupsFlowButton(text: busy ? tr("group_invite_sending") : (picked.count > 1 ? trn("group_invite_people", picked.count) : tr("group_invite_button")), enabled: !picked.isEmpty && !busy) {
                     busy = true
                     let dids = picked
                     session.exec({ session.ctl.inviteContacts(id, dids: dids) }) { r in
                         busy = false
                         switch r {
                         case .success(let s): session.say(s); dismiss()
-                        case .failure(let e): session.say(e.message.groupsIfBlank("Couldn’t invite"))
+                        case .failure(let e): session.say(e.message.groupsIfBlank(tr("group_invite_failed")))
                         }
                     }
                 }.padding(20)
@@ -95,7 +95,7 @@ private struct AddMembersScreen: View {
             .groupsToasts(session)
             .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
         } else {
-            GroupsPage(title: "Add members") { Spacer() }
+            GroupsPage(title: tr("group_add_members_title")) { Spacer() }
                 .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
         }
     }
@@ -150,8 +150,8 @@ private struct JoinGroupScreen: View {
 
     var body: some View {
         if scanning {
-            GroupsPage(title: "Scan the invite", onBack: { scanning = false }) {
-                scanner.scannerView(prompt: "Point at the group invite") { t in token = t.trimmingCharacters(in: .whitespacesAndNewlines); scanning = false }
+            GroupsPage(title: tr("group_scan_title"), onBack: { scanning = false }) {
+                scanner.scannerView(prompt: tr("group_scan_prompt")) { t in token = t.trimmingCharacters(in: .whitespacesAndNewlines); scanning = false }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         } else { form }
@@ -159,22 +159,22 @@ private struct JoinGroupScreen: View {
 
     private var form: some View {
         let bad = !token.groupsIsBlank && !checking && peek == nil
-        return GroupsPage(title: "Join a group") {
+        return GroupsPage(title: tr("group_join_title")) {
             ScrollView {
                 VStack(spacing: 14) {
-                    GroupsField(label: "Invite link or code", text: $token, placeholder: "tinline://g/…", error: nil, look: .form, mono: true, multiline: true, minHeight: 72,
-                                hint: checking ? "Checking with the group’s host…" : (bad ? "That link didn’t work: it isn’t a group invite, it expired, or its host is offline." : nil))
+                    GroupsField(label: tr("group_join_field"), text: $token, placeholder: "tinline://g/…", error: nil, look: .form, mono: true, multiline: true, minHeight: 72,
+                                hint: checking ? tr("group_join_checking") : (bad ? tr("group_join_bad") : nil))
                     HStack(spacing: 10) {
-                        GroupsFlowButton(text: "Paste", style: .outlined, icon: GroupsIcons.paste) {
+                        GroupsFlowButton(text: tr("group_paste"), style: .outlined, icon: GroupsIcons.paste) {
                             if let s = UIPasteboard.general.string { token = s.trimmingCharacters(in: .whitespacesAndNewlines) }
                         }
-                        GroupsFlowButton(text: "Scan", style: .outlined, icon: GroupsIcons.scan) { scanning = true }
+                        GroupsFlowButton(text: tr("group_scan"), style: .outlined, icon: GroupsIcons.scan) { scanning = true }
                     }
                     if let p = peek { peekCard(p) }
                     if let err { Text(err).font(TinType.bodyM).foregroundStyle(tin.er).frame(maxWidth: .infinity, alignment: .leading) }
                 }.padding(.horizontal, 20)
             }
-            GroupsFlowButton(text: busy ? "Joining…" : "Join", enabled: peek != nil && !busy) {
+            GroupsFlowButton(text: busy ? tr("group_joining") : tr("group_join"), enabled: peek != nil && !busy) {
                 busy = true; err = nil
                 let t = token
                 session.exec({ session.ctl.join(t) }) { r in
@@ -201,8 +201,14 @@ private struct JoinGroupScreen: View {
         }
     }
 
+    /// A line about someone on the join preview: one whole string for me, for a contact and for someone outside my contacts.
+    private func peekLine(_ did: String, named: String, unknown: String, you: String) -> String {
+        if did == session.me { return tr(you) }
+        if let c = session.dir.contacts.first(where: { $0.did == did }), !c.name.groupsIsBlank { return tr(named, c.name) }
+        return tr(unknown)
+    }
+
     private func peekCard(_ p: GroupInvitePeek) -> some View {
-        let unknown = "someone who isn’t in your contacts"
         return VStack(spacing: 14) {
             GroupsCardBox(radius: 20) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -210,12 +216,12 @@ private struct JoinGroupScreen: View {
                         GroupsAvatar(size: 44)
                         Text(p.name).font(TinType.titleM).foregroundStyle(tin.ink)
                     }
-                    Text(p.issuerDid.map { "Invited by \(session.name($0, unknown))" } ?? "A link for your own account").font(TinType.bodyM).foregroundStyle(tin.ink2)
-                    Text("Owner: \(session.name(p.ownerDid, unknown))").font(TinType.bodyM).foregroundStyle(tin.ink2)
-                    if let e = p.expires { Text("Valid until \(GroupsTime.whenFull(e))").font(TinType.bodyM).foregroundStyle(tin.ink2) }
+                    Text(p.issuerDid.map { peekLine($0, named: "group_join_invited_by", unknown: "group_join_invited_by_unknown", you: "group_join_invited_by_you") } ?? tr("group_join_own_link")).font(TinType.bodyM).foregroundStyle(tin.ink2)
+                    Text(peekLine(p.ownerDid, named: "group_join_owner", unknown: "group_join_owner_unknown", you: "group_join_owner_you")).font(TinType.bodyM).foregroundStyle(tin.ink2)
+                    if let e = p.expires { Text(tr("group_valid_until", GroupsTime.whenFull(e))).font(TinType.bodyM).foregroundStyle(tin.ink2) }
                 }.padding(16)
             }
-            GroupsHint("Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute.")
+            GroupsHint(tr("group_join_hint"))
         }
     }
 }
@@ -248,32 +254,32 @@ private struct GroupTokenScreen: View {
     @State private var copied = false
 
     var body: some View {
-        let name = session.ctl.opened.flatMap { $0.id == id ? $0.detail.name : nil } ?? "the group"
-        GroupsPage(title: "Invite link") {
+        let name = session.ctl.opened.flatMap { $0.id == id ? $0.detail.name : nil }
+        GroupsPage(title: tr("group_link_title")) {
             ScrollView {
                 VStack(spacing: 14) {
-                    GroupsHint("Anyone with this link or QR can join \(name) for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.")
+                    GroupsHint(name.map { tr("group_link_hint", $0) } ?? tr("group_link_hint_unnamed"))
                     // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
                     ZStack {
                         RoundedRectangle(cornerRadius: 16).fill(Color.white)
                         if let t = token, let img = groupsQRImage(t) {
-                            Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(12).accessibilityLabel("QR code of the group invite link")
+                            Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(12).accessibilityLabel(tr("group_link_qr_desc"))
                         } else if let err { Text(err).font(TinType.bodyM).foregroundStyle(tin.er).multilineTextAlignment(.center).padding(16) }
-                        else { Text("Making it…").font(TinType.bodyM).foregroundStyle(Color(hex: 0x4D5853)) }
+                        else { Text(tr("group_link_making")).font(TinType.bodyM).foregroundStyle(Color(hex: 0x4D5853)) }
                     }
                     .aspectRatio(1, contentMode: .fit)
                     .onTapGesture { if token != nil { full = true } }
-                    .accessibilityAddTraits(token != nil ? .isButton : []).accessibilityHint(token != nil ? "Show full screen" : "")
+                    .accessibilityAddTraits(token != nil ? .isButton : []).accessibilityHint(token != nil ? tr("group_link_show_full") : "")
                     if let t = token { Text(t).font(TinType.bodyM.monospaced()).foregroundStyle(tin.ink2).multilineTextAlignment(.center).textSelection(.enabled) }
                     HStack(spacing: 10) {
                         if let t = token {
-                            ShareLink(item: "Join \(name) on Tinline: \(t)", subject: Text("Share group invite")) {
-                                Text("Share").font(TinType.button).foregroundStyle(tin.onPrc).frame(maxWidth: .infinity, minHeight: 52).background(tin.prc, in: Capsule())
+                            ShareLink(item: name.map { tr("group_share_text", $0, t) } ?? tr("group_share_text_unnamed", t), subject: Text(tr("group_share_subject"))) {
+                                Text(tr("group_share")).font(TinType.button).foregroundStyle(tin.onPrc).frame(maxWidth: .infinity, minHeight: 52).background(tin.prc, in: Capsule())
                             }
                         } else {
-                            GroupsFlowButton(text: "Share", style: .tonal, icon: GroupsIcons.share, enabled: false) {}
+                            GroupsFlowButton(text: tr("group_share"), style: .tonal, icon: GroupsIcons.share, enabled: false) {}
                         }
-                        GroupsFlowButton(text: copied ? "Copied" : "Copy", style: .outlined, icon: GroupsIcons.copy, enabled: token != nil) {
+                        GroupsFlowButton(text: copied ? tr("group_copied") : tr("group_copy"), style: .outlined, icon: GroupsIcons.copy, enabled: token != nil) {
                             if let t = token { UIPasteboard.general.string = t; copied = true }
                         }
                     }
@@ -290,8 +296,8 @@ private struct GroupTokenScreen: View {
             if let t = token, let img = groupsQRImage(t) {
                 ZStack {
                     Color.white.ignoresSafeArea()
-                    Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(16).accessibilityLabel("QR code of the group invite link, full screen")
-                }.onTapGesture { full = false }.accessibilityAddTraits(.isButton).accessibilityHint("Close")
+                    Image(uiImage: img).interpolation(.none).resizable().scaledToFit().padding(16).accessibilityLabel(tr("group_link_qr_full_desc"))
+                }.onTapGesture { full = false }.accessibilityAddTraits(.isButton).accessibilityHint(tr("group_close"))
             }
         }
     }
