@@ -254,7 +254,10 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
                             Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
                             if (badge > 0) CountBadge(badge, Modifier.align(Alignment.TopEnd).offset(x = (-4).dp, y = (-4).dp))
                         }
-                        Text(t.title, style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold), color = fg)
+                        // One line in every language: a long word (Malayalam "Contacts") shrinks to fit instead of wrapping and growing the bar.
+                        Text(t.title, style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold), color = fg,
+                            maxLines = 1, softWrap = false,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp))
                     }
                 }
         }
