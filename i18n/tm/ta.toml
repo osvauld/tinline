@@ -162,7 +162,7 @@ where = [
   "ios shell_unknown: Name shown for a person with no known name.",
   "ios call_unknown_name: Fallback name when a caller has no name.",
 ]
-text = "தெரியாதவர்"
+text = "பெயர் தெரியாதவர்"
 
 [t_29c32c7f4c]
 en = "Someone"
@@ -1808,7 +1808,7 @@ where = [
   "android groupsb_who_flagged: Subheading of the removal page, above the list of flags. Shown in capitals.",
   "ios group_removal_who: Section label on the removal page.",
 ]
-text = "உங்களுக்குக் கொடியிட்டவர்கள்"
+text = "உங்கள் மீது கொடியிட்டவர்கள்"
 
 [t_ef6d09ddc2]
 en = "Each flag was made by an admin of the group, and this device checked them before showing this."
@@ -2160,7 +2160,7 @@ where = [
   "android groupsb_owner_cant_flag: Disabled menu item shown for the group owner.",
   "ios group_member_owner_no_flag: Disabled action row for the owner.",
 ]
-text = "உரிமையாளருக்குக் கொடியிட முடியாது"
+text = "உரிமையாளர் மீது கொடியிட முடியாது"
 
 [t_2d8f5faeae]
 en = "Flag {name} for removal?"
@@ -2169,7 +2169,7 @@ where = [
   "ios group_flag_title: Title of the flag confirmation. {name} is the member’s first name.",
   "desktop group_flag_for_removal: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "நீக்குவதற்காக {name} அவர்களுக்குக் கொடியிடவா?"
+text = "நீக்குவதற்காக {name} மீது கொடியிடவா?"
 
 [t_e3730899ef]
 en = "Flag {next} of {total}"
@@ -2201,7 +2201,7 @@ where = [
   "android groupsb_flag_button: Confirm button of the flag confirmation. {name} is the member's first name.",
   "ios group_flag_button: Button that flags a member. {name} is the member’s first name.",
 ]
-text = "{name} அவர்களுக்குக் கொடியிடு"
+text = "{name} மீது கொடியிடு"
 
 [t_4599f39831]
 en = "{name} sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it."
@@ -3019,7 +3019,7 @@ en = "Open {label}: {link}"
 where = [
   "android profile_open_link_desc: Screen-reader description of the button that opens a link field. {label} is the field name, {link} the shortened address.",
 ]
-text = "{label} திற: {link}"
+text = "{label} என்பதைத் திற: {link}"
 
 [t_cdd08715b7]
 en = "Remove {label}"
@@ -3027,7 +3027,7 @@ where = [
   "android profile_remove_field_desc: Screen-reader description of the trash button on a profile field. {label} is the field name.",
   "ios people_ui_remove_a11y: Screen reader label of the button that removes a field. {label} is the field name.",
 ]
-text = "{label} அகற்று"
+text = "{label} என்பதை அகற்று"
 
 [t_dbf51573cf]
 en = "Yes"
@@ -4092,7 +4092,7 @@ where = [
   "ios onboarding_welcome_title: Title of the first screen.",
   "desktop signup_a_direct_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "உங்கள் அன்பானவர்களுக்கு ஒரு நேரடி லைன்"
+text = "உங்கள் அன்புக்குரியவர்களுக்கு ஒரு நேரடி லைன்"
 
 [t_a1676ea1be]
 en = "Create a new account or bring one you already have.\nYour current account stays on this phone."
@@ -4254,7 +4254,7 @@ where = [
   "ios onboarding_tip_devices_body: Tip body.",
   "desktop signup_link_another_device_when: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "முடிந்தபோது இன்னொரு சாதனத்தை இணையுங்கள்; அப்போது ஒன்று தொலைந்தாலும் உங்கள் கணக்கை இழக்க மாட்டீர்கள்."
+text = "முடிந்தபோது இன்னொரு சாதனத்தை இணையுங்கள்; அப்போது ஒன்று தொலைந்தாலும் உங்கள் கணக்கு உங்களிடமே இருக்கும்."
 
 [t_ad43e78a15]
 en = "Groups are hosted on a computer"
@@ -4270,7 +4270,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = "குழுவைத் தொடங்க, எப்போதும் இயங்கக்கூடிய கணினியில் Tinline-ஐச் சேருங்கள்."
+text = "குழுவைத் தொடங்க, எப்போதும் இயங்கக்கூடிய கணினியில் Tinline-ஐ நிறுவுங்கள்."
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4886,7 +4886,7 @@ en = "Allow {permission}"
 where = [
   "android onboarding_perm_allow_desc: Screen-reader description of the Allow button. {permission} is the permission name in lower case.",
 ]
-text = "{permission} அனுமதி"
+text = "{permission} அனுமதியை வழங்கு"
 
 [t_3a4f0ec59d]
 en = "{permission} allowed"
@@ -5341,7 +5341,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "Tinline-இலிருந்து ஒலிகள் இல்லை: ரிங், அழைப்பு ஒலிகள், சேர்வுகள்"
+text = "Tinline-இலிருந்து எந்த ஒலியும் இல்லை: ரிங், அழைப்பு ஒலிகள், சேரும் ஒலிகள்"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -6717,7 +6717,7 @@ en = "Expires in {time} · works once"
 where = [
   "android link_expires: Line under the QR code. {time} is the time left as minutes:seconds, such as 4:32.",
 ]
-text = "{time} இல் காலாவதியாகும் · ஒருமுறை மட்டுமே செயல்படும்"
+text = "மீதமுள்ள நேரம் {time} · ஒருமுறை மட்டுமே செயல்படும்"
 
 [t_35781a0696]
 en = "Link code {code}"
@@ -7114,7 +7114,7 @@ en = "Call listener"
 where = [
   "android notif_ch_service: Name of the always-on notification channel in the Android system settings.",
 ]
-text = "அழைப்புக் கேட்பான்"
+text = "அழைப்புச் சேவை"
 
 [t_ff8964c15b]
 en = "Keeps the app reachable for incoming calls"
@@ -8124,7 +8124,7 @@ where = [
   "android conv_download_name: Screen-reader label of the download button on a file. {name} is the file name.",
   "ios chat_file_download_a11y: Accessibility label of the download button on a file. {name} is the file name.",
 ]
-text = "{name} பதிவிறக்கு"
+text = "{name} கோப்பைப் பதிவிறக்கு"
 
 [t_07617323a2]
 en = "Cancel download of {name}"
@@ -8132,7 +8132,7 @@ where = [
   "android conv_cancel_download_name: Screen-reader label of the cancel button on a file download. {name} is the file name.",
   "ios chat_file_cancel_a11y: Accessibility label of the cancel button on a file download. {name} is the file name.",
 ]
-text = "{name} பதிவிறக்கத்தை ரத்துசெய்"
+text = "{name} கோப்பின் பதிவிறக்கத்தை ரத்துசெய்"
 
 [t_9da4610fa6]
 en = "Save {name} to phone"
@@ -8140,7 +8140,7 @@ where = [
   "android conv_save_name_to_phone: Screen-reader label of the save button on a file. {name} is the file name.",
   "ios chat_file_save_a11y: Accessibility label of the save button on a file. {name} is the file name.",
 ]
-text = "{name} ஃபோனில் சேமி"
+text = "{name} கோப்பை ஃபோனில் சேமி"
 
 [t_879708511c]
 en = "Saved {time} · on your devices"
@@ -9603,7 +9603,7 @@ where = [
   "ios people_add_inc_open: Request note when the line is open. {name} is their name.",
   "desktop signup_your_line_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} அவர்களுடனான உங்கள் லைன் திறந்துள்ளது. வணக்கம் சொல்லுங்கள்."
+text = "{name} அவர்களுடனான உங்கள் லைன் திறந்திருக்கிறது. வணக்கம் சொல்லுங்கள்."
 
 [t_4880a21001]
 en = "Request sent. Your line opens when {name} accepts."
@@ -9728,7 +9728,7 @@ where = [
   "ios people_add_inc_accepted: Request note when they accepted. {name} is their name.",
   "desktop signup_accepted_your_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} ஏற்றுக்கொண்டார். {name} அவர்களுடனான உங்கள் லைன் திறந்துள்ளது. வணக்கம் சொல்லுங்கள்."
+text = "{name} ஏற்றுக்கொண்டார். {name} அவர்களுடனான உங்கள் லைன் திறந்திருக்கிறது. வணக்கம் சொல்லுங்கள்."
 
 [t_8677dd930a]
 en = "Calls themselves “{name}”"
@@ -9882,7 +9882,7 @@ where = [
   "android people_hide_field: Screen reader label of the eye button that hides a secret field. {label} is the field's name in lower case.",
   "ios people_field_hide: Accessibility label that hides a secret field’s text. {label} is the field name in lower case, e.g. “passphrase”.",
 ]
-text = "{label} மறை"
+text = "{label} என்பதை மறை"
 
 [t_6e52501208]
 en = "Show {label}"
@@ -9890,7 +9890,7 @@ where = [
   "android people_show_field: Screen reader label of the eye button that shows a secret field. {label} is the field's name in lower case.",
   "ios people_field_show: Accessibility label that shows a secret field’s text. {label} is the field name in lower case.",
 ]
-text = "{label} காட்டு"
+text = "{label} என்பதைக் காட்டு"
 
 [t_5e858be6fe]
 en = "Hide passphrase"
@@ -10502,7 +10502,7 @@ where = [
   "ios shell_mic_body: Explains microphone permission when denied.",
   "ios call_mic_needed_body: Explanation on the microphone permission screen.",
 ]
-text = "அது இல்லாமல், அவர்களுக்கு உங்கள் குரல் கேட்காது. Tinline அழைப்புகளின்போது மட்டுமே கேட்கும் — பின்னணியில் ஒருபோதும் இல்லை."
+text = "அது இல்லாமல், அவர்களுக்கு உங்கள் குரல் கேட்காது. Tinline அழைப்புகளின்போது மட்டுமே மைக்ரோஃபோனைப் பயன்படுத்தும் — பின்னணியில் ஒருபோதும் இல்லை."
 
 [t_6717879327]
 en = "Then go to Permissions › Microphone and allow it."
@@ -11983,7 +11983,7 @@ where = [
   "android video_hd_metered: Short line under the call header once per call when Sharper video is on over mobile data. 'HD' is the name of a button on the call screen.",
   "ios call_hd_metered: Note shown once per call when HD is on over mobile data; \"tap HD\" refers to the HD chip.",
 ]
-text = "மொபைல் டேட்டாவில் HD அதிகம் பயன்படுத்தும் · HD-ஐத் தட்டுங்கள்"
+text = "மொபைல் டேட்டாவில் HD அதிக டேட்டாவைப் பயன்படுத்தும் · HD-ஐத் தட்டுங்கள்"
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -12894,7 +12894,7 @@ en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = "{minutes}:{seconds} இல் காலாவதியாகும் · ஒருமுறை மட்டுமே செயல்படும்"
+text = "மீதமுள்ள நேரம் {minutes}:{seconds} · ஒருமுறை மட்டுமே செயல்படும்"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
@@ -12958,21 +12958,21 @@ en = "Allow {name}"
 where = [
   "ios onboarding_allow_a11y: Accessibility label of the Allow button; {name} is the permission title in lower case.",
 ]
-text = "{name} அனுமதி"
+text = "{name} அனுமதியை வழங்கு"
 
 [t_1c63fc0970]
 en = "Hide {name}"
 where = [
   "ios shellkit_hide_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = "{name} மறை"
+text = "{name} என்பதை மறை"
 
 [t_53251367a9]
 en = "Show {name}"
 where = [
   "ios shellkit_show_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = "{name} காட்டு"
+text = "{name} என்பதைக் காட்டு"
 
 [t_c54e35554c]
 en = "No account"
@@ -13168,7 +13168,7 @@ en = "Open {label}: {url}"
 where = [
   "ios people_ui_open_a11y: Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address.",
 ]
-text = "{label} திற: {url}"
+text = "{label} என்பதைத் திற: {url}"
 
 [t_10b961c673]
 en = "Microphone permission needed to place a call"
@@ -14073,7 +14073,7 @@ en = "Hang up"
 where = [
   "desktop call_hang_up: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = "துண்டி"
+text = "அழைப்பை முடி"
 
 [t_c8637eae36]
 en = "HD"
@@ -14458,7 +14458,7 @@ en = "Saved to {p}"
 where = [
   "desktop chat_saved_to: Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app.",
 ]
-text = "{p} இல் சேமிக்கப்பட்டது"
+text = "சேமித்த இடம்: {p}"
 
 [t_c29e950a10]
 en = "Say hello to {name}"
@@ -14605,7 +14605,7 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாக மாற முடியும். அவற்றை எழுதிப் பாதுகாப்பான இடத்தில் வையுங்கள்."
+text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாகச் செயல்பட முடியும். அவற்றை எழுதிப் பாதுகாப்பான இடத்தில் வையுங்கள்."
 
 [t_83fb73677c]
 en = "I have saved it"
@@ -14647,7 +14647,7 @@ en = "These {words} words are the only way to restore your identity on another d
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number.",
 ]
-text = "வேறு சாதனத்தில் உங்கள் அடையாளத்தை மீட்டெடுக்க இந்த {words} வார்த்தைகள் மட்டுமே ஒரே வழி."
+text = "வேறு சாதனத்தில் உங்கள் அடையாளத்தை மீட்டெடுக்க இந்த {words} வார்த்தைகள்தான் ஒரே வழி."
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
@@ -14724,7 +14724,7 @@ en = "A flag is signed by you and can’t be taken back. {name} can see who flag
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "கொடியில் உங்கள் கையொப்பம் இருக்கும், அதைத் திரும்பப் பெற முடியாது. தமக்கு யார் எப்போது கொடியிட்டார்கள் என்பதை {name} பார்க்க முடியும். நீக்கத்துக்கு முன் {name} எழுதிய செய்திகள் குறியிடப்பட்டுத் தொடர்ந்து தெரியும்."
+text = "கொடியில் உங்கள் கையொப்பம் இருக்கும், அதைத் திரும்பப் பெற முடியாது. தம் மீது யார் எப்போது கொடியிட்டார்கள் என்பதை {name} பார்க்க முடியும். நீக்கத்துக்கு முன் {name} எழுதிய செய்திகள் குறியிடப்பட்டுத் தொடர்ந்து தெரியும்."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
@@ -14850,7 +14850,7 @@ en = "Can invite, flag members and appoint hosts"
 where = [
   "desktop group_can_invite_flag_members: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "அழைக்கலாம், உறுப்பினர்களுக்குக் கொடியிடலாம், ஹோஸ்ட்களை நியமிக்கலாம்"
+text = "அழைக்கலாம், உறுப்பினர்கள் மீது கொடியிடலாம், ஹோஸ்ட்களை நியமிக்கலாம்"
 
 [t_30fa20a31a]
 en = "Carries the group’s calls; a computer that stays on is best"
@@ -15390,15 +15390,15 @@ en_other = "{name} will be able to invite people, flag members ({count} flags re
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member.",
 ]
-one = "{name} மக்களை அழைக்கவும், உறுப்பினர்களுக்குக் கொடியிடவும் ({count} கொடி வந்தால் ஒருவர் நீக்கப்படுவார்), ஹோஸ்ட்களை நியமிக்கவும் முடியும். உரிமையாளரான நீங்கள் மட்டுமே நிர்வாகிகளை ஆக்கவோ நீக்கவோ முடியும்."
-other = "{name} மக்களை அழைக்கவும், உறுப்பினர்களுக்குக் கொடியிடவும் ({count} கொடிகள் வந்தால் ஒருவர் நீக்கப்படுவார்), ஹோஸ்ட்களை நியமிக்கவும் முடியும். உரிமையாளரான நீங்கள் மட்டுமே நிர்வாகிகளை ஆக்கவோ நீக்கவோ முடியும்."
+one = "{name} மக்களை அழைக்கவும், உறுப்பினர்கள் மீது கொடியிடவும் ({count} கொடி வந்தால் ஒருவர் நீக்கப்படுவார்), ஹோஸ்ட்களை நியமிக்கவும் முடியும். உரிமையாளரான நீங்கள் மட்டுமே நிர்வாகிகளை ஆக்கவோ நீக்கவோ முடியும்."
+other = "{name} மக்களை அழைக்கவும், உறுப்பினர்கள் மீது கொடியிடவும் ({count} கொடிகள் வந்தால் ஒருவர் நீக்கப்படுவார்), ஹோஸ்ட்களை நியமிக்கவும் முடியும். உரிமையாளரான நீங்கள் மட்டுமே நிர்வாகிகளை ஆக்கவோ நீக்கவோ முடியும்."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
 where = [
   "desktop group_withdraw_the_offer_to: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "ஹோஸ்ட் செய்யும் முன்வருகையைத் திரும்பப் பெறு"
+text = "ஹோஸ்ட் செய்ய முன்வந்ததைத் திரும்பப் பெறு"
 
 [t_9465546688]
 en = "written before {value} was removed"
@@ -15524,7 +15524,7 @@ en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "இணைக்கப்பட்ட சாதனம் நீங்களாகவே ஆகிவிடும்"
+text = "இணைக்கப்பட்ட சாதனம் நீங்களாகவே செயல்படும்"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
@@ -15622,7 +15622,7 @@ en = "Expires in {value} · works once"
 where = [
   "desktop link_expires_in_works_once: Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app.",
 ]
-text = "{value} இல் காலாவதியாகும் · ஒருமுறை மட்டுமே செயல்படும்"
+text = "மீதமுள்ள நேரம் {value} · ஒருமுறை மட்டுமே செயல்படும்"
 
 [t_9dc5adbda5]
 en = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
@@ -15783,7 +15783,7 @@ en = "Show this to the device you want to add. It becomes you, so only link your
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "நீங்கள் சேர்க்க விரும்பும் சாதனத்துக்கு இதைக் காட்டுங்கள். அது நீங்களாகவே ஆகிவிடும், எனவே உங்கள் சொந்தச் சாதனத்தை மட்டுமே இணையுங்கள்."
+text = "நீங்கள் சேர்க்க விரும்பும் சாதனத்துக்கு இதைக் காட்டுங்கள். அது நீங்களாகவே செயல்படும், எனவே உங்கள் சொந்தச் சாதனத்தை மட்டுமே இணையுங்கள்."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
@@ -16105,7 +16105,7 @@ en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = "{seconds} வி-இல் மறையும்"
+text = "{seconds} வினாடிகளில் மறையும்"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
@@ -16209,7 +16209,7 @@ en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = "புதிய கடவுச்சொற்றொடர் மீண்டும்"
+text = "புதிய கடவுச்சொற்றொடர் (மீண்டும்)"
 
 [t_2be53fc862]
 en = "Nickname"
@@ -16645,7 +16645,7 @@ en = "Your recovery phrase is the only way to get your account back if you lose 
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "உங்கள் எல்லாச் சாதனங்களையும் இழந்தால், உங்கள் கணக்கைத் திரும்பப் பெற உங்கள் மீட்பு வார்த்தைகள் மட்டுமே ஒரே வழி. அவை உள்ள எவரும் நீங்களாகச் செயல்பட முடியும்."
+text = "உங்கள் எல்லாச் சாதனங்களையும் இழந்தால், உங்கள் கணக்கைத் திரும்பப் பெற உங்கள் மீட்பு வார்த்தைகள்தான் ஒரே வழி. அவை உள்ள எவரும் நீங்களாகச் செயல்பட முடியும்."
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
@@ -16666,14 +16666,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாக மாற முடியும். யாரும் பார்க்கவில்லை என்பதை உறுதிசெய்த பிறகு அவற்றைக் காட்டுங்கள்."
+text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாகச் செயல்பட முடியும். யாரும் பார்க்கவில்லை என்பதை உறுதிசெய்த பிறகு அவற்றைக் காட்டுங்கள்."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாக மாற முடியும். யாரும் பார்க்கவில்லை என்பதை உறுதிசெய்யுங்கள்."
+text = "இந்த வார்த்தைகளைப் பார்க்கும் எவரும் நீங்களாகச் செயல்பட முடியும். யாரும் பார்க்கவில்லை என்பதை உறுதிசெய்யுங்கள்."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
