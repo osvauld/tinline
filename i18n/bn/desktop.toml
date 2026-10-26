@@ -495,6 +495,9 @@ text = "অন্য ডিভাইসে ধরা হয়েছে"
 [call_calling]
 text = "কল করা হচ্ছে…"
 
+[call_waking]
+text = "ওঁর ফোন জাগানো হচ্ছে…"
+
 [call_calling_during_your_call]
 text = "আপনার কলের মধ্যে কল করছেন"
 

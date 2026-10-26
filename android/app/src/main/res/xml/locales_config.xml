@@ -5,5 +5,8 @@
     <locale android:name="fi" />
     <locale android:name="fr" />
     <locale android:name="de" />
+    <locale android:name="bn" />
     <locale android:name="hi" />
+    <locale android:name="ml" />
+    <locale android:name="ta" />
 </locale-config>

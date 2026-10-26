@@ -495,6 +495,9 @@ text = "வேறு சாதனத்தில் பதிலளிக்க�
 [call_calling]
 text = "அழைக்கிறது…"
 
+[call_waking]
+text = "அவரது ஃபோனை எழுப்புகிறது…"
+
 [call_calling_during_your_call]
 text = "உங்கள் அழைப்பின் நடுவே அழைக்கிறார்"
 

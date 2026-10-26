@@ -495,6 +495,9 @@ text = "മറ്റൊരു ഉപകരണത്തിൽ എടുത്ത�
 [call_calling]
 text = "വിളിക്കുന്നു…"
 
+[call_waking]
+text = "അവരുടെ ഫോൺ ഉണർത്തുന്നു…"
+
 [call_calling_during_your_call]
 text = "നിങ്ങളുടെ കോളിനിടയിൽ വിളിക്കുന്നു"
 
