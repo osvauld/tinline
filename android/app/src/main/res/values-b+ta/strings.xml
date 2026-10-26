@@ -764,7 +764,7 @@
     <string name="settings_battery_hint_push">யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு ஒரு சிறிய தட்டல் அதை எழுப்பும்; அதனால் பேட்டரி விலக்கு தேவையில்லை. அழைப்பு ஒலிக்க Android-க்குத் தேவையானவை கீழே உள்ள பட்டியலில் உள்ளன.</string>
     <string name="settings_stay_connected">எப்போதும் இணைப்பில் இரு</string>
     <string name="settings_stay_connected_on">Tinline உங்கள் லைனைத் திறந்தே வைத்திருக்கும், அதனால் அழைப்புகளும் செய்திகளும் உடனே வந்து சேரும். இது சற்று அதிகம் பேட்டரியைப் பயன்படுத்தும்.</string>
-    <string name="settings_stay_connected_off">யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு விழித்துக்கொள்ளும். எழுப்பும் தட்டலில் எந்தச் செய்தியும் இருக்காது, ஒரு சிறிய தட்டல் மட்டுமே.</string>
+    <string name="settings_stay_connected_off">யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு ஒரு சிறிய தட்டலில் விழித்துக்கொள்ளும். அந்தத் தட்டலில் எந்தச் செய்தியும் இருக்காது.</string>
     <string name="settings_checklist">சரிபார்ப்புப் பட்டியல்</string>
     <string name="settings_battery_row">பேட்டரி</string>
     <string name="settings_battery_optimised">மேம்படுத்தப்பட்டது — Android, Tinline-ஐ இடைநிறுத்தக்கூடும்</string>
@@ -950,7 +950,7 @@
     <string name="notif_wake_service_title">உங்கள் செய்திகளைப் பெறுகிறது…</string>
     <string name="notif_wake_service_text">Tinline தானாகவே மீண்டும் ஓய்வுக்குச் செல்லும்.</string>
     <string name="notif_wake_notice_title">உங்களுக்குப் புதிய செய்தி வந்திருக்கலாம்</string>
-    <string name="notif_wake_notice_text">விடுபட்டவற்றைப் பார்க்க Tinline-ஐத் திறந்து அன்லாக் செய்யுங்கள்.</string>
+    <string name="notif_wake_notice_text">என்ன வந்திருக்கிறது என்று பார்க்க, Tinline-ஐத் திறங்கள்.</string>
     <string name="notif_return_to_call">அழைப்புக்குத் திரும்பத் தட்டுங்கள்</string>
     <string name="notif_leave">வெளியேறு</string>
     <string name="notif_end_call">அழைப்பை முடி</string>
@@ -1429,7 +1429,7 @@
     <string name="call_mic_unavailable">மைக்ரோஃபோன் கிடைக்கவில்லை - உங்கள் குரல் கேட்காது</string>
     <string name="call_mic_permission">மைக்ரோஃபோன் அனுமதி தேவை - உங்கள் குரல் கேட்காது</string>
     <string name="avail_title">அழைப்புகளுக்குக் கிடைக்கிறேன்</string>
-    <string name="avail_subtitle">இது இயக்கத்தில் இருக்கும்போது, அழைப்புகள் சாதாரண ஃபோனைப் போலவே ஒலிக்கும்.</string>
+    <string name="avail_subtitle">இது ஆன் செய்யப்பட்டிருக்கும்போது, அழைப்புகள் சாதாரண ஃபோனைப் போலவே ஒலிக்கும்.</string>
     <string name="avail_until">%1$s வரை கிடைக்க மாட்டீர்கள்.</string>
     <string name="avail_until_tomorrow">நாளை %1$s வரை கிடைக்க மாட்டீர்கள்.</string>
     <string name="avail_until_manual">நீங்கள் மீண்டும் ஆன் செய்யும் வரை கிடைக்க மாட்டீர்கள்.</string>

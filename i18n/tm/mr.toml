@@ -4802,6 +4802,13 @@ where = [
 ]
 text = "Tinline फोन लाइनसारखे काम करते: ते बॅकग्राउंडमध्ये शांतपणे खुले राहते. यापैकी प्रत्येक परवानगी ऐच्छिक आहे, आणि तुम्ही त्या नंतर बदलू शकता."
 
+[t_42aaf400ac]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it. Each of these is optional, and you can change them later."
+where = [
+  "android onboarding_perms_lead_push: Lead on the permissions step when Tinline wakes by push instead of staying connected all the time. A nudge is a content-free wake-up push.",
+]
+text = "कोणी तुमच्याशी संपर्क करेपर्यंत Tinline विश्रांती घेतो, मग एक छोटीशी हाक त्याला जागे करते. यातील प्रत्येक गोष्ट ऐच्छिक आहे, आणि तुम्ही ती नंतर बदलू शकता."
+
 [t_ff3d541d05]
 en = "Microphone"
 where = [
@@ -5026,13 +5033,28 @@ where = [
 ]
 text = "स्वरूप"
 
+[t_1fb45821b6]
+en = "Language"
+where = [
+  "android settings_language: Settings row and page title: the language the app is shown in.",
+]
+text = "भाषा"
+
 [t_ce3a092efe]
 en = "Match my phone"
 where = [
+  "android settings_language_match: Language option: show the app in the phone's language.",
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
 text = "माझ्या फोनप्रमाणे"
+
+[t_7c0be85713]
+en = "Uses the language this phone is set to"
+where = [
+  "android settings_language_match_sub: Small line under the Match my phone language option.",
+]
+text = "या फोनवर सेट केलेली भाषा वापरतो"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"
@@ -5879,6 +5901,34 @@ where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
 text = "Tinline बॅकग्राउंडमध्ये कनेक्ट राहते, म्हणजे साध्या फोनसारखे कॉल रिंग होतात. यात थोडी बॅटरी लागते. त्यासाठी Android ला खालील गोष्टी लागतात."
+
+[t_94b5ffeb4a]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it, so it needs no battery exemption. The checklist below is what Android needs to ring."
+where = [
+  "android settings_battery_hint_push: Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push.",
+]
+text = "कोणी तुमच्याशी संपर्क करेपर्यंत Tinline विश्रांती घेतो, मग एक छोटीशी हाक त्याला जागे करते, त्यामुळे बॅटरी सवलतीची गरज नाही. कॉलची रिंग वाजण्यासाठी Android ला काय लागते ते खालील यादीत आहे."
+
+[t_f9d8fe5ee3]
+en = "Stay connected all the time"
+where = [
+  "android settings_stay_connected: Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it.",
+]
+text = "नेहमी कनेक्टेड राहणे"
+
+[t_2659692d22]
+en = "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
+where = [
+  "android settings_stay_connected_on: Line under the Stay connected all the time switch when it is on.",
+]
+text = "Tinline तुमची लाइन खुली ठेवतो, त्यामुळे कॉल आणि संदेश लगेच येतात. यासाठी थोडी जास्त बॅटरी लागते."
+
+[t_4ec7dd392b]
+en = "Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge."
+where = [
+  "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
+]
+text = "कोणी तुमच्याशी संपर्क करेपर्यंत Tinline विश्रांती घेतो, मग एका छोट्याशा हाकेने जागा होतो. त्या हाकेत कोणताही संदेश नसतो."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -6795,6 +6845,7 @@ text = "ते जुळतात"
 en = "Connecting…"
 where = [
   "android link_connecting: Heading while connecting to the new device.",
+  "android call_wake_connecting: Status line on the incoming-call screen after you answered a call that woke your phone, while the call itself is still arriving.",
   "ios link_connecting: Heading while connecting to the new device.",
   "desktop gcall_connecting: Desktop, group calls (in gcall.rs, status).",
 ]
@@ -7248,6 +7299,34 @@ where = [
   "android notif_idle_available_text: Text of the always-on notification when available.",
 ]
 text = "तुमची लाइन खुली आहे. बदलण्यासाठी टॅप करा."
+
+[t_27eaf5b596]
+en = "Getting your messages…"
+where = [
+  "android notif_wake_service_title: Title of the brief notification Android shows while a push has woken Tinline to fetch what is waiting.",
+]
+text = "तुमचे संदेश आणत आहे…"
+
+[t_e7908d07a7]
+en = "Tinline will go back to sleep by itself."
+where = [
+  "android notif_wake_service_text: Text of the brief notification while Tinline is woken by a push: it stops on its own when done.",
+]
+text = "Tinline आपोआप पुन्हा विश्रांती घेईल."
+
+[t_9501651b03]
+en = "You may have a new message"
+where = [
+  "android notif_wake_notice_title: Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text.",
+]
+text = "तुम्हाला नवीन संदेश आलेला असू शकतो"
+
+[t_e9548850fb]
+en = "Open Tinline and unlock to catch up."
+where = [
+  "android notif_wake_notice_text: Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived.",
+]
+text = "काय आले ते पाहण्यासाठी Tinline उघडा आणि अनलॉक करा."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
@@ -10511,12 +10590,12 @@ where = [
 ]
 text = "मग परवानग्या › मायक्रोफोन येथे जाऊन परवानगी द्या."
 
-[t_45e67545ae]
-en = "Your line stays open in the background so calls ring like a normal phone."
+[t_ca60790c0b]
+en = "When this is on, calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = "तुमची लाइन बॅकग्राउंडमध्ये खुली राहते, म्हणजे साध्या फोनसारखे कॉल रिंग होतात."
+text = "हे चालू असताना कॉलची रिंग साध्या फोनसारखीच वाजते."
 
 [t_c865b5b93b]
 en = "Not available until {time}."
@@ -10591,6 +10670,15 @@ where = [
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
 text = "कॉल करत आहे…"
+
+[t_41d8e1e3cd]
+en = "Waking their phone…"
+where = [
+  "android call_status_waking: Status line on the call screen while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "ios call_status_waking: Status line while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "desktop call_waking: Desktop, calls: status while an outgoing call waits because the other person's phone was asleep and is being woken by a push (in call_screen.rs, call_view).",
+]
+text = "त्यांचा फोन जागा करत आहे…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."

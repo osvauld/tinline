@@ -761,10 +761,10 @@
     <string name="settings_battery_title">പശ്ചാത്തലവും ബാറ്ററിയും</string>
     <string name="settings_battery_keep">എന്റെ ലൈൻ തുറന്നുവയ്ക്കുക</string>
     <string name="settings_battery_hint">സാധാരണ ഫോൺ പോലെ കോളുകൾ റിംഗ് ചെയ്യാൻ Tinline പശ്ചാത്തലത്തിൽ കണക്റ്റ് ചെയ്തിരിക്കും. ഇത് അല്പം ബാറ്ററി ഉപയോഗിക്കും. അത് അനുവദിക്കാൻ Android-ന് വേണ്ടത് താഴെയുള്ള ചെക്ക്‌ലിസ്റ്റിലുണ്ട്.</string>
-    <string name="settings_battery_hint_push">ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ട് അതിനെ ഉണർത്തും, അതിനാൽ ബാറ്ററി ഇളവ് വേണ്ട. കോൾ റിങ് ചെയ്യാൻ Android-ന് വേണ്ടത് താഴെയുള്ള പട്ടികയിലുണ്ട്.</string>
+    <string name="settings_battery_hint_push">ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ട് അതിനെ ഉണർത്തും, അതിനാൽ ബാറ്ററി ഇളവ് വേണ്ട. കോൾ റിംഗ് ചെയ്യാൻ Android-ന് വേണ്ടത് താഴെയുള്ള പട്ടികയിലുണ്ട്.</string>
     <string name="settings_stay_connected">എപ്പോഴും കണക്റ്റഡ് ആയിരിക്കുക</string>
     <string name="settings_stay_connected_on">Tinline നിങ്ങളുടെ ലൈൻ തുറന്നുവെക്കും, അതിനാൽ കോളുകളും സന്ദേശങ്ങളും ഉടൻ എത്തും. ഇതിന് അൽപ്പം കൂടുതൽ ബാറ്ററി വേണം.</string>
-    <string name="settings_stay_connected_off">ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഉണരും. ഉണർത്തുന്ന തട്ടിൽ സന്ദേശമൊന്നുമില്ല, ഒരു ചെറിയ തട്ട് മാത്രം.</string>
+    <string name="settings_stay_connected_off">ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ടിൽ ഉണരും. ആ തട്ടിൽ സന്ദേശമൊന്നുമില്ല.</string>
     <string name="settings_checklist">ചെക്ക്‌ലിസ്റ്റ്</string>
     <string name="settings_battery_row">ബാറ്ററി</string>
     <string name="settings_battery_optimised">ഒപ്റ്റിമൈസ് ചെയ്തത് — Android Tinline-നെ താൽക്കാലികമായി നിർത്തിയേക്കാം</string>
@@ -1429,7 +1429,7 @@
     <string name="call_mic_unavailable">മൈക്രോഫോൺ ലഭ്യമല്ല - നിങ്ങളെ കേൾക്കാനാകില്ല</string>
     <string name="call_mic_permission">മൈക്രോഫോൺ അനുമതി വേണം - നിങ്ങളെ കേൾക്കാനാകില്ല</string>
     <string name="avail_title">കോളുകൾക്ക് ലഭ്യമാണ്</string>
-    <string name="avail_subtitle">ഇത് ഓണായിരിക്കുമ്പോൾ, കോളുകൾ സാധാരണ ഫോണിലെന്നപോലെ റിങ് ചെയ്യും.</string>
+    <string name="avail_subtitle">ഇത് ഓണായിരിക്കുമ്പോൾ, കോളുകൾ സാധാരണ ഫോണിലെന്നപോലെ റിംഗ് ചെയ്യും.</string>
     <string name="avail_until">%1$s വരെ ലഭ്യമല്ല.</string>
     <string name="avail_until_tomorrow">നാളെ %1$s വരെ ലഭ്യമല്ല.</string>
     <string name="avail_until_manual">നിങ്ങൾ വീണ്ടും ഓണാക്കുന്നതുവരെ ലഭ്യമല്ല.</string>
