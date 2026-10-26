@@ -218,7 +218,8 @@ fun ConversationScreen(
     val rows = remember(msgs.toList(), calls, nowMs / 3_600_000, dividerId) {
         buildList<ConvRow> {
             var last: Long? = null
-            val pending = calls.sortedBy { it.startedAt }.toMutableList()
+            // One row per call: the call id is the row's key (an older log may hold a call twice).
+            val pending = calls.distinctBy { it.callId }.sortedBy { it.startedAt }.toMutableList()
             fun flushCalls(upTo: Long) {
                 while (pending.isNotEmpty() && pending.first().startedAt.toLong() * 1000 <= upTo) {
                     val r = pending.removeAt(0); val at = r.startedAt.toLong() * 1000

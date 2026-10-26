@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use account_model::sync::callsdoc::better;
+
 use crate::Error;
 
 // The models, the clear `account.json` (`Store`) and the issuance stores are
@@ -146,8 +148,17 @@ pub struct History {
 }
 
 impl History {
-    pub fn new(calls: Vec<CallRecord>, backing: Option<Backing>) -> Self {
-        Self { calls: parking_lot::Mutex::new(calls), writing: Default::default(), backing: parking_lot::Mutex::new(backing) }
+    pub fn new(mut calls: Vec<CallRecord>, backing: Option<Backing>) -> Self {
+        // A log saved before `push` kept one record per call may hold a call twice.
+        let mut seen: Vec<CallRecord> = Vec::with_capacity(calls.len());
+        for r in calls.drain(..) {
+            match seen.iter_mut().find(|s| s.call_id == r.call_id) {
+                Some(s) if better(&r, s) => *s = r,
+                Some(_) => {}
+                None => seen.push(r),
+            }
+        }
+        Self { calls: parking_lot::Mutex::new(seen), writing: Default::default(), backing: parking_lot::Mutex::new(backing) }
     }
 
     /// Nothing to show and nowhere to write: while locked, or before an identity exists.
@@ -160,8 +171,16 @@ impl History {
         *self.backing.lock() = Some(backing);
     }
 
+    /// One record per call: a second one for a call already logged (a redial of a call that was
+    /// ringing here, turned away as busy) replaces it only when it is the better account.
     pub fn push(&self, rec: CallRecord) {
         let mut c = self.calls.lock();
+        if let Some(old) = c.iter_mut().find(|r| r.call_id == rec.call_id) {
+            if better(&rec, old) {
+                *old = rec;
+            }
+            return;
+        }
         c.insert(0, rec);
         c.truncate(MAX_HISTORY);
     }

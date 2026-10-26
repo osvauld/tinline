@@ -35,6 +35,12 @@ fn rank(r: &CallRecord) -> (bool, u32, bool, String) {
     (!elsewhere, r.duration_secs, !r.missed, serde_json::to_string(r).unwrap_or_default())
 }
 
+/// Whether `a` is the better account of the call it shares with `b` (`rank`): the same rule for
+/// the synced doc and the local log, so both keep one record per call.
+pub fn better(a: &CallRecord, b: &CallRecord) -> bool {
+    rank(a) > rank(b)
+}
+
 impl CallsDoc {
     pub fn new(device: &[u8; 32]) -> Self {
         Self(Doc::new(device, CALLS_DOC))
