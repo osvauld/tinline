@@ -1385,7 +1385,7 @@ where = [
   "android groupsb_open_group: Label of the sheet that opens the group to anyone with the link, and its confirm button.",
   "desktop group_open_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "ग्रुप सर्वांसाठी खुला करा"
+text = "ग्रुप खुला करा"
 
 [t_4ee1bf34dd]
 en = "Open {name} to anyone with the link?"
@@ -6015,7 +6015,7 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = "हे खाजगी ठेवा. हे ज्याच्याकडे असेल ती व्यक्ती तुमच्या नावाने काहीही करू शकते."
+text = "हे खाजगी ठेवा. हे ज्याच्याकडे असेल ती व्यक्ती तुम्ही म्हणून वावरू शकते."
 
 [t_156815035e]
 en = "{words} words"
@@ -6927,7 +6927,7 @@ where = [
   "android link_approve_warning: Warning on the approval step. {name} is the new device's name. The ** marks make 'recovery phrase' bold; keep them around the same words.",
   "ios link_approve_body: Warning on the approval step. The words **recovery phrase** are bold (markdown stars, keep them around the same words); {name} is the new device's name.",
 ]
-text = "मंजुरी दिल्यावर तुमचे **रिकव्हरी शब्द** {name} ला पाठवले जातात. ते तुमची पूर्ण प्रत बनते: ते तुमच्या चॅट वाचू शकते आणि तुमच्या नावाने काहीही करू शकते. फक्त तुमच्या हातात असलेल्या डिव्हाइसलाच मंजुरी द्या."
+text = "मंजुरी दिल्यावर तुमचे **रिकव्हरी शब्द** {name} ला पाठवले जातात. ते तुमची पूर्ण प्रत बनते: ते तुमच्या चॅट वाचू शकते आणि तुम्ही म्हणून वावरू शकते. फक्त तुमच्या हातात असलेल्या डिव्हाइसलाच मंजुरी द्या."
 
 [t_37bba9dbad]
 en = "Don’t link"
@@ -9244,7 +9244,7 @@ where = [
   "ios call_group_about_trust: Paragraph on the group call details card about trusting the call host.",
   "desktop gcall_your_connection_to_the: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "कॉल होस्टशी तुमचे कनेक्शन एन्क्रिप्टेड आहे, पण आवाज कॉल होस्टपर्यंत पोहोचतो, त्यामुळे तो हा कॉल ऐकू शकतो. पोस्टसाठी तुम्ही ग्रुप होस्टवर जसा विश्वास ठेवता, तसाच कॉलसाठी त्याच्यावर ठेवता."
+text = "कॉल होस्टशी तुमचे कनेक्शन एन्क्रिप्टेड आहे, पण आवाज कॉल होस्टपर्यंत पोहोचतो, त्यामुळे तो हा कॉल ऐकू शकतो. पोस्टसाठी तुम्ही चॅट होस्टवर जसा विश्वास ठेवता, तसाच कॉलसाठी त्याच्यावर ठेवता."
 
 [t_58d3e5c07e]
 en = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
@@ -9253,7 +9253,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "कॉल होस्ट म्हणजे ग्रुपच्या ॲडमिनने निवडलेले आणि ते मान्य केलेले डिव्हाइस. हे ग्रुप होस्टिंगपेक्षा वेगळे आहे. ॲडमिन ग्रुपच्या माहितीमध्ये कॉल होस्ट बदलू शकतात."
+text = "कॉल होस्ट म्हणजे ग्रुपच्या ॲडमिनने निवडलेले आणि ते मान्य केलेले डिव्हाइस. हे चॅट होस्टिंगपेक्षा वेगळे आहे. ॲडमिन ग्रुपच्या माहितीमध्ये कॉल होस्ट बदलू शकतात."
 
 [t_c38df51058]
 en = "Got it"
@@ -12015,7 +12015,7 @@ where = [
   "android link_approve_warning_unnamed: Warning on the approval step when the new device has no name. The ** marks make 'recovery phrase' bold; keep them around the same words.",
   "ios link_approve_body_unnamed: Warning on the approval step when the new device has no name. The words **recovery phrase** are bold (markdown stars, keep them around the same words).",
 ]
-text = "मंजुरी दिल्यावर तुमचे **रिकव्हरी शब्द** नवीन डिव्हाइसला पाठवले जातात. ते तुमची पूर्ण प्रत बनते: ते तुमच्या चॅट वाचू शकते आणि तुमच्या नावाने काहीही करू शकते. फक्त तुमच्या हातात असलेल्या डिव्हाइसलाच मंजुरी द्या."
+text = "मंजुरी दिल्यावर तुमचे **रिकव्हरी शब्द** नवीन डिव्हाइसला पाठवले जातात. ते तुमची पूर्ण प्रत बनते: ते तुमच्या चॅट वाचू शकते आणि तुम्ही म्हणून वावरू शकते. फक्त तुमच्या हातात असलेल्या डिव्हाइसलाच मंजुरी द्या."
 
 [t_2bc0ef71a7]
 en = "Linking the new device"
@@ -14605,7 +14605,7 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "हे शब्द पाहणारे कोणीही तुमच्या नावाने काहीही करू शकतात. ते लिहून सुरक्षित ठिकाणी ठेवा."
+text = "हे शब्द पाहणारे कोणीही तुम्ही म्हणून वावरू शकतात. ते लिहून सुरक्षित ठिकाणी ठेवा."
 
 [t_83fb73677c]
 en = "I have saved it"
@@ -14801,7 +14801,7 @@ en = "Appointed. The device hosts once it agrees (Host from this device)."
 where = [
   "desktop group_appointed_the_device_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = "नेमले. डिव्हाइसने मान्य केल्यावर ते होस्ट करेल (\"या डिव्हाइसवरून होस्ट करा\")."
+text = "नेमले. डिव्हाइसने मान्य केल्यावर ते होस्ट करेल (\"या डिव्हाइसवर होस्ट करा\")."
 
 [t_856dff95d1]
 en = "As a host this computer will:"
@@ -15326,7 +15326,7 @@ en = "This computer doesn’t host any groups. To host one, open it and choose H
 where = [
   "desktop group_this_computer_doesnt_host: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = "हा कॉम्प्युटर कोणताही ग्रुप होस्ट करत नाही. होस्ट करण्यासाठी, ग्रुप उघडा आणि सदस्य विभागात \"या कॉम्प्युटरवरून होस्ट करा\" निवडा."
+text = "हा कॉम्प्युटर कोणताही ग्रुप होस्ट करत नाही. होस्ट करण्यासाठी, ग्रुप उघडा आणि सदस्य विभागात \"हा ग्रुप या कॉम्प्युटरवर होस्ट करा\" निवडा."
 
 [t_66ba1bfba6]
 en = "This computer hosts the group. Posts go through right away."
@@ -15951,14 +15951,14 @@ en = "Anyone who has it can act as you, just like the words. Tinline never asks 
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "शब्दांप्रमाणेच, ती ज्याच्याकडे असेल ती व्यक्ती तुमच्या नावाने काहीही करू शकते. Tinline तुमचे खाते परत मिळवण्याव्यतिरिक्त ती कधीच मागत नाही."
+text = "शब्दांप्रमाणेच, ती ज्याच्याकडे असेल ती व्यक्ती तुम्ही म्हणून वावरू शकते. Tinline तुमचे खाते परत मिळवण्याव्यतिरिक्त ती कधीच मागत नाही."
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = " तुमचे रिकव्हरी शब्द अजूनही ज्यांच्याकडे आहेत, किंवा जे {name} अनलॉक करू शकतात, ते तरीही तुमच्या नावाने काहीही करू शकतात. ते हरवले किंवा चोरीला गेले, तर पूर्ण उपाय म्हणजे नवीन खाते."
+text = " तुमचे रिकव्हरी शब्द अजूनही ज्यांच्याकडे आहेत, किंवा जे {name} अनलॉक करू शकतात, ते तरीही तुम्ही म्हणून वावरू शकतात. ते हरवले किंवा चोरीला गेले, तर पूर्ण उपाय म्हणजे नवीन खाते."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
@@ -16063,7 +16063,7 @@ en = "Every linked device is a full copy of you: it can read your chats and act 
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = "प्रत्येक लिंक केलेले डिव्हाइस म्हणजे तुमची पूर्ण प्रत असते: ते तुमच्या चॅट वाचू शकते आणि तुमच्या नावाने काहीही करू शकते. इथली नावे फक्त तुमच्या डिव्हाइसना दिसतात; संपर्कांना ती कधीच दिसत नाहीत."
+text = "प्रत्येक लिंक केलेले डिव्हाइस म्हणजे तुमची पूर्ण प्रत असते: ते तुमच्या चॅट वाचू शकते आणि तुम्ही म्हणून वावरू शकते. इथली नावे फक्त तुमच्या डिव्हाइसना दिसतात; संपर्कांना ती कधीच दिसत नाहीत."
 
 [t_87fd46df46]
 en = "Fixed rung"
@@ -16645,7 +16645,7 @@ en = "Your recovery phrase is the only way to get your account back if you lose 
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "तुमची सर्व डिव्हाइस हरवली तर तुमचे खाते परत मिळवण्याचा एकमेव मार्ग म्हणजे तुमचे रिकव्हरी शब्द. ते ज्याच्याकडे असतील ती व्यक्ती तुमच्या नावाने काहीही करू शकते."
+text = "तुमची सर्व डिव्हाइस हरवली तर तुमचे खाते परत मिळवण्याचा एकमेव मार्ग म्हणजे तुमचे रिकव्हरी शब्द. ते ज्याच्याकडे असतील ती व्यक्ती तुम्ही म्हणून वावरू शकते."
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
@@ -16666,14 +16666,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "हे शब्द पाहणारे कोणीही तुमच्या नावाने काहीही करू शकतात. कोणी पाहत नाही ना हे तपासा, मग ते दाखवा."
+text = "हे शब्द पाहणारे कोणीही तुम्ही म्हणून वावरू शकतात. कोणी पाहत नाही ना हे तपासा, मग ते दाखवा."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "हे शब्द पाहणारे कोणीही तुमच्या नावाने काहीही करू शकतात. कोणी पाहत नाही ना हे तपासा."
+text = "हे शब्द पाहणारे कोणीही तुम्ही म्हणून वावरू शकतात. कोणी पाहत नाही ना हे तपासा."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
