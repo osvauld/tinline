@@ -439,7 +439,8 @@ private struct GroupItem: View {
                     GroupsBubble(text: m.text, pos: pos, mine: m.outgoing, time: GroupsTime.clock(m.at), tick: tick,
                                  sender: m.outgoing || p ? nil : m.beforeRemoval ? tr("group_sender_removed", groupsFirstName(name)) : groupsFirstName(name),
                                  senderColor: m.beforeRemoval ? tin.ink2 : groupsAuthorColor(m.authorDid, tin),
-                                 quote: m.replyTo == nil ? nil : (qWho, qColor, qr?.text ?? tr("group_quote_unavailable")))
+                                 quote: m.replyTo == nil ? nil : (qWho, qColor, qr.map(GroupText.postLine) ?? tr("group_quote_unavailable")),
+                                 voice: m.voice.map { AnyView(GroupsVoiceBody(session: session, gid: d.id, m: m, v: $0)) })
                         .onTapGesture { if lines != nil { info.toggle() } }
                         .contextMenu { if GroupText.active(d.myRole) { Button(tr("group_reply"), action: onReply) } }
                 }
@@ -507,6 +508,8 @@ private struct GroupsBubble: View {
     var sender: String?
     var senderColor: Color
     var quote: (String?, Color, String)?
+    /// A voice post: this in place of the text, the meta under it at the end.
+    var voice: AnyView? = nil
 
     private var shape: UnevenRoundedRectangle {
         let o: CGFloat = 18, t: CGFloat = 6
@@ -535,15 +538,57 @@ private struct GroupsBubble: View {
                 Text(sender).font(.custom("Figtree", size: 13, relativeTo: .footnote).weight(.bold)).foregroundStyle(senderColor).lineLimit(1).padding(.bottom, 1)
             }
             if let quote { GroupsQuote(who: quote.0, color: quote.1, text: quote.2).padding(.top, 2).padding(.bottom, 6) }
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .lastTextBaseline, spacing: 10) { body; meta }
-                VStack(alignment: .trailing, spacing: 2) { body.frame(maxWidth: .infinity, alignment: .leading); meta }
+            if let voice {
+                VStack(alignment: .trailing, spacing: 2) { voice; meta }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .lastTextBaseline, spacing: 10) { body; meta }
+                    VStack(alignment: .trailing, spacing: 2) { body.frame(maxWidth: .infinity, alignment: .leading); meta }
+                }
             }
         }
         .padding(.horizontal, 13).padding(.vertical, 8)
         .background(mine ? tin.prc : tin.bubIn, in: shape)
         .overlay { if !mine { shape.strokeBorder(tin.bubInLine, lineWidth: 1) } }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A voice post's body: the 1:1 voice player once the recording is here (the core opens it into a file), else load it
+/// (auto-download said wait), wait while it comes, or try again, beside its length (ChatVoiceBubble).
+private struct GroupsVoiceBody: View {
+    @ObservedObject var session: GroupsSession
+    @Environment(\.tin) private var tin
+    let gid: String
+    let m: GroupMessage
+    let v: GroupVoice
+    @State private var path: String?
+
+    var body: some View {
+        Group {
+            if let path {
+                VoiceBubbleContent(id: m.id, path: path, durationMs: Int(v.durationMs), waveform: v.waveform, outgoing: m.outgoing)
+            } else {
+                let remote = v.state == .remote, failed = v.state == .failed
+                HStack(spacing: 10) {
+                    Button {
+                        let (ctl, g, id) = (session.ctl, gid, m.id)
+                        session.exec({ ctl.fetchVoice(g, messageId: id).map { "" } }, session.sayDone)
+                    } label: {
+                        ChatIcon(glyph: failed ? .retry : remote ? .download : .play, size: 22, color: tin.onPr).frame(width: 40, height: 40).background(tin.pr, in: Circle())
+                    }
+                    .disabled(!remote && !failed).accessibilityLabel(remote || failed ? tr("chat_voice_download") : tr("chat_voice_loading"))
+                    Text(clockMs(ms: v.durationMs)).font(.custom("IBMPlexMono-Medium", size: 12, relativeTo: .caption))
+                        .foregroundStyle(m.outgoing ? tin.onPrc : tin.ink2)
+                    Spacer(minLength: 0)
+                }.frame(minWidth: 230)
+            }
+        }
+        .task(id: "\(m.id)\(v.state == .ready)") {
+            guard v.state == .ready else { path = nil; return }
+            let (ctl, g, id) = (session.ctl, gid, m.id)
+            path = await Task.detached(priority: .userInitiated) { ctl.voicePath(g, messageId: id) }.value
+        }
     }
 }
 

@@ -57,6 +57,10 @@ protocol GroupApi {
     func appointCallHost(_ id: String, did: String, deviceId: String) throws
     func revokeCallHost(_ id: String, did: String, deviceId: String) throws
     func acceptCallHost(_ id: String, accept: Bool) throws
+    // Voice posts (the 1:1 recording, carried as a picture is): load one now; the opened file once it is here
+    // (blocking the first time).
+    func fetchVoice(_ id: String, messageId: String) throws
+    func voicePath(_ id: String, messageId: String) -> String?
 }
 
 extension GroupApi {
@@ -65,6 +69,8 @@ extension GroupApi {
     func appointCallHost(_ id: String, did: String, deviceId: String) throws { throw GroupsUnsupported() }
     func revokeCallHost(_ id: String, did: String, deviceId: String) throws { throw GroupsUnsupported() }
     func acceptCallHost(_ id: String, accept: Bool) throws { throw GroupsUnsupported() }
+    func fetchVoice(_ id: String, messageId: String) throws {}
+    func voicePath(_ id: String, messageId: String) -> String? { nil }
 }
 
 struct GroupsUnsupported: Swift.Error {}
@@ -103,6 +109,8 @@ struct NodeGroupApi: GroupApi {
     func appointCallHost(_ id: String, did: String, deviceId: String) throws { try node().groupAppointCallHost(groupId: id, did: did, deviceId: deviceId) }
     func revokeCallHost(_ id: String, did: String, deviceId: String) throws { try node().groupRevokeCallHost(groupId: id, did: did, deviceId: deviceId) }
     func acceptCallHost(_ id: String, accept: Bool) throws { try node().groupAcceptCallHost(groupId: id, accept: accept) }
+    func fetchVoice(_ id: String, messageId: String) throws { try node().groupFetchVoice(groupId: id, messageId: messageId) }
+    func voicePath(_ id: String, messageId: String) -> String? { node().groupVoicePath(groupId: id, messageId: messageId) }
 }
 
 /// A contact as the "Add members" picker sees it.
@@ -268,11 +276,14 @@ enum GroupText {
         default:
             guard let m = s.last else { return "" }
             if m.kind != .post { return sysText(m, me: me) }
-            if m.outgoing { return tr("group_preview_you", m.text) }
-            if m.authorName.groupsIsBlank { return tr("group_preview_someone", m.text) }
-            return tr("group_preview_author", groupsFirstName(m.authorName), m.text)
+            if m.outgoing { return tr("group_preview_you", postLine(m)) }
+            if m.authorName.groupsIsBlank { return tr("group_preview_someone", postLine(m)) }
+            return tr("group_preview_author", groupsFirstName(m.authorName), postLine(m))
         }
     }
+
+    /// A post in one line: its text, or "Voice message" for a voice post (android `postLine`).
+    static func postLine(_ m: GroupMessage) -> String { m.voice != nil ? tr("chat_preview_voice") : m.text }
 
     /// The header's sub-line.
     static func status(_ d: GroupDetail) -> String {
@@ -621,6 +632,14 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
             return .success(m)
         } catch { return failed(error) }
     }
+
+    /// Loads a voice post's recording now (tap, or try again); `onGroupImage` reports it. Off the main thread.
+    func fetchVoice(_ id: String, messageId: String) -> GroupResult<Void> {
+        do { try api.fetchVoice(id, messageId: messageId); return .success(()) } catch { return failed(error) }
+    }
+
+    /// The voice post's recording as a file once it is here (nil before). Off the main thread.
+    func voicePath(_ id: String, messageId: String) -> String? { api.voicePath(id, messageId: messageId) }
 
     func create(_ name: String) -> GroupResult<String> {
         if name.groupsIsBlank { return .failure(GroupFailure(tr("group_err_name_group"))) }
