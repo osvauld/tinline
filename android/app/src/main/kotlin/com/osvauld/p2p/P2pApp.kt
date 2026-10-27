@@ -13,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.update
 import uniffi.p2pcore.Availability
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallRecord
@@ -73,6 +74,10 @@ class P2pApp : Application(), NodeEvents {
     /** The selected account's DID (changes when the user switches); null with no account. */
     val accountDid: StateFlow<String?> = _accountDid
 
+    private val _accountsVersion = MutableStateFlow(0)
+    /** Bumped when the core says the accounts changed (unread counts, a background account opened): the switcher re-reads. */
+    val accountsVersion: StateFlow<Int> = _accountsVersion
+
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
@@ -128,6 +133,9 @@ class P2pApp : Application(), NodeEvents {
         node.setGroupCallEvents(groupCalls)
         groupCallUi = GroupCallUi(this)
         node.setContactRequestEvents(requestEvents)
+        // Several accounts reachable (docs/multi-online.md): the other accounts' keys and notices. The mode is set off the main
+        // thread (the push check may block), first thing on the lifecycle thread and again before every start and wake.
+        node.setAccountEvents(BackgroundAccounts(this))
         hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
         // The cached DID: the group screens read it per row while composing (a core call there stalled the UI).
@@ -144,6 +152,7 @@ class P2pApp : Application(), NodeEvents {
         // first frame never waits for them.
         lifecycle.execute {
             try {
+                applyBackgroundMode()
                 Startup.trace("selectAccount") { selectLastAccountIfNone() }
                 Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
                 Startup.trace("refresh") { refresh() }
@@ -178,6 +187,26 @@ class P2pApp : Application(), NodeEvents {
         if (!a.available && until != null) availJob = scope.launch {
             delay((until.toLong() * 1000 - System.currentTimeMillis()).coerceAtLeast(0) + 500)
             refreshAvailability()
+        }
+    }
+
+    /** Push mode lets the core open another account on a wake for it; always-on / Liberum keeps only the open one. Not on the main thread. */
+    fun applyBackgroundMode() {
+        try { node.setBackgroundMode(PushMode.backgroundMode(this)) } catch (e: Exception) { Log.w(TAG, "setBackgroundMode: ${e.javaClass.simpleName}") }
+    }
+
+    /**
+     * `AccountEvents.on_accounts_changed` (a core thread): the switcher re-reads its counts. When the core itself opened another
+     * account (answering a background account's call), the screens follow it as after a switch, on the lifecycle thread.
+     */
+    fun accountsChanged() {
+        _accountsVersion.update { it + 1 }
+        lifecycle.execute {
+            try {
+                val did = currentDid()
+                if (did != _accountDid.value) refresh()
+                did?.let { BackgroundNotifier.cancelFor(this, it) }
+            } catch (e: Exception) { Log.w(TAG, "accountsChanged: ${e.javaClass.simpleName}") }
         }
     }
 
@@ -372,6 +401,7 @@ class P2pApp : Application(), NodeEvents {
         try { lifecycle.submit { switchToNow(did, passphrase) }.get() }
         catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
         refresh()
+        BackgroundNotifier.cancelFor(this, did)
         Notifications.cancelLocked(this)
         CoreService.ensureAlwaysOn(this)
         startNode()
@@ -474,6 +504,7 @@ class P2pApp : Application(), NodeEvents {
                 Notifications.cancelLocked(this)
                 // Wake-by-push: tell the core where this device can be woken (or take the tokens back in always-on mode).
                 WakeHandler.syncTarget(this)
+                applyBackgroundMode()
                 try { Startup.trace("node.start") { node.start() } } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
                 refresh()
             } catch (e: Throwable) { Log.e(TAG, "startNode", e) }

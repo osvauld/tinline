@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uniffi.p2pcore.BackgroundMode
 
 /** docs/push.md: push is the default where the edition can do it; always-on otherwise. */
 class PushPolicyTest {
@@ -25,5 +26,12 @@ class PushPolicyTest {
     @Test fun onlyAlwaysOnStartsTheServiceAtBootAndAppOpen() {
         assertTrue(PushPolicy.wantsAlwaysOnService(PushPolicy.Mode.ALWAYS_ON))
         assertFalse(PushPolicy.wantsAlwaysOnService(PushPolicy.Mode.PUSH))
+    }
+
+    /** docs/multi-online.md: other accounts wake by push; always-on (and Liberum, always-on by the rule above) keeps one. */
+    @Test fun onlyPushLetsOtherAccountsWake() {
+        assertEquals(BackgroundMode.ON_WAKE, PushPolicy.backgroundMode(PushPolicy.Mode.PUSH))
+        assertEquals(BackgroundMode.OPEN_ONLY, PushPolicy.backgroundMode(PushPolicy.Mode.ALWAYS_ON))
+        assertEquals(BackgroundMode.OPEN_ONLY, PushPolicy.backgroundMode(PushPolicy.mode(providerAvailable = false, alwaysOn = null)))
     }
 }

@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uniffi.p2pcore.AccountRef
 import uniffi.p2pcore.WakeOutcome
 
 /** The wake ring's state changes and the plan a core answer maps to (docs/push.md "Calls"). Synthetic DIDs. */
@@ -53,6 +54,17 @@ class WakeRingTest {
         assertEquals(WakePlan.Nothing, WakePlan.of(WakeOutcome.EndCall))
         assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.DialedBack(a)))
         assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.CodeWake))
-        assertEquals(WakePlan.Ring(a, "Maya"), WakePlan.of(WakeOutcome.Ring(a, "Maya")))
+        assertEquals(WakePlan.Ring(a, "Maya"), WakePlan.of(WakeOutcome.Ring(a, "Maya", null)))
+    }
+
+    /** docs/multi-online.md: a call wake for another account of this phone carries it to the ring, which names it. */
+    @Test fun aRingForABackgroundAccountNamesIt() {
+        val work = AccountRef("did:key:zWork", "Work")
+        assertEquals(WakePlan.Ring(a, "Maya", work), WakePlan.of(WakeOutcome.Ring(a, "Maya", work)))
+        val ring = WakeRingLogic.ring(null, a, "Maya", work.name)
+        assertEquals("Maya → Work", ring.title)
+        assertEquals("Maya", WakeRingLogic.ring(null, a, "Maya").title)
+        // A repeat wake keeps the early answer and the account.
+        assertEquals(WakeRingUi(a, "Maya", answered = true, account = "Work"), WakeRingLogic.ring(WakeRingLogic.answered(ring), a, "Maya", "Work"))
     }
 }

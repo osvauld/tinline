@@ -109,6 +109,7 @@ private fun StayConnectedRow(alwaysOn: Boolean, onChange: (Boolean) -> Unit) {
                 val app = P2pApp.get(ctx)
                 app.scope.launch {
                     WakeHandler.syncTarget(app)
+                    app.applyBackgroundMode()   // always-on keeps only the open account; push lets the others wake
                     if (on) CoreService.ensureRunning(ctx) else CoreService.poke("push mode")
                 }
             }, stringResource(R.string.settings_stay_connected))

@@ -3,6 +3,7 @@ package com.osvauld.p2p
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.launch
+import uniffi.p2pcore.AccountRef
 import uniffi.p2pcore.LockState
 import uniffi.p2pcore.PushTarget
 import uniffi.p2pcore.WakeOutcome
@@ -13,14 +14,17 @@ sealed interface WakePlan {
     data object Nothing : WakePlan
     /** A message wake (or a code wake, from someone with our code): make sure the node runs so the dial-back, the sync or their contact request happen; the usual notifications follow. */
     data object StartNode : WakePlan
-    /** A call wake: ring now with the user's own name for the contact, and keep the node up for the caller's dial. */
-    data class Ring(val did: String, val name: String) : WakePlan
+    /**
+     * A call wake: ring now with the user's own name for the contact, and keep the node up for the caller's dial.
+     * [account]: the account of this phone it rings, when not the open one (the ring names it; the core routed it there).
+     */
+    data class Ring(val did: String, val name: String, val account: AccountRef? = null) : WakePlan
 
     companion object {
         fun of(o: WakeOutcome): WakePlan = when (o) {
             is WakeOutcome.Ignore, is WakeOutcome.EndCall -> Nothing
             is WakeOutcome.DialedBack, is WakeOutcome.CodeWake -> StartNode
-            is WakeOutcome.Ring -> Ring(o.did, o.name)
+            is WakeOutcome.Ring -> Ring(o.did, o.name, o.account)
         }
     }
 }
@@ -75,6 +79,7 @@ object WakeHandler {
         val app = P2pApp.get(ctx)
         if (!PushMode.pushOn(app)) return   // always-on: the service is connected already; a stray push is ignored
         app.unlockForWake()
+        app.applyBackgroundMode()   // a push that started the process may come before the first start
         val outcome = try {
             app.node.onWake(hint)
         } catch (e: uniffi.p2pcore.Exception.Locked) { Notifications.wakeNotice(app); return }
@@ -83,7 +88,7 @@ object WakeHandler {
         when (val plan = WakePlan.of(outcome)) {
             WakePlan.Nothing -> {}
             WakePlan.StartNode -> keepUp(app)
-            is WakePlan.Ring -> { WakeRing.ring(app, plan.did, plan.name); keepUp(app) }
+            is WakePlan.Ring -> { WakeRing.ring(app, plan.did, plan.name, plan.account?.name); keepUp(app) }
         }
     }
 
