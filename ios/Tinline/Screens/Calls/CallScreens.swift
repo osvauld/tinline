@@ -45,7 +45,7 @@ struct CallScreenRoot: View {
         ZStack {
             if let u = ui, u.info.incoming, u.isRinging {
                 // Their call arrived while ours was open (ours yielded): ring it here.
-                IncomingCallContent(name: u.info.peerName, did: u.info.peerDid, video: u.info.video,
+                IncomingCallContent(name: u.info.ringName(tr("call_unknown_name")), did: u.info.peerDid, video: u.info.video,
                                     onDecline: { controller.decline() },
                                     onAnswer: { calls.platform.requestMic { controller.answer() } },
                                     onVideo: { calls.platform.requestMicAndCamera { controller.answerWithVideo() } })

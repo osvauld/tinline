@@ -249,8 +249,10 @@ private struct ShellMainStack: View {
                              onOpen: { ctl.openCallScreen() }, onDecline: { ctl.declineWaiting() }, onAnswer: { ctl.endAndAnswer() })
         }
         if let u = ctl.ui, u.info.incoming, u.state == .ringing {
-            return ShellRing(did: u.info.peerDid, name: ShellText.ifBlank(u.info.peerName, tr("shell_unknown")), sub: u.info.video ? tr("shell_ring_incoming_video") : tr("shell_ring_incoming"),
-                             onOpen: { ctl.openCallScreen() }, onDecline: { ctl.decline() }, onAnswer: { ctl.answer(); ctl.openCallScreen() })
+            // Another account's call (`account`): "Asha → Work"; answering switches first and opens the screen after (CallController).
+            let switches = u.info.account != nil
+            return ShellRing(did: u.info.peerDid, name: u.info.ringName(tr("shell_unknown")), sub: u.info.video ? tr("shell_ring_incoming_video") : tr("shell_ring_incoming"),
+                             onOpen: { ctl.openCallScreen() }, onDecline: { ctl.decline() }, onAnswer: { ctl.answer(); if !switches { ctl.openCallScreen() } })
         }
         return nil
     }
@@ -288,6 +290,14 @@ private struct ShellMainStack: View {
                                    onOpenChat: { did in callShown = false; nav.push(.chat(did, nil)) })
         }
         .onAppear { calls.controller.openCallScreen = { callShown = true } }
+        // A notification tap asked for a conversation (another account's notice switches to it first, ShellCore.openFromNotice).
+        .onReceive(OpenChat.request) { did in
+            guard let did else { return }
+            OpenChat.request.send(nil)
+            callShown = false
+            nav.home()
+            nav.push(.chat(did, nil))
+        }
         .onChange(of: callShown) { _, on in calls.controller.callScreenShown = on }
         // A group call or join that needs the microphone: the system dialog, then the call (or the explainer screen).
         .onChange(of: calls.groupUi.needMic) { _, gid in

@@ -2270,7 +2270,14 @@ text = "Luo uusi tili"
 text = "Linkitä tili toiselta laitteelta"
 
 [unlock_one_online]
-text = "Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi."
+text = "Avaamasi tili on verkossa. Muut tilisi soivat ja ilmoittavat silti, kun Tinline voi herättää ne; siihen asti niiden puhelut soivat muilla laitteillasi."
+
+[shell_account_unread]
+one = "{count} lukematon"
+other = "{count} lukematonta"
+
+[shell_notice_account_message_body]
+text = "Uusi viesti"
 
 [unlock_finish_call]
 text = "Lopeta ensin puhelusi"

@@ -18,6 +18,9 @@ final class AppEnv: ObservableObject {
     @Published var hasIdentity = false
     /// The selected account's DID (changes when the user switches); nil with no account.
     @Published var accountDid: String?
+    /// Bumped when the core says the accounts changed (`AccountEvents.onAccountsChanged`: unread counts, background
+    /// accounts): the account lists re-read `accounts()`.
+    @Published var accountsTick = 0
     /// The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires).
     @Published var history: [CallRecord] = []
     /// Group calls this device was in or missed, newest first (the core's group call log; local to this device).

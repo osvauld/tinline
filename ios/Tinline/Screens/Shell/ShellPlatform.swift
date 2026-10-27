@@ -205,6 +205,69 @@ final class ShellPrefs: @unchecked Sendable {
     }
 }
 
+// ---------------------------------------------------------------- notices for other accounts (docs/multi-online.md)
+
+/// Local notifications for accounts that are not open ("Asha → Work · New message") and their taps. The delegate is set at
+/// launch (`TinlineApp.init`) so a tap that launches the app is not lost; it waits for `core` (set in `boot`). Only these
+/// notices go through here: the open account's message notifications are the Chat area's `ChatNotifier`.
+@MainActor
+final class ShellNotices: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = ShellNotices()
+    nonisolated static let category = "tinline.account_message"
+    nonisolated private static let accountKey = "account", peerKey = "peer"
+
+    weak var core: ShellCore? { didSet { if core != nil, let t = pendingTap { pendingTap = nil; open(t) } } }
+    private var pendingTap: (account: String, peer: String)?
+
+    /// Call once at launch, before the first scene.
+    func install() { UNUserNotificationCenter.current().delegate = self }
+
+    /// One notice per account and contact: a newer message replaces the older one. No message text: the core does not hand it
+    /// to the background path, and the title already says who and for which account.
+    func postBackgroundMessage(account: AccountRef, fromDid: String, fromName: String) {
+        let c = UNMutableNotificationContent()
+        c.title = tr("shell_notice_account_message_title", ShellText.ifBlank(fromName, tr("shell_unknown")), ShellText.ifBlank(account.name, "?"))
+        c.body = tr("shell_notice_account_message_body")
+        c.sound = ShellPrefs().alert("quiet") ? nil : .default
+        c.categoryIdentifier = Self.category
+        c.threadIdentifier = "account." + account.did
+        c.userInfo = [Self.accountKey: account.did, Self.peerKey: fromDid]
+        let req = UNNotificationRequest(identifier: "account.\(account.did).\(fromDid)", content: c, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { err in if let err { NSLog("Tinline: account notice failed: \(err)") } }
+    }
+
+    /// The open account's notices go away once its conversations are read; another account's stay until opened.
+    func clear(account did: String) {
+        let c = UNUserNotificationCenter.current()
+        c.getDeliveredNotifications { list in
+            let ids = list.filter { $0.request.content.userInfo[Self.accountKey] as? String == did }.map(\.request.identifier)
+            if !ids.isEmpty { c.removeDeliveredNotifications(withIdentifiers: ids) }
+        }
+    }
+
+    private func open(_ t: (account: String, peer: String)) {
+        guard let core else { pendingTap = t; return }
+        Task { await core.openFromNotice(account: t.account, peer: t.peer) }
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler done: @escaping () -> Void) {
+        let info = response.notification.request.content.userInfo
+        let account = info[Self.accountKey] as? String, peer = info[Self.peerKey] as? String
+        let tapped = response.actionIdentifier == UNNotificationDefaultActionIdentifier
+        Task { @MainActor in
+            if tapped, let account, let peer { self.open((account, peer)) }
+            done()
+        }
+    }
+
+    /// In front, another account's notice still shows (the screens show only the open account).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                            withCompletionHandler done: @escaping (UNNotificationPresentationOptions) -> Void) {
+        done([.banner, .list, .sound])
+    }
+}
+
 // ---------------------------------------------------------------- clipboard, links
 
 enum ShellClipboard {
