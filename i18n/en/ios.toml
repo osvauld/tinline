@@ -3022,8 +3022,25 @@ text = "Link an account from another device"
 note = "Row in the account picker."
 
 [unlock_one_online]
-text = "One account is online at a time. Calls to a locked account ring only on your other devices."
-note = "Hint at the bottom of the account picker."
+text = "The account you open is online. Your other accounts still ring and notify when Tinline can wake them; until then, their calls ring on your other devices."
+note = "Hint at the bottom of the account picker. Only the open account keeps its connection; another account can be woken by a content-free push (a wake-up) so its calls and messages still come through. iOS cannot wake them yet, so their calls ring on the person's other devices."
+
+[shell_account_unread]
+one = "{count} unread"
+other = "{count} unread"
+note = "Screen-reader label of the dot on an account in the account switcher. {count} unread messages for that account."
+
+[shell_notice_account_message_title]
+text = "{name} → {account}"
+note = "Title of the notification for a message to an account that is not open. {name} is the sender, {account} the name of the account on this phone it was sent to. The arrow reads as “to”."
+
+[shell_notice_account_message_body]
+text = "New message"
+note = "Body of the notification for a message to an account that is not open. The text itself is not shown; tapping switches to that account."
+
+[call_for_account]
+text = "{name} → {account}"
+note = "Caller name on a ringing call for an account that is not open: {name} is the caller, {account} the name of the account on this phone they are calling. The arrow reads as “to”. Answering switches to that account."
 
 [unlock_finish_call]
 text = "Finish your call first"

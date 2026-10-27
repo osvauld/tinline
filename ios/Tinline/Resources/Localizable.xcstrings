@@ -2581,6 +2581,18 @@
         }
       }
     },
+    "call_for_account": {
+      "comment": "Caller name on a ringing call for an account that is not open: {name} is the caller, {account} the name of the account on this phone they are calling. The arrow reads as “to”. Answering switches to that account.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ → %2$@"
+          }
+        }
+      }
+    },
     "call_got_it": {
       "comment": "Button that closes the call details card.",
       "extractionState": "manual",
@@ -81571,6 +81583,180 @@
         }
       }
     },
+    "shell_account_unread": {
+      "comment": "Screen-reader label of the dot on an account in the account switcher. {count} unread messages for that account.",
+      "extractionState": "manual",
+      "localizations": {
+        "bn": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lldটি না-পড়া"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lldটি না-পড়া"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld ungelesen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld ungelesen"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld unread"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld unread"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld lukematon"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld lukematonta"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld non lus"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld non lu"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld non lus"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld बिना पढ़ा"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld बिना पढ़े"
+                }
+              }
+            }
+          }
+        },
+        "ml": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld വായിക്കാത്തത്"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld വായിക്കാത്തവ"
+                }
+              }
+            }
+          }
+        },
+        "mr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld न वाचलेले"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld न वाचलेले"
+                }
+              }
+            }
+          }
+        },
+        "ta": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld படிக்காதது"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld படிக்காதவை"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "shell_back": {
       "comment": "Accessibility label of a back button.",
       "extractionState": "manual",
@@ -87745,6 +87931,78 @@
         }
       }
     },
+    "shell_notice_account_message_body": {
+      "comment": "Body of the notification for a message to an account that is not open. The text itself is not shown; tapping switches to that account.",
+      "extractionState": "manual",
+      "localizations": {
+        "bn": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "নতুন মেসেজ"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Neue Nachricht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New message"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uusi viesti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nouveau message"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नया संदेश"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "പുതിയ സന്ദേശം"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नवीन संदेश"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "புதிய செய்தி"
+          }
+        }
+      }
+    },
+    "shell_notice_account_message_title": {
+      "comment": "Title of the notification for a message to an account that is not open. {name} is the sender, {account} the name of the account on this phone it was sent to. The arrow reads as “to”.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ → %2$@"
+          }
+        }
+      }
+    },
     "shell_pass_strength_empty": {
       "comment": "Passphrase hint while the field is empty.",
       "extractionState": "manual",
@@ -93302,61 +93560,61 @@
       }
     },
     "unlock_one_online": {
-      "comment": "Hint at the bottom of the account picker.",
+      "comment": "Hint at the bottom of the account picker. Only the open account keeps its connection; another account can be woken by a content-free push (a wake-up) so its calls and messages still come through. iOS cannot wake them yet, so their calls ring on the person's other devices.",
       "extractionState": "manual",
       "localizations": {
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "একবারে একটি অ্যাকাউন্ট অনলাইনে থাকে। লক করা অ্যাকাউন্টে কল এলে শুধু আপনার অন্য ডিভাইসগুলোতে রিং হয়।"
+            "value": "আপনি যে অ্যাকাউন্ট খোলেন সেটি অনলাইনে থাকে। Tinline আপনার অন্য অ্যাকাউন্টগুলোকে জাগাতে পারলে সেগুলোর কলও রিং হয় ও বিজ্ঞপ্তি আসে; ততক্ষণ সেগুলোর কল আপনার অন্য ডিভাইসগুলোতে রিং হয়।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Es ist immer nur ein Konto online. Anrufe an ein gesperrtes Konto klingeln nur auf deinen anderen Geräten."
+            "value": "Das Konto, das du öffnest, ist online. Deine anderen Konten klingeln und benachrichtigen dich trotzdem, wenn Tinline sie wecken kann; bis dahin klingeln ihre Anrufe auf deinen anderen Geräten."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One account is online at a time. Calls to a locked account ring only on your other devices."
+            "value": "The account you open is online. Your other accounts still ring and notify when Tinline can wake them; until then, their calls ring on your other devices."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi."
+            "value": "Avaamasi tili on verkossa. Muut tilisi soivat ja ilmoittavat silti, kun Tinline voi herättää ne; siihen asti niiden puhelut soivat muilla laitteillasi."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Un seul compte est en ligne à la fois. Les appels vers un compte verrouillé ne sonnent que sur vos autres appareils."
+            "value": "Le compte que vous ouvrez est en ligne. Vos autres comptes sonnent et vous préviennent aussi quand Tinline peut les réveiller ; d’ici là, leurs appels sonnent sur vos autres appareils."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "एक समय में एक खाता ऑनलाइन रहता है। लॉक खाते की कॉल सिर्फ़ आपके दूसरे डिवाइस पर बजती हैं।"
+            "value": "आप जो खाता खोलते हैं, वह ऑनलाइन रहता है। जब Tinline आपके दूसरे खातों को जगा सकता है, तब उनकी कॉल भी बजती हैं और सूचनाएँ आती हैं; तब तक उनकी कॉल आपके दूसरे डिवाइस पर बजती हैं।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ഒരു സമയം ഒരു അക്കൗണ്ട് മാത്രമേ ഓൺലൈനിലുണ്ടാകൂ. ലോക്ക് ചെയ്ത അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും."
+            "value": "നിങ്ങൾ തുറക്കുന്ന അക്കൗണ്ട് ഓൺലൈനിലായിരിക്കും. Tinline-ന് നിങ്ങളുടെ മറ്റ് അക്കൗണ്ടുകളെ ഉണർത്താൻ കഴിയുമ്പോൾ അവയിലേക്കുള്ള കോളുകളും റിംഗ് ചെയ്യും, അറിയിപ്പുകളും വരും; അതുവരെ ആ കോളുകൾ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ റിംഗ് ചെയ്യും."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "एका वेळी एकच खाते ऑनलाइन असते. लॉक असलेल्या खात्याचे कॉल फक्त तुमच्या इतर डिव्हाइसवर रिंग होतात."
+            "value": "तुम्ही उघडलेले खाते ऑनलाइन असते. Tinline तुमची इतर खाती जागी करू शकते तेव्हा त्यांचे कॉलही रिंग होतात आणि सूचना येतात; तोपर्यंत त्यांचे कॉल तुमच्या इतर डिव्हाइसवर रिंग होतात."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ஒரே நேரத்தில் ஒரு கணக்கு மட்டுமே ஆன்லைனில் இருக்கும். பூட்டப்பட்ட கணக்குக்கு வரும் அழைப்புகள் உங்கள் மற்ற சாதனங்களில் மட்டுமே ஒலிக்கும்."
+            "value": "நீங்கள் திறக்கும் கணக்கு ஆன்லைனில் இருக்கும். Tinline உங்கள் மற்ற கணக்குகளை எழுப்ப முடியும்போது அவற்றின் அழைப்புகளும் ஒலிக்கும், அறிவிப்புகளும் வரும்; அதுவரை அவற்றின் அழைப்புகள் உங்கள் மற்ற சாதனங்களில் ஒலிக்கும்."
           }
         }
       }
