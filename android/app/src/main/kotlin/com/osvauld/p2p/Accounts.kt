@@ -17,7 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +36,12 @@ class AccountActions(val onCreate: () -> Unit, val onRestore: () -> Unit, val on
 fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, actions: AccountActions? = null, atLogin: Boolean = false) {
     val c = Tin.c
     val status by app.status.collectAsState()
-    val list by produceState<List<AccountSummary>>(emptyList()) { value = withContext(Dispatchers.IO) { app.node.accounts() } }
+    // Re-read when the core says the accounts changed: a background account's unread count, or the open one.
+    val version by app.accountsVersion.collectAsState()
+    val list by produceState<List<AccountSummary>>(emptyList(), version) { value = withContext(Dispatchers.IO) { app.node.accounts() } }
+    // With wake pushes the other accounts still ring and notify here (docs/multi-online.md); always-on and Liberum keep one.
+    // Read once, as Settings does (answered from the push check's cache), so the hint never changes under the reader.
+    val wakes = remember { PushMode.pushOn(app) }
     TinSheet(onDismiss) {
         Text(if (atLogin) stringResource(R.string.accounts_open_as) else stringResource(R.string.accounts_title), Modifier.padding(top = 4.dp, bottom = 8.dp), style = TinType.titleL, color = c.ink)
         list.forEach { a ->
@@ -43,10 +51,15 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
             val sub = if (atLogin) (if (opensNow) stringResource(R.string.accounts_opens_right_away) else stringResource(R.string.accounts_asks_passphrase)) else when {
                 a.current && status?.online == true -> stringResource(R.string.accounts_online_here)
                 a.current -> stringResource(R.string.accounts_on_this_phone)
+                // A woken account needs its key remembered here; a passphrase-only one waits until it is opened.
+                wakes && UnlockStore.exists(app, a.did) -> stringResource(R.string.accounts_rings_here)
                 else -> stringResource(R.string.accounts_locked_not_ringing)
             }
+            val unread = if (a.current) 0 else a.unread.toInt()
+            val unreadDesc = if (unread > 0) pluralStringResource(R.plurals.shell_badge_unread, unread, unread) else ""
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button) { if (a.current) onDismiss() else onPick(a.did) },
+                Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button) { if (a.current) onDismiss() else onPick(a.did) }
+                    .semantics(mergeDescendants = true) { if (unread > 0) stateDescription = unreadDesc },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 if (a.current) SelfAvatar(a.name.ifBlank { "?" }, 44.dp) else Avatar(a.name.ifBlank { "?" }, a.did, 44.dp)
@@ -55,6 +68,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
                     Hint(sub)
                 }
                 if (a.current) Icon(PgIcons.Check, stringResource(R.string.accounts_current_desc), tint = c.pr)
+                else if (unread > 0) CountBadge(unread, Modifier.padding(end = 10.dp))
             }
         }
         if (actions != null) {
@@ -63,7 +77,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
             SheetRow(PgIcons.Link, stringResource(R.string.accounts_link), null, true) { actions.onLink() }
             SheetRow(PgIcons.Key, stringResource(R.string.accounts_restore), null, true) { actions.onRestore() }
         }
-        if (!atLogin) Hint(stringResource(R.string.accounts_one_online_hint), Modifier.padding(top = 12.dp))
+        if (!atLogin) Hint(stringResource(if (wakes) R.string.accounts_others_ring_hint else R.string.accounts_one_online_hint), Modifier.padding(top = 12.dp))
     }
 }
 
@@ -91,6 +105,8 @@ fun SwitchConfirmScreen(app: P2pApp, did: String, onBack: () -> Unit, onSwitched
     val finishCallFirst = stringResource(R.string.accounts_finish_call_first)
     val target = remember(did) { app.node.accounts().firstOrNull { it.did == did } }
     val current = remember { app.node.profile()?.name ?: "" }
+    // With wake pushes the account I leave sleeps but still rings and notifies, if its key is remembered here.
+    val leftStillRings = remember { PushMode.pushOn(app) && app.accountDid.value?.let { UnlockStore.exists(ctx, it) } == true }
     if (target == null) { LaunchedEffect(Unit) { onBack() }; return }
     val needsPass = target.hasPassphrase && !UnlockStore.exists(ctx, did)
     val inCall by app.calls.ui.collectAsState()
@@ -117,7 +133,7 @@ fun SwitchConfirmScreen(app: P2pApp, did: String, onBack: () -> Unit, onSwitched
         ) {
             Avatar(target.name.ifBlank { "?" }, target.did, 72.dp)
             H1(stringResource(R.string.accounts_switch_to, target.name), align = TextAlign.Center)
-            Lead(stringResource(R.string.accounts_switch_lead, current), align = TextAlign.Center)
+            Lead(stringResource(if (leftStillRings) R.string.accounts_switch_lead_push else R.string.accounts_switch_lead, current), align = TextAlign.Center)
             if (needsPass) TinField(pass, { pass = it; error = null }, stringResource(R.string.accounts_passphrase_for, target.name), mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error,
                 keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { if (pass.isNotEmpty() && !busy) go() }))
