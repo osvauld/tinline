@@ -99,7 +99,8 @@ struct ShellSettingsRoute: View {
                     }
                     ForEach(accounts.filter { !$0.current }, id: \.did) { a in
                         ShellPfAct(title: a.name, sub: tr("settings_account_paused"), action: { nav.push(.switchConfirm(a.did)) },
-                                   leading: { ShellAvatar(did: a.did, name: a.name, size: 36) }, trailing: { EmptyView() }, extra: { EmptyView() })
+                                   leading: { ShellAvatar(did: a.did, name: a.name, size: 36) }, trailing: { ShellAccountUnreadDot(unread: a.unread) },
+                                   extra: { EmptyView() })
                     }
                     ShellPfAct(tr("settings_add_account"), glyph: .plus, chevron: true) { adding = true }
                 }
@@ -153,8 +154,11 @@ struct ShellSettingsRoute: View {
             }
         }
         .task(id: app.accountDid) {
-            accounts = await core.accounts()
             fallback = (try? await core.work { $0.profile()?.name ?? "" }) ?? ""
+        }
+        // Re-read on a switch and when the core says the accounts changed (unread dots).
+        .task(id: "\(app.accountDid ?? "")#\(app.accountsTick)") {
+            accounts = await core.accounts()
         }
         .task(id: av.untilMs) {
             if let u = av.untilMs {
