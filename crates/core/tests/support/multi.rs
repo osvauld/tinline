@@ -5,9 +5,14 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
-use p2pcore::{AccountEvents, AccountRef, BackgroundMode, Chat, ChatEvents, DeliveryState, Message};
+use p2pcore::{AccountEvents, AccountRef, BackgroundMode, CallState, Chat, ChatEvents, DeliveryState, Message, WakeOutcome};
 
-use super::{PASS, Peer, eventually, online};
+use super::{Ev, PASS, Peer, eventually, expect, online};
+
+/// Chat links close this fast in the isolated children (`with_env("P2P_IDLE_CLOSE_MS", ..)`).
+pub const LINK_IDLE_MS: &str = "1500";
+/// A background account closes this long after its last session.
+pub const BG_IDLE_MS: u64 = 800;
 
 /// The platform side of background accounts: the keys it remembered, and what the core told it.
 #[derive(Default)]
@@ -83,6 +88,8 @@ pub struct Device {
     /// Message and call wake hints for `b`, from its first contact in `b_contacts`.
     pub b_msg_hint: Option<String>,
     pub b_call_hint: Option<String>,
+    /// `b`'s recovery phrase.
+    pub b_phrase: String,
 }
 
 /// `c` scans `p`'s open account's code; waits until both hold each other.
@@ -97,8 +104,25 @@ pub fn befriend(c: &Peer, p: &Peer, did: &str) {
 /// hints are made), then `a` (contacts `a_contacts`). `b_key`: whether the platform remembers
 /// `b`'s key (`false`: a passphrase-only account).
 pub fn device(prefix: &str, tag: &str, b_contacts: &[&Peer], a_contacts: &[&Peer], b_key: bool) -> Device {
+    build(prefix, tag, b_contacts, None, a_contacts, b_key).0
+}
+
+/// A third account `e` on the device (created between `b` and `a`; its key is remembered).
+pub struct Third {
+    pub did: String,
+    pub msg_hint: Option<String>,
+    pub call_hint: Option<String>,
+}
+
+/// Like `device`, with a third account `e` whose contacts are `e_contacts`.
+pub fn device3(prefix: &str, tag: &str, b_contacts: &[&Peer], e_contacts: &[&Peer], a_contacts: &[&Peer]) -> (Device, Third) {
+    let (d, e) = build(prefix, tag, b_contacts, Some(e_contacts), a_contacts, true);
+    (d, e.expect("third account"))
+}
+
+fn build(prefix: &str, tag: &str, b_contacts: &[&Peer], e_contacts: Option<&[&Peer]>, a_contacts: &[&Peer], b_key: bool) -> (Device, Option<Third>) {
     let p = Peer::blank(prefix, &format!("{tag}-dev"));
-    p.node.create_identity("Bea".into(), PASS.into()).unwrap();
+    let b_phrase = p.node.create_identity("Bea".into(), PASS.into()).unwrap();
     let b = p.node.profile().unwrap().did;
     let b_secret = p.node.unlock_key().unwrap();
     online(&p.node);
@@ -110,6 +134,20 @@ pub fn device(prefix: &str, tag: &str, b_contacts: &[&Peer], a_contacts: &[&Peer
         None => (None, None),
     };
     // Still `OpenOnly`: `b` goes to sleep as on any switch today.
+    let mut third = None;
+    let mut e_secret = Vec::new();
+    if let Some(e_contacts) = e_contacts {
+        p.node.begin_new_account().unwrap();
+        p.node.create_identity("Eve".into(), PASS.into()).unwrap();
+        let e = p.node.profile().unwrap().did;
+        e_secret = p.node.unlock_key().unwrap();
+        online(&p.node);
+        for c in e_contacts {
+            befriend(c, &p, &e);
+        }
+        let hint = |call| e_contacts.first().map(|c| p.node.wake_hint_for_test(c.did.clone(), call).unwrap());
+        third = Some(Third { msg_hint: hint(false), call_hint: hint(true), did: e });
+    }
     p.node.begin_new_account().unwrap();
     p.node.create_identity("Ada".into(), PASS.into()).unwrap();
     let a = p.node.profile().unwrap().did;
@@ -123,11 +161,14 @@ pub fn device(prefix: &str, tag: &str, b_contacts: &[&Peer], a_contacts: &[&Peer
     if b_key {
         acc.remember(&b, b_secret.clone());
     }
+    if let Some(t) = &third {
+        acc.remember(&t.did, e_secret);
+    }
     p.node.set_account_events(acc.clone());
     let screen = Arc::new(Screen::default());
     p.node.set_chat_events(screen.clone());
     p.node.set_background_mode(BackgroundMode::OnWake);
-    Device { p, a, b, b_key: b_secret, a_key, acc, screen, b_msg_hint, b_call_hint }
+    (Device { p, a, b, b_key: b_secret, a_key, acc, screen, b_msg_hint, b_call_hint, b_phrase }, third)
 }
 
 impl Device {
@@ -151,4 +192,25 @@ impl Device {
         let key = if did == self.a { self.a_key.clone() } else { self.b_key.clone() };
         self.p.node.unlock_with_key(key).unwrap();
     }
+}
+
+/// `c` writes to `b` while `b` sleeps; the device gets the message wake for `b`. Returns the
+/// message id.
+pub fn message_while_asleep(d: &Device, c: &Peer) -> String {
+    let m = c.node.send_text(d.b.clone(), "are you there?".into(), None).unwrap();
+    let outcome = d.p.node.on_wake(d.b_msg_hint.clone().unwrap()).unwrap();
+    assert_eq!(outcome, WakeOutcome::DialedBack { did: c.did.clone() });
+    m.id
+}
+
+/// The id of the next incoming call on the device, with the account it rings.
+pub fn incoming_with_account(p: &Peer, secs: u64) -> (String, Option<String>) {
+    expect(p, secs, "incoming call", |e| match e {
+        Ev::Incoming(c) => Some((c.call_id.clone(), c.account.as_ref().map(|a| a.did.clone()))),
+        _ => None,
+    })
+}
+
+pub fn active(p: &Peer, id: &str) {
+    expect(p, 30, "call active", |e| matches!(e, Ev::State(i, CallState::Active) if i == id).then_some(()));
 }

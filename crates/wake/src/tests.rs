@@ -574,3 +574,50 @@ fn state_round_trips_through_json() {
 fn user_agent_names_the_app() {
     assert_eq!(user_agent("0.2.0"), "Tinline/0.2.0");
 }
+
+// ---- which account a push is for (several accounts on one device) ----
+
+#[test]
+fn a_hint_opens_only_under_its_own_accounts_key() {
+    let s = woken_state();
+    let mine = hint_text(&KEY, 1, Kind::Msg, NOW);
+    let theirs = hint_text(&[1; 32], 1, Kind::Msg, NOW);
+    assert!(s.opens(&mine));
+    assert!(hint_opens(&KEY, &mine));
+    assert!(!s.opens(&theirs), "another account's hint does not open");
+    assert!(!hint_opens(&KEY, &theirs));
+    assert!(hint_opens(&[1; 32], &theirs) && !hint_opens(&[1; 32], &mine));
+}
+
+#[test]
+fn garbage_and_oversized_hints_open_nothing() {
+    let s = woken_state();
+    for text in ["", "not a hint!", "AAAA", &"A".repeat(1000)] {
+        assert!(!s.opens(text), "{text:?}");
+        assert!(!hint_opens(&KEY, text), "{text:?}");
+    }
+}
+
+#[test]
+fn opening_says_whose_push_it_is_whatever_it_would_mean() {
+    // An unissued tag, a blocked contact and a stale call are all Ignore/IgnoreCall for this
+    // account, yet the push is still its own: another account must not be tried for them.
+    let s = woken_state();
+    let unknown = hint_text(&KEY, 99, Kind::Msg, NOW);
+    assert_eq!(s.on_wake(&unknown, NOW, never), WakeAction::Ignore);
+    assert!(s.opens(&unknown));
+    let call = hint_text(&KEY, 1, Kind::Call, NOW);
+    assert_eq!(s.on_wake(&call, NOW, is_a), WakeAction::IgnoreCall);
+    assert!(s.opens(&call));
+    let stale = hint_text(&KEY, 1, Kind::Call, NOW);
+    assert_eq!(s.on_wake(&stale, NOW + STALE_CALL_MS + 1, never), WakeAction::IgnoreCall);
+    assert!(s.opens(&stale));
+}
+
+#[test]
+fn a_state_with_another_hint_key_no_longer_opens_the_old_hints() {
+    // What a lock does to routing: the key is gone with the state, a fresh state has its own.
+    let old = hint_text(&KEY, 1, Kind::Msg, NOW);
+    assert!(WakeState::new(KEY).opens(&old));
+    assert!(!WakeState::new([2; 32]).opens(&old));
+}

@@ -11,35 +11,11 @@ use std::sync::atomic::Ordering;
 use p2pcore::{BackgroundMode, CallState, LockState, WakeOutcome};
 
 use crate::support;
-use support::multi::{Device, device};
+use support::multi::{BG_IDLE_MS, LINK_IDLE_MS, active, device, incoming_with_account, message_while_asleep};
 use support::*;
 
 const TAG: &str = "multi";
 const S: Suite = Suite(TAG);
-/// Chat links close this fast in the isolated children.
-const LINK_IDLE_MS: &str = "1500";
-/// A background account closes this long after its last session.
-const BG_IDLE_MS: u64 = 800;
-
-/// `c` writes to `b` while `b` sleeps; the device gets the message wake for `b`.
-fn message_while_asleep(d: &Device, c: &Peer) -> String {
-    let m = c.node.send_text(d.b.clone(), "are you there?".into(), None).unwrap();
-    let outcome = d.p.node.on_wake(d.b_msg_hint.clone().unwrap()).unwrap();
-    assert_eq!(outcome, WakeOutcome::DialedBack { did: c.did.clone() });
-    m.id
-}
-
-/// The id of the next incoming call on the device, with the account it rings.
-fn incoming_with_account(p: &Peer, secs: u64) -> (String, Option<String>) {
-    expect(p, secs, "incoming call", |e| match e {
-        Ev::Incoming(c) => Some((c.call_id.clone(), c.account.as_ref().map(|a| a.did.clone()))),
-        _ => None,
-    })
-}
-
-fn active(p: &Peer, id: &str) {
-    expect(p, 30, "call active", |e| matches!(e, Ev::State(i, CallState::Active) if i == id).then_some(()));
-}
 
 /// 1. A message wake for sleeping `b`: `b` loads, dials back, the message lands in `b`'s store
 /// and `on_background_message(b)` fires; `a`'s screens see nothing; `b` closes once idle.

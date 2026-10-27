@@ -31,6 +31,7 @@ mod link;
 mod link_expiry;
 mod message_receipts;
 mod multi_online;
+mod multi_online_edges;
 mod old_writer_delivery;
 mod private_rotation;
 mod profile_sync;
