@@ -123,6 +123,7 @@ impl Node {
         if let Some(woken) = self.hub.take_woken_of(&id) {
             self.close_slots(Some(woken));
         }
+        self.hub.forget_hint_key(&id);
         let _life = self.lifecycle()?;
         let current = slot.shared.lock().acct.as_ref().map(|a| a.id.clone());
         if current.as_deref() == Some(id.as_str()) || slot.accounts.current().as_deref() == Some(id.as_str()) {
@@ -229,13 +230,19 @@ impl Node {
             None => return Ok(()),
         };
         let (secrets, dek) = self.kdf(move || vault::open(&vault, &passphrase))??;
-        slot.finish_unlock(secrets, dek)
+        slot.finish_unlock(secrets, dek)?;
+        self.hub.unlocked(&slot);
+        Ok(())
     }
 
     /// Unlocks with a data key the platform remembered (from `unlock_key`); fast.
     /// `WrongPassphrase` if it does not open the vault: the platform should then forget it.
     pub fn unlock_with_key(&self, key: Vec<u8>) -> Result<(), Error> {
-        self.open().unlock_with_key(key)
+        let slot = self.open();
+        slot.unlock_with_key(key)?;
+        // Unlocked: other accounts may run again (wakes, `KeepAll` at the next `start`).
+        self.hub.unlocked(&slot);
+        Ok(())
     }
 
     /// The vault's data key while unlocked via a vault, for the platform to remember (wrapped
@@ -312,7 +319,9 @@ impl Node {
     /// Stops the endpoint and forgets the secrets in memory; the node is `Locked` until
     /// `unlock`. No-op without an identity.
     pub fn lock(&self) {
-        // Every account running in the background closes too, and the hint keys go.
+        // Every account running in the background closes too, and the hint keys go; none opens
+        // again (no wake, `start` or switch) until the open account is unlocked.
+        self.hub.set_locked();
         let background = self.hub.take_woken();
         self.hub.forget_hint_keys();
         if !background.is_empty() {

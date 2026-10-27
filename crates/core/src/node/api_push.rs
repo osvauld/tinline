@@ -100,13 +100,16 @@ impl Node {
     /// to every other account the platform has a key for (`AccountEvents::account_key`), loaded
     /// and unlocked in the background now. That account's endpoint starts and it acts there; a
     /// ring names it (`Ring.account`), and its messages come as `on_background_message`. A call
-    /// wake for a background account while another account is in a call is `EndCall` (busy).
-    /// No account opens it: `Ignore` (or the error above while the open account is locked).
+    /// wake while another account is in a call or rings, or for a background account while
+    /// the user is in a group call, is `EndCall` (busy): one ring at a time. No account opens
+    /// it: `Ignore` (or the error above while the open account is locked). While the app is
+    /// locked (`lock`, or started with its account locked) no other account opens either: the
+    /// wake is answered as above for the locked open account.
     pub fn on_wake(&self, hint: String) -> Result<WakeOutcome, Error> {
         let open = self.open();
         let opened = open.me().map(|_| open.wake_opens(&hint));
         let mode = self.hub.mode();
-        if matches!(opened, Ok(true)) || mode == BackgroundMode::OpenOnly {
+        if matches!(opened, Ok(true)) || mode == BackgroundMode::OpenOnly || self.hub.is_locked() {
             return self.wake_outcome(&open, &hint, None);
         }
         if let Some(slot) = self.hub.wake_slot(&hint, mode == BackgroundMode::OnWake) {
@@ -153,13 +156,16 @@ impl Node {
     /// Acts on a wake in `slot` (`account`: who it is, when not the open account).
     fn wake_outcome(&self, slot: &Arc<Inner>, hint: &str, account: Option<AccountRef>) -> Result<WakeOutcome, Error> {
         use node_runtime::push::WakeAction;
+        // Two call wakes for two accounts must not both ring.
+        let _ring = self.hub.ring_gate();
         Ok(match slot.ctx.on_wake(hint)? {
             WakeAction::Ignore => WakeOutcome::Ignore,
             WakeAction::IgnoreCall => WakeOutcome::EndCall,
             WakeAction::DialBack { did } => WakeOutcome::DialedBack { did },
-            // One 1:1 call across the accounts: another one is in a call, so the caller will be
-            // told busy; no ring (and no `Ended` for it later).
-            WakeAction::Ring { did } if account.is_some() && slot.floor.held_by_other(slot.slot_id) => {
+            // One ring across the accounts: another one is in a call or rings (or, for a
+            // background account, the user is in a group call), so the caller will be told
+            // busy; no ring (and no `Ended` for it later).
+            WakeAction::Ring { did } if self.hub.ring_refused(slot) => {
                 let _ = slot.ctx.decline_wake_ring(&did);
                 WakeOutcome::EndCall
             }

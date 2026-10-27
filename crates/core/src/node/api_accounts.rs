@@ -33,14 +33,14 @@ impl Node {
 impl Node {
     /// Closes slots taken out of the hub, waiting for it when it can (as `lock` does).
     pub(crate) fn close_slots(&self, slots: impl IntoIterator<Item = Arc<Inner>>) {
-        let slots: Vec<Arc<Inner>> = slots.into_iter().collect();
-        if slots.is_empty() {
+        // Each counts as closing from here (`close_slot`), before the first one is polled.
+        let closes: Vec<_> = slots.into_iter().map(|inner| self.hub.clone().close_slot(inner)).collect();
+        if closes.is_empty() {
             return;
         }
-        let hub = self.hub.clone();
         self.run_lifecycle(async move {
-            for inner in slots {
-                hub.clone().close_slot(inner).await;
+            for close in closes {
+                close.await;
             }
         });
     }

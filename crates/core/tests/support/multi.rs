@@ -14,6 +14,9 @@ pub const LINK_IDLE_MS: &str = "1500";
 /// A background account closes this long after its last session.
 pub const BG_IDLE_MS: u64 = 800;
 
+/// What a platform does from inside a callback (calls back into the node).
+pub type Reentry = Box<dyn Fn() + Send + Sync>;
+
 /// The platform side of background accounts: the keys it remembered, and what the core told it.
 #[derive(Default)]
 pub struct Accounts {
@@ -23,6 +26,9 @@ pub struct Accounts {
     pub changed: AtomicU32,
     /// How often `account_key` was asked.
     pub asked: AtomicU32,
+    /// Run once, inside the next `account_key` / `on_accounts_changed`.
+    pub on_key: Mutex<Option<Reentry>>,
+    pub on_changed: Mutex<Option<Reentry>>,
 }
 
 impl Accounts {
@@ -39,6 +45,10 @@ impl Accounts {
 impl AccountEvents for Accounts {
     fn account_key(&self, did: String) -> Option<Vec<u8>> {
         self.asked.fetch_add(1, Ordering::SeqCst);
+        let reenter = self.on_key.lock().unwrap().take();
+        if let Some(f) = reenter {
+            f();
+        }
         self.keys.lock().unwrap().get(&did).cloned()
     }
 
@@ -48,6 +58,10 @@ impl AccountEvents for Accounts {
 
     fn on_accounts_changed(&self) {
         self.changed.fetch_add(1, Ordering::SeqCst);
+        let reenter = self.on_changed.lock().unwrap().take();
+        if let Some(f) = reenter {
+            f();
+        }
     }
 }
 
@@ -201,6 +215,28 @@ pub fn message_while_asleep(d: &Device, c: &Peer) -> String {
     let outcome = d.p.node.on_wake(d.b_msg_hint.clone().unwrap()).unwrap();
     assert_eq!(outcome, WakeOutcome::DialedBack { did: c.did.clone() });
     m.id
+}
+
+/// Runs `f` on a thread of its own and fails the test if it has not returned within `secs`
+/// (a deadlock), instead of hanging the run.
+pub fn returns_within<T: Send + 'static>(secs: u64, what: &str, f: impl FnOnce() -> T + Send + 'static) -> T {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(f());
+    });
+    rx.recv_timeout(std::time::Duration::from_secs(secs)).unwrap_or_else(|_| panic!("{what}: no return within {secs} s (deadlock?)"))
+}
+
+/// The call `id` does not become active on `p` within `secs`.
+pub fn never_active(p: &Peer, id: &str, secs: u64) {
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+    while let Some(left) = end.checked_duration_since(std::time::Instant::now()) {
+        match p.rx.recv_timeout(left) {
+            Ok(Ev::State(i, CallState::Active)) if i == id => panic!("call {id} connected"),
+            Ok(_) => {}
+            Err(_) => return,
+        }
+    }
 }
 
 /// The id of the next incoming call on the device, with the account it rings.

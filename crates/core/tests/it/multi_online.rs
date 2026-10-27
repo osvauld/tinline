@@ -8,7 +8,7 @@
 
 use std::sync::atomic::Ordering;
 
-use p2pcore::{BackgroundMode, CallState, LockState, WakeOutcome};
+use p2pcore::{BackgroundMode, LockState, WakeOutcome};
 
 use crate::support;
 use support::multi::{BG_IDLE_MS, LINK_IDLE_MS, active, device, incoming_with_account, message_while_asleep};

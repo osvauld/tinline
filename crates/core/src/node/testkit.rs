@@ -185,4 +185,11 @@ impl Node {
     pub fn set_background_idle_ms_for_test(&self, ms: u64) {
         self.hub.set_idle_ms(ms);
     }
+
+    /// For tests: every account slot's close waits `ms` before it starts (`0`: none), so that a
+    /// wake can arrive while one is closing.
+    #[doc(hidden)]
+    pub fn set_close_delay_for_test(&self, ms: u64) {
+        self.hub.knobs.lock().close_delay_ms = ms;
+    }
 }

@@ -108,7 +108,10 @@ keeps the total it had when it last closed (saved clear in the account dir, a nu
 - Otherwise: as today, load it (locked) and make it open; the previous open slot becomes woken and idles out
   instead of closing at once, so an exchange in flight finishes.
 
-`lock()` closes every slot. `stop()` stops every endpoint. `set_push_target` applies to the open slot and,
+`lock()` closes every slot, and **locked means every account stays shut** (decided 2026-10-27, option a):
+until the open account is unlocked again, no wake, `start` (`KeepAll`) or switch opens another account; a
+wake is answered as on one account while locked (`Locked`: generic notice / CallKit report-and-end). A
+process that starts with its account locked counts as locked too. `stop()` stops every endpoint. `set_push_target` applies to the open slot and,
 when a woken slot opens, to it too (same device token for every account).
 
 ## Platforms
@@ -198,10 +201,48 @@ Test hooks (`dev-tools`): `background_accounts_for_test`, `account_endpoint_for_
 
 - `WakeOutcome.Ring` gained a field and `AccountSummary`/`CallInfo` gained fields: regenerated
   Kotlin/Swift bindings need the call sites updated (Kotlin `when` on `Ring`, Swift pattern matches).
-- `account_key` is called synchronously from `on_wake` (and `start` under `KeepAll`); on iOS it runs
-  inside the PushKit handler's time budget.
+- `account_key` is called synchronously from `on_wake` (and `start` under `KeepAll`), with no core lock
+  held (the platform may call back into the node from it); on iOS it runs inside the PushKit handler's
+  time budget.
 - A background slot's leftover tasks end by the usual "endpoint gone / epoch changed" checks, as after
   a switch today; a slot closed by idle and reopened by a wake at once may briefly wait for its store
   files.
 - Each running account is a full endpoint plus group endpoint: `KeepAll` with many accounts costs
   that many endpoints (Open item 3).
+
+## Fixed after review (2026-10-27)
+
+Tests 16-22 in `crates/core/tests/it/multi_online_review.rs`; floor and ring tests in
+`node-runtime` (`push/ring_tests.rs`, `wake_*`); sink gating in `crates/core/src/node/gated/tests.rs`.
+
+1. **Lock holds** (option a above). `Hub.locked`: set by `lock`, and at start when the account opens
+   locked; cleared when the open slot is unlocked (`unlock`, `unlock_with_key`, create/restore).
+   `on_wake` takes the open account's path while locked; `wake_slot` / `open_all` load nothing.
+2. **An early answer stays with the screen.** Leaving the open slot (switch, new account) first
+   turns its early-answered wake rings back to ringing (`NodeCtx::wake_rings_unanswer`): the call then
+   rings in the background, naming the account, instead of connecting unheard. Race: a call that
+   arrives during the switch makes it `InCall` and rings, unanswered, in the slot that stays open.
+3. **Group calls count for busy.** The `CallFloor` knows every slot (`join_floor`):
+   `group_call_elsewhere` makes an incoming 1:1 call `Busy` (outgoing `InCall`) while the user is in a
+   group call on another account, as on one account; a call wake for a background account then is
+   `EndCall`. A call wake for the open account during its own group call still rings, as today.
+4. **One ring across the accounts.** A call wake while another slot holds the floor or has an open
+   (not declined) wake ring is `EndCall` (`Hub::ring_refused`, decided under `ring_gate`), for the open
+   account too; an incoming call while another slot rings for a wake is `Busy`.
+5. **Background notices wait for read cursors.** `on_background_message` fires `NOTICE_SETTLE_MS`
+   (1.5 s) after the message arrives, and only if the account's read cursor for that conversation is
+   not past it (own-device sync sends messages and cursors in no fixed order).
+6. **Close vs reopen.** `close_slot` marks the account closing when it is called; a load of it
+   (`wake_slot`, `open_all`, `switch_to`) waits for the close first (`wait_closed`, 10 s at most;
+   never on a core thread, where it skips the account and `switch_to` says `Busy`).
+7. **No platform callback under `switching`.** `account_key` is asked with no lock held (the account
+   is rechecked after); `make_open` no longer calls out, `announce_open` (status, contacts,
+   `on_accounts_changed`) runs after the lock is released.
+8. **Events of the account just left.** The open slot's sinks are gated (`gated.rs`): an event passes
+   only while that slot is still open in the term the sink was installed in; the old slot's gate
+   closes before the new one opens. The video sink is not gated (it follows the call).
+9. `remove_account` forgets the account's hint key.
+10. Not changed: no cap on background slots (Open item 3). Races noted above (2, 6).
+
+Not covered by a core test: the group-call busy rule end to end (only the floor rule, in
+`node-runtime`, with a fake group call).

@@ -17,17 +17,24 @@
 //!   (`BackgroundChat`). A switch flips both (`set_open`).
 //! - One 1:1 call at a time across the slots: they share one `CallFloor` (node-runtime).
 //!
+//! - Locked (`lock`, or a process that started with its account locked) means every account
+//!   stays shut until the open one is unlocked: no wake, `start` or switch opens another.
+//!
 //! Lock order: `switching` (held across a load or a switch, never by runtime tasks: the reaper
 //! only `try_lock`s it) before `slots`, `sinks` and the other short data locks, which are never
-//! held across a callback, a load or an await.
+//! held across a callback, a load or an await. **No platform callback runs under `switching`**
+//! (`account_key`, `AccountEvents`, `NodeEvents`): the platform may switch or lock from inside
+//! one.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{OnceLock, Weak};
 use std::time::Instant;
 
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
+
+use super::gated::*;
 
 use super::*;
 use chat_runtime::chat::api::{Chat, DeliveryState, Message};
@@ -35,6 +42,13 @@ use chat_runtime::chat::api::{Chat, DeliveryState, Message};
 /// How long a woken slot stays up with no chat session, ring, dial-back or call (same as a
 /// chat link's idle close, `wire::IDLE_CLOSE`).
 pub const WOKEN_IDLE_MS: u64 = 60_000;
+
+/// How long a background message waits before its notice: an own device that relays it
+/// usually sends the read cursor that says it was read there within this (same session).
+const NOTICE_SETTLE_MS: u64 = 1_500;
+
+/// How long a load waits for the same account's slot to finish closing.
+const CLOSE_WAIT: Duration = Duration::from_secs(10);
 
 /// Which accounts besides the open one run on this device. Set by the platform before `start`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
@@ -70,6 +84,9 @@ pub trait AccountEvents: Send + Sync {
 /// Which slot an `Inner` is, and whether it is the open one.
 pub(crate) struct SlotGate {
     open: AtomicBool,
+    /// Counts the times the slot became the open one: a sink installed then passes events only
+    /// while it still is (`gated.rs`).
+    generation: AtomicU64,
     /// Who this slot's account is, for the events a background slot sends.
     account: Mutex<Option<AccountRef>>,
     hub: OnceLock<Weak<Hub>>,
@@ -77,8 +94,29 @@ pub(crate) struct SlotGate {
 }
 
 impl SlotGate {
+    pub(crate) fn new(open: bool, account: Option<AccountRef>) -> Self {
+        SlotGate { open: AtomicBool::new(open), generation: AtomicU64::new(0), account: Mutex::new(account), hub: OnceLock::new(), inner: OnceLock::new() }
+    }
+
     pub(crate) fn is_open(&self) -> bool {
         self.open.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn generation(&self) -> u64 {
+        self.generation.load(Ordering::SeqCst)
+    }
+
+    /// Open, and still in the term that began at `generation`.
+    pub(crate) fn passes(&self, generation: u64) -> bool {
+        self.is_open() && self.generation() == generation
+    }
+
+    /// Opens or closes the gate (opening starts a new term).
+    pub(crate) fn set(&self, open: bool) {
+        if open {
+            self.generation.fetch_add(1, Ordering::SeqCst);
+        }
+        self.open.store(open, Ordering::SeqCst);
     }
 
     fn account(&self) -> Option<AccountRef> {
@@ -128,7 +166,8 @@ impl NodeSink for SlotSink {
 }
 
 /// The chat events of a background slot: an arriving 1:1 message becomes
-/// `on_background_message`; nothing else leaves the slot.
+/// `on_background_message` (once it has settled, if it is still unread); nothing else leaves
+/// the slot.
 struct BackgroundChat {
     gate: Arc<SlotGate>,
 }
@@ -145,15 +184,13 @@ impl chat_runtime::ChatSink for BackgroundChat {
         if message.peer_did == account.did {
             return;
         }
-        let name = inner.ctx.wake_label(&message.peer_did);
-        if let Some(ev) = hub.account_events() {
-            ev.on_background_message(account, message.peer_did, name);
-        }
-        // Off this callback: the count reads the chat list, the file write is a disk write.
+        // Off this callback: an own device may relay the message with the read cursor that
+        // says it was read there (own-device sync sends them in no fixed order), so the notice
+        // waits for it; the count reads the chat list, the file write is a disk write.
         let h = hub.clone();
-        hub.handle.spawn_blocking(move || {
-            h.save_unread(&inner);
-            h.accounts_changed();
+        hub.handle.spawn(async move {
+            tokio::time::sleep(Duration::from_millis(NOTICE_SETTLE_MS)).await;
+            let _ = tokio::task::spawn_blocking(move || h.background_notice(&inner, account, message)).await;
         });
     }
 
@@ -182,6 +219,8 @@ pub(crate) struct Sinks {
 #[derive(Default)]
 pub(crate) struct Knobs {
     pub(crate) auto_accept: bool,
+    /// A slot's close waits this long before it starts (tests: a wake during a close).
+    pub(crate) close_delay_ms: u64,
 }
 
 struct Woken {
@@ -213,6 +252,14 @@ pub(crate) struct Hub {
     /// Hint keys of accounts woken before, so a later wake finds its account without unlocking
     /// every other one again. Kept while the process lives; `lock` forgets them.
     hint_keys: Mutex<HashMap<String, zeroize::Zeroizing<[u8; 32]>>>,
+    /// The app is locked: no account opens in the background until the open one is unlocked.
+    locked: AtomicBool,
+    /// Accounts whose slot is closing; a load of one waits for `closed` first, so that two slots
+    /// never hold one account's stores.
+    closing: Mutex<HashSet<String>>,
+    closed: Condvar,
+    /// Held while a call wake decides whether it may ring (one ring across the accounts).
+    ringing: Mutex<()>,
     pub(crate) knobs: Mutex<Knobs>,
     /// `WOKEN_IDLE_MS`, or a test's override.
     idle_ms: AtomicU64,
@@ -233,7 +280,7 @@ fn build_slot(
     if let Some(l) = loaded {
         shared.install(l)?;
     }
-    let gate = Arc::new(SlotGate { open: AtomicBool::new(open), account: Mutex::new(account), hub: OnceLock::new(), inner: OnceLock::new() });
+    let gate = Arc::new(SlotGate::new(open, account));
     let sink = Arc::new(SlotSink { events: events.clone(), gate: gate.clone() });
     let ctx = Arc::new(NodeCtx::new(handle.clone(), accounts, shared, sink).with_floor(floor.clone()));
     let selfsync: Arc<sync_runtime::engine::SelfSync> = Default::default();
@@ -244,6 +291,7 @@ fn build_slot(
     let group = Arc::new(group_runtime::GroupRt::new(ctx.clone(), search.clone()));
     let sync = Arc::new(sync_runtime::SyncRt::new(ctx.clone(), chat.clone(), group.clone(), selfsync));
     let inner = Arc::new(Inner { ctx, chat, group, sync, search, slot: gate.clone() });
+    inner.ctx.join_floor();
     let gcall_host: std::sync::Weak<group_runtime::GroupRt> = Arc::downgrade(&inner.group);
     inner.group.gcall.install_host(gcall_host);
     let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
@@ -271,6 +319,8 @@ impl Hub {
             Some(id) => Some(load_account(&accounts, &id)?),
             None => None,
         };
+        // The account opens locked: the app is locked until it is unlocked.
+        let locked = loaded.is_some();
         let floor: Arc<CallFloor> = Default::default();
         let open = build_slot(&handle, &root, &events, &floor, loaded, true)?;
         let hub = Arc::new(Hub {
@@ -285,6 +335,10 @@ impl Hub {
             mode: Mutex::new(BackgroundMode::default()),
             push: Mutex::new(None),
             hint_keys: Mutex::new(HashMap::new()),
+            locked: AtomicBool::new(locked),
+            closing: Mutex::new(HashSet::new()),
+            closed: Condvar::new(),
+            ringing: Mutex::new(()),
             knobs: Default::default(),
             idle_ms: AtomicU64::new(WOKEN_IDLE_MS),
         });
@@ -334,6 +388,22 @@ impl Hub {
         }
     }
 
+    /// `lock`: from now on no account opens in the background (decided 2026-10-27, option a).
+    pub(crate) fn set_locked(&self) {
+        self.locked.store(true, Ordering::SeqCst);
+    }
+
+    /// `slot` was unlocked (or given an identity): if it is the open one, the app is unlocked.
+    pub(crate) fn unlocked(&self, slot: &Inner) {
+        if slot.slot.is_open() && slot.me().is_ok() {
+            self.locked.store(false, Ordering::SeqCst);
+        }
+    }
+
+    pub(crate) fn is_locked(&self) -> bool {
+        self.locked.load(Ordering::SeqCst)
+    }
+
     #[cfg(any(test, feature = "dev-tools"))]
     pub(crate) fn set_idle_ms(&self, ms: u64) {
         self.idle_ms.store(if ms == 0 { WOKEN_IDLE_MS } else { ms }, Ordering::Relaxed);
@@ -347,12 +417,26 @@ impl Hub {
         self.install_sinks(&self.open());
     }
 
-    /// The open slot gets the platform's sinks, a woken one only `BackgroundChat`.
+    /// The open slot gets the platform's sinks, each gated to this term of it being open
+    /// (`gated.rs`); a woken one only `BackgroundChat`. The video sink follows the call, which
+    /// never changes slots mid-call.
     fn install_sinks(&self, inner: &Arc<Inner>) {
-        let s = if inner.slot.is_open() {
-            self.sinks.lock().clone()
+        let g = &inner.slot;
+        let s = if g.is_open() {
+            let s = self.sinks.lock().clone();
+            Sinks {
+                chat: s.chat.map(|x| GatedChat::new(x, g)),
+                profile: s.profile.map(|x| GatedProfile::new(x, g)),
+                video: s.video,
+                link: s.link.map(|x| GatedLink::new(x, g)),
+                group: s.group.map(|x| GatedGroup::new(x, g)),
+                group_call: s.group_call.map(|x| GatedGroupCall::new(x, g)),
+                group_invitation: s.group_invitation.map(|x| GatedInvitation::new(x, g)),
+                group_request: s.group_request.map(|x| GatedRequest::new(x, g)),
+                contact_request: s.contact_request.map(|x| GatedContactRequest::new(x, g)),
+            }
         } else {
-            Sinks { chat: Some(Arc::new(BackgroundChat { gate: inner.slot.clone() })), ..Sinks::default() }
+            Sinks { chat: Some(Arc::new(BackgroundChat { gate: g.clone() })), ..Sinks::default() }
         };
         *inner.chat.chat_events.lock() = s.chat;
         *inner.chat.profile_events.lock() = s.profile;
@@ -375,7 +459,7 @@ impl Hub {
             let disk = inner.shared.lock().disk.clone();
             *inner.slot.account.lock() = disk.as_ref().map(account_ref);
         }
-        inner.slot.open.store(open, Ordering::SeqCst);
+        inner.slot.set(open);
         self.install_sinks(inner);
     }
 
@@ -436,117 +520,229 @@ impl Hub {
         self.hint_keys.lock().clear();
     }
 
+    /// `remove_account`: the removed account's hint key goes with it.
+    pub(crate) fn forget_hint_key(&self, id: &str) {
+        self.hint_keys.lock().remove(id);
+    }
+
+    /// Waits until no slot of `id` is closing (`CLOSE_WAIT` at most; never on a core thread,
+    /// where the close itself may need the worker). False: still closing.
+    fn wait_closed(&self, id: &str) -> bool {
+        let mut closing = self.closing.lock();
+        if !closing.contains(id) {
+            return true;
+        }
+        if super::on_core_thread() {
+            return false;
+        }
+        let deadline = Instant::now() + CLOSE_WAIT;
+        while closing.contains(id) {
+            if self.closed.wait_until(&mut closing, deadline).timed_out() {
+                return !closing.contains(id);
+            }
+        }
+        true
+    }
+
     /// Makes `next` the open slot (selecting `id`, or no account for `None`). The previous open
     /// slot becomes a woken one when it can run on (unlocked, on disk, not `OpenOnly`); otherwise
-    /// it is returned for the caller to close. `switching` must be held.
+    /// it is returned for the caller to close. `switching` must be held; the caller tells the
+    /// platform afterwards (`announce_open`), with it released.
     fn make_open(self: &Arc<Self>, next: Arc<Inner>, id: Option<&str>) -> Result<Option<Arc<Inner>>, Error> {
         let dirs = self.dirs()?;
         match id {
             Some(id) => dirs.select(id)?,
             None => dirs.deselect()?,
         }
-        let prev = {
+        let prev = self.open();
+        let prev_id = id_of_slot(&prev);
+        let keep = self.mode() != BackgroundMode::OpenOnly && prev.me().is_ok() && prev.shared.lock().committed;
+        // The account left goes quiet on the screens before the next one opens: never both.
+        match prev_id {
+            Some(_) if keep => self.set_open(&prev, false),
+            _ => prev.slot.set(false),
+        }
+        {
             let mut s = self.slots.lock();
             if let Some(id) = id {
                 s.woken.remove(id);
             }
-            std::mem::replace(&mut s.open, next.clone())
-        };
+            s.open = next.clone();
+        }
         self.set_open(&next, true);
         if let Some(id) = id {
             // Opened: its own read cursors take over from the switcher's count.
             self.write_unread(id, 0);
         }
-        let prev_id = id_of_slot(&prev);
-        let keep = self.mode() != BackgroundMode::OpenOnly && prev.me().is_ok() && prev.shared.lock().committed;
         let closing = match prev_id {
             Some(pid) if keep => {
-                self.set_open(&prev, false);
                 // Its group call ends as on a switch today; the screens cannot show it any more.
                 let p = prev.clone();
                 self.handle.spawn(async move { p.group.gcall_shutdown().await });
                 self.add_woken(pid, prev);
                 None
             }
-            _ => {
-                prev.slot.open.store(false, Ordering::SeqCst);
-                Some(prev)
-            }
+            _ => Some(prev),
         };
+        Ok(closing)
+    }
+
+    /// After a switch, with `switching` released: the screens refresh for the open slot.
+    fn announce_open(&self, next: &Inner) {
         next.emit_status();
         next.sink.on_contacts_changed();
         self.accounts_changed();
-        Ok(closing)
+    }
+
+    /// The open slot is about to be left: a wake ring answered early on it must not connect in
+    /// the background, so it rings again instead (`wake_rings_unanswer`). Then, as before, no
+    /// switch during a 1:1 call. (A call that arrived meanwhile is `InCall`; it rings, unanswered,
+    /// in the slot that stays open.)
+    fn leave_open(&self) -> Result<(), Error> {
+        let open = self.open();
+        open.not_in_call()?;
+        open.ctx.wake_rings_unanswer();
+        Ok(open.not_in_call()?)
     }
 
     /// `switch_account` to an account that is not open, outside `OpenOnly`: a woken slot opens
     /// as it is; any other account is loaded locked into a new slot. Returns the slot to close.
     pub(crate) fn switch_to(self: &Arc<Self>, id: &str) -> Result<Option<Arc<Inner>>, Error> {
-        let _sw = self.switching.lock();
-        self.open().not_in_call()?;
-        let woken = self.slots.lock().woken.get(id).map(|w| w.inner.clone());
-        let next = match woken {
-            Some(w) => w,
-            None => {
-                let loaded = load_account(&self.dirs()?, id)?;
-                self.new_slot(Some(loaded), true)?
-            }
+        let (closing, next) = {
+            let _sw = self.switching.lock();
+            self.open().not_in_call()?;
+            let woken = self.slots.lock().woken.get(id).map(|w| w.inner.clone());
+            let next = match woken {
+                Some(w) => w,
+                None => {
+                    if !self.wait_closed(id) {
+                        return Err(Error::Busy);
+                    }
+                    let loaded = load_account(&self.dirs()?, id)?;
+                    self.new_slot(Some(loaded), false)?
+                }
+            };
+            self.leave_open()?;
+            (self.make_open(next.clone(), Some(id))?, next)
         };
-        self.make_open(next, Some(id))
+        self.announce_open(&next);
+        Ok(closing)
     }
 
     /// `begin_new_account` outside `OpenOnly`: an empty slot opens. Returns the slot to close.
     pub(crate) fn open_blank(self: &Arc<Self>) -> Result<Option<Arc<Inner>>, Error> {
-        let _sw = self.switching.lock();
-        self.open().not_in_call()?;
-        let next = self.new_slot(None, true)?;
-        self.make_open(next, None)
+        let (closing, next) = {
+            let _sw = self.switching.lock();
+            self.open().not_in_call()?;
+            let next = self.new_slot(None, false)?;
+            self.leave_open()?;
+            (self.make_open(next.clone(), None)?, next)
+        };
+        self.announce_open(&next);
+        Ok(closing)
     }
 
     /// Closes a slot for good: its call floor, endpoints, sessions and stores; its unread
-    /// count is saved first.
-    pub(crate) async fn close_slot(self: Arc<Self>, inner: Arc<Inner>) {
-        inner.sync.link_cancel();
-        {
-            let _life = inner.lifecycle.lock().await;
-            inner.chat.chat_sessions_close();
-            inner.group.gcall_shutdown().await;
-            inner.close_endpoint().await;
-            self.save_unread(&inner);
-            inner.chat.chat_close().await;
-            inner.group.group_close_now();
-            inner.shared.lock().forget_session();
+    /// count is saved first. The account counts as closing from this call (not from the first
+    /// poll of the future), so that a load of it waits (`wait_closed`).
+    pub(crate) fn close_slot(self: Arc<Self>, inner: Arc<Inner>) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let id = id_of_slot(&inner);
+        if let Some(id) = &id {
+            self.closing.lock().insert(id.clone());
         }
-        inner.floor.release(inner.slot_id);
-        self.accounts_changed();
+        async move {
+            let delay = self.knobs.lock().close_delay_ms;
+            if delay > 0 {
+                tokio::time::sleep(Duration::from_millis(delay)).await;
+            }
+            inner.sync.link_cancel();
+            {
+                let _life = inner.lifecycle.lock().await;
+                inner.chat.chat_sessions_close();
+                inner.group.gcall_shutdown().await;
+                inner.close_endpoint().await;
+                self.save_unread(&inner);
+                inner.chat.chat_close().await;
+                inner.group.group_close_now();
+                inner.shared.lock().forget_session();
+            }
+            inner.floor.release(inner.slot_id);
+            if let Some(id) = id {
+                self.closing.lock().remove(&id);
+                self.closed.notify_all();
+            }
+            self.accounts_changed();
+        }
     }
 
     // ---- wakes ----
 
-    /// The background slot a wake `hint` is for: a running woken slot whose key opens it; else,
-    /// with `load` (`OnWake`), another account on disk the platform has a key for, loaded and
-    /// unlocked now. `None`: no account here opens it.
-    pub(crate) fn wake_slot(self: &Arc<Self>, hint: &str, load: bool) -> Option<Arc<Inner>> {
-        let _sw = self.switching.lock();
-        {
-            let mut s = self.slots.lock();
-            if let Some(w) = s.woken.values_mut().find(|w| w.inner.wake_opens(hint)) {
-                w.idle_since = None;
-                return Some(w.inner.clone());
-            }
-        }
-        if !load {
-            return None;
-        }
+    /// The accounts on disk that no slot holds (`switching` held).
+    fn sleeping(&self) -> Vec<accounts::Entry> {
         let open_id = id_of_slot(&self.open());
         let entries = self.dirs().and_then(|d| Ok(d.list()?)).unwrap_or_else(|e| {
-            tracing::warn!("listing accounts for a wake: {e}");
+            tracing::warn!("listing accounts: {e}");
             Vec::new()
         });
-        for e in entries {
-            if open_id.as_deref() == Some(e.id.as_str()) || self.is_woken(&e.id) {
-                continue;
+        entries.into_iter().filter(|e| open_id.as_deref() != Some(e.id.as_str()) && !self.is_woken(&e.id)).collect()
+    }
+
+    /// Loads the sleeping account `e` with the `key` the platform gave (asked with no lock
+    /// held) and keeps it running if `wanted`. `switching` is taken again here, and everything
+    /// rechecked: the app may have been locked, or the account opened, meanwhile; a slot of it
+    /// still closing is waited for.
+    fn load_sleeping(self: &Arc<Self>, e: &accounts::Entry, mut key: Vec<u8>, wanted: impl FnOnce(&Inner) -> bool) -> Option<Arc<Inner>> {
+        let _sw = self.switching.lock();
+        let held = self.is_locked() || id_of_slot(&self.open()).as_deref() == Some(e.id.as_str()) || self.is_woken(&e.id);
+        let closed = !held && self.wait_closed(&e.id);
+        if !closed {
+            if !held {
+                tracing::warn!("a background account is still closing; not opened");
             }
+            key.zeroize();
+            return None;
+        }
+        match self.load_unlocked(&e.id, key) {
+            Ok(inner) if wanted(&inner) => {
+                self.add_woken(e.id.clone(), inner.clone());
+                Some(inner)
+            }
+            Ok(inner) => {
+                self.handle.spawn(self.clone().close_slot(inner));
+                None
+            }
+            Err(err) => {
+                tracing::warn!("opening a background account: {err}");
+                None
+            }
+        }
+    }
+
+    /// The background slot a wake `hint` is for: a running woken slot whose key opens it; else,
+    /// with `load` (`OnWake`), another account on disk the platform has a key for, loaded and
+    /// unlocked now. `None`: no account here opens it, or the app is locked.
+    pub(crate) fn wake_slot(self: &Arc<Self>, hint: &str, load: bool) -> Option<Arc<Inner>> {
+        let running = |hub: &Hub| {
+            let mut s = hub.slots.lock();
+            s.woken.values_mut().find(|w| w.inner.wake_opens(hint)).map(|w| {
+                w.idle_since = None;
+                w.inner.clone()
+            })
+        };
+        let entries = {
+            let _sw = self.switching.lock();
+            if self.is_locked() {
+                return None;
+            }
+            if let Some(w) = running(self) {
+                return Some(w);
+            }
+            if !load {
+                return None;
+            }
+            self.sleeping()
+        };
+        for e in entries {
             // Known not to be this account's wake: no unlock needed to tell.
             if let Some(k) = self.hint_keys.lock().get(&e.id)
                 && !node_runtime::push::hint_opens(k, hint)
@@ -555,18 +751,17 @@ impl Hub {
             }
             // A passphrase-only account (no key here) sleeps until it is unlocked.
             let Some(key) = self.account_events().and_then(|ev| ev.account_key(e.did.clone())) else { continue };
-            let inner = match self.load_unlocked(&e.id, key) {
-                Ok(i) => i,
-                Err(err) => {
-                    tracing::warn!("opening a background account for a wake: {err}");
-                    continue;
+            let Some(inner) = self.load_sleeping(&e, key, |i| i.wake_opens(hint)) else {
+                // Not this account's wake; or locked meanwhile; or another wake opened it,
+                // perhaps for this very hint.
+                if self.is_locked() {
+                    return None;
+                }
+                match running(self) {
+                    Some(w) => return Some(w),
+                    None => continue,
                 }
             };
-            if !inner.wake_opens(hint) {
-                self.handle.spawn(self.clone().close_slot(inner));
-                continue;
-            }
-            self.add_woken(e.id, inner.clone());
             self.accounts_changed();
             return Some(inner);
         }
@@ -574,24 +769,19 @@ impl Hub {
     }
 
     /// `KeepAll`: every account the platform has a key for runs in a woken slot (they start
-    /// with `start`). Accounts that fail to open are skipped.
+    /// with `start`). Accounts that fail to open are skipped; nothing opens while locked.
     pub(crate) fn open_all(self: &Arc<Self>) {
-        let _sw = self.switching.lock();
-        let open_id = id_of_slot(&self.open());
-        let Ok(entries) = self.dirs().and_then(|d| Ok(d.list()?)) else { return };
+        let entries = {
+            let _sw = self.switching.lock();
+            if self.is_locked() {
+                return;
+            }
+            self.sleeping()
+        };
         let mut opened = false;
         for e in entries {
-            if open_id.as_deref() == Some(e.id.as_str()) || self.is_woken(&e.id) {
-                continue;
-            }
             let Some(key) = self.account_events().and_then(|ev| ev.account_key(e.did.clone())) else { continue };
-            match self.load_unlocked(&e.id, key) {
-                Ok(inner) => {
-                    self.add_woken(e.id, inner);
-                    opened = true;
-                }
-                Err(err) => tracing::warn!("opening a background account: {err}"),
-            }
+            opened |= self.load_sleeping(&e, key, |_| true).is_some();
         }
         if opened {
             self.accounts_changed();
@@ -603,6 +793,20 @@ impl Hub {
     /// The woken slot that has the call `call_id`.
     pub(crate) fn woken_with_call(&self, call_id: &str) -> Option<(String, Arc<Inner>)> {
         self.slots.lock().woken.iter().find(|(_, w)| w.inner.has_call(call_id)).map(|(id, w)| (id.clone(), w.inner.clone()))
+    }
+
+    /// One ring at a time across the accounts: a call wake for `slot` is turned away (`EndCall`)
+    /// while another slot holds the call floor or rings for a wake, or, for a background slot,
+    /// while the user is in a group call (a call to the open account during its own group call
+    /// rings as on one account, and is busy when it arrives).
+    pub(crate) fn ring_refused(&self, slot: &Inner) -> bool {
+        let (floor, id) = (&slot.floor, slot.slot_id);
+        floor.held_by_other(id) || floor.wake_ring_elsewhere(id) || (!slot.slot.is_open() && floor.group_call_elsewhere(id))
+    }
+
+    /// Held while a call wake rings or is refused, so two wakes cannot both ring.
+    pub(crate) fn ring_gate(&self) -> parking_lot::MutexGuard<'_, ()> {
+        self.ringing.lock()
     }
 
     /// The woken slot ringing for a wake from `did`.
@@ -664,6 +868,24 @@ impl Hub {
 
     fn unread_path(&self, id: &str) -> Option<PathBuf> {
         Some(self.dirs().ok()?.dir(id).ok()?.join("unread"))
+    }
+
+    /// A background message has settled: notify unless the account opened meanwhile or the
+    /// message was read on another own device (its read cursor is past it).
+    fn background_notice(&self, inner: &Arc<Inner>, account: AccountRef, message: Message) {
+        if inner.slot.is_open() {
+            return;
+        }
+        let pair = chat_runtime::chat::doc::pair_id(&account.did, &message.peer_did);
+        let cursor = inner.chat.chat_read_cursors().into_iter().find(|(p, _)| *p == pair).map_or(0, |(_, c)| c);
+        if !message.deleted && i64::try_from(message.at).unwrap_or(i64::MAX) > cursor {
+            let name = inner.ctx.wake_label(&message.peer_did);
+            if let Some(ev) = self.account_events() {
+                ev.on_background_message(account, message.peer_did, name);
+            }
+        }
+        self.save_unread(inner);
+        self.accounts_changed();
     }
 
     /// Saves a background slot's unread count in its account dir (a clear number only).

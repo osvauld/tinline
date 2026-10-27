@@ -166,6 +166,7 @@ impl Node {
         drop(s);
         slot.chat_open();
         slot.sync.acc_open();
+        self.hub.unlocked(&slot);
         Ok(())
     }
 }

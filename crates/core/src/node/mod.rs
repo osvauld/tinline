@@ -24,6 +24,7 @@ mod api_call;
 mod api_contacts;
 mod api_identity;
 mod api_push;
+mod gated;
 mod hooks;
 mod lifecycle;
 mod rotation;
