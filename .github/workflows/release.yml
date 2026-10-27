@@ -5,7 +5,8 @@ on:
   # Production is the prod branch: every merge to prod builds the release and drafts it as v<workspace version>.
   push:
     branches: [prod]
-    tags: ['v*']
+    # Publishing creates a v* tag; do not rebuild the packages already attached to that release.
+    # workflow_dispatch remains available for intentional rebuilds.
 
 permissions:
   contents: read
@@ -63,6 +64,17 @@ jobs:
             dpkg-dev desktop-file-utils nasm curl
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-linux
+          workspaces: . -> target/distribution
+      - name: Cache Linux native codecs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/build-cache/p2p_chat/libaom
+            ~/build-cache/p2p_chat/libvpx
+          key: release-linux-codecs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build_libaom.py', 'scripts/build_libvpx.py') }}
       - name: Build tarball, Debian package and AppImage
         run: |
           desktop-file-validate packaging/linux/tinline.desktop
@@ -113,6 +125,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          # prod is not the default branch, but must be able to populate its release cache.
+          cache-read-only: false
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -126,7 +142,34 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
           rustup target add aarch64-linux-android x86_64-linux-android
-          cargo install cargo-ndk --version 4.1.2 --locked
+      - name: Native cache key
+        id: native
+        # The NDK pin and the ABI list, not the whole build.gradle.kts: every release bumps the version
+        # in that file, which would miss the native caches on every release.
+        run: |
+          ndk=$(sed -n 's/^ *ndkVersion = "\(.*\)"/\1/p' android/app/build.gradle.kts)
+          test -n "$ndk" || { echo 'ndkVersion not found in android/app/build.gradle.kts'; exit 1; }
+          echo "key=ndk$ndk-x86_64,arm64-v8a-${{ hashFiles('scripts/build_libaom.py') }}" >> "$GITHUB_OUTPUT"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-android
+          # Include native toolchain/build wiring as well as rust-cache's Rust/compiler keys.
+          key: ${{ steps.native.outputs.key }}
+      - name: Cache cargo-ndk
+        id: cargo-ndk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: release-cargo-ndk-${{ runner.os }}-${{ runner.arch }}-4.1.2
+      - name: Install cargo-ndk
+        if: steps.cargo-ndk-cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-ndk --version 4.1.2 --locked --force
+      - name: Cache Android and host libaom
+        uses: actions/cache@v4
+        with:
+          path: ~/build-cache/p2p_chat/libaom
+          # Do not restore a host-only cache: every ABI must be present before saving this key.
+          key: release-android-aom-${{ runner.os }}-${{ runner.arch }}-${{ steps.native.outputs.key }}
       - name: Build static libaom per ABI (pinned, sha256-verified source)
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"

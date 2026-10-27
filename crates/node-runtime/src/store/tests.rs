@@ -69,3 +69,51 @@ fn history_is_capped_newest_first_and_private() {
     drop(db);
     let _ = fs::remove_dir_all(&dir);
 }
+
+fn call(id: &str, at: u64, reason: &str, duration_secs: u32, missed: bool) -> CallRecord {
+    CallRecord {
+        call_id: id.into(),
+        peer_did: "a".into(),
+        peer_name: "x".into(),
+        incoming: true,
+        started_at: at,
+        duration_secs,
+        reason: reason.into(),
+        direct: false,
+        missed,
+        video: false,
+    }
+}
+
+#[test]
+fn history_keeps_one_record_per_call() {
+    let h = History::new(Vec::new(), None);
+    h.push(call("c1", 10, "hangup_remote", 42, false));
+    // A redial of the same call turned away as busy, logged after the real record.
+    h.push(call("c1", 12, "busy", 0, true));
+    h.push(call("c2", 20, "hangup_local", 0, false));
+    let all = h.list(None, 10);
+    assert_eq!(all.iter().map(|r| r.call_id.as_str()).collect::<Vec<_>>(), ["c2", "c1"]);
+    assert_eq!(all[1].duration_secs, 42, "the answered record stays");
+
+    // The busy one first, the answered one after: the answered one replaces it.
+    let h = History::new(Vec::new(), None);
+    h.push(call("c3", 10, "busy", 0, true));
+    h.push(call("c3", 10, "hangup_remote", 7, false));
+    let all = h.list(None, 10);
+    assert_eq!(all.len(), 1);
+    assert_eq!(all[0].duration_secs, 7);
+}
+
+#[test]
+fn a_saved_log_with_a_call_twice_loads_once() {
+    let saved = vec![
+        call("c2", 20, "busy", 0, true),
+        call("c1", 15, "busy", 0, true),
+        call("c2", 20, "hangup_remote", 9, false),
+    ];
+    let h = History::new(saved, None);
+    let all = h.list(None, 10);
+    assert_eq!(all.iter().map(|r| r.call_id.as_str()).collect::<Vec<_>>(), ["c2", "c1"]);
+    assert_eq!(all[0].duration_secs, 9);
+}
