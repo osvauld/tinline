@@ -220,3 +220,23 @@ fn no_keyring_stores_nothing_when_remember_is_turned_on() {
     n2.create_identity("Bo".into(), String::new()).unwrap();
     assert!(set_remember(&Mem::default(), &d2, &n2, true).is_err());
 }
+
+#[test]
+fn background_key_is_the_remembered_one_and_none_for_passphrase_only() {
+    let d = dir("background-key");
+    let st = Mem::default();
+    let node = open(&d);
+    node.create_identity("Ann".into(), String::new()).unwrap();
+    commit(&st, &d, &node).unwrap();
+    let ann = current_did(&node).unwrap();
+    assert_eq!(remembered_key(&st, &d, &ann), node.unlock_key(), "no passphrase: the automatic key");
+
+    node.begin_new_account().unwrap();
+    node.create_identity("Bo".into(), "a long passphrase".into()).unwrap();
+    commit(&st, &d, &node).unwrap();
+    let bo = current_did(&node).unwrap();
+    assert_eq!(remembered_key(&st, &d, &bo), None, "passphrase only: nothing to open it with");
+    set_remember(&st, &d, &node, true).unwrap();
+    assert_eq!(remembered_key(&st, &d, &bo), node.unlock_key(), "remembered on this computer");
+    assert_ne!(remembered_key(&st, &d, &ann), remembered_key(&st, &d, &bo));
+}
