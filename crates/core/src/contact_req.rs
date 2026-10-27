@@ -51,7 +51,9 @@ pub enum AddOutcome {
     /// They added us at once (a re-add of an existing contact, or a group chat request ticket).
     Added { contact: Contact },
     /// Their device holds it for their user: "Request sent. Your line opens when Tara accepts."
-    /// `ContactRequestEvents::on_request_accepted` follows if they accept.
+    /// `ContactRequestEvents::on_request_accepted` follows if they accept. Also when their device
+    /// could not be reached: the request is then queued and sent (their phone woken when their
+    /// code allows) as soon as it can be, until their code expires.
     Requested { did: String, name: String },
 }
 
@@ -158,6 +160,7 @@ impl Node {
 
     /// Adds someone by their code (any text holding one). Usually their device holds it as a
     /// request (`Requested`); blocks until it answered, at most ~45 s (dial 30 s, answer 15 s).
+    /// When their device cannot be reached the request is queued and this is `Requested` too.
     pub fn add_contact_by_code(&self, text: String) -> Result<AddOutcome, AddError> {
         let slot = self.open();
         let ticket = find_card(&text).ok_or(AddError::NotACode)?;
@@ -200,7 +203,8 @@ impl Node {
             .state
             .sent_requests
             .iter()
-            .filter(|(did, r)| r.delivered && r.exp > now && !s.state.contacts.iter().any(|c| &c.did == *did))
+            // Delivered, or queued for delivery (`ticket` kept while it is retried).
+            .filter(|(did, r)| (r.delivered || r.ticket.is_some()) && r.exp > now && !s.state.contacts.iter().any(|c| &c.did == *did))
             .map(|(did, r)| ContactRequest { did: did.clone(), name: r.pending.name.clone(), at: r.at, expires_at: r.exp })
             .collect();
         v.sort_by_key(|r| r.at);

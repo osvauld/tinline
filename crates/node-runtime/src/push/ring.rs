@@ -92,14 +92,16 @@ impl NodeCtx {
     pub fn on_wake(self: &Arc<Self>, hint: &str) -> Result<WakeAction, Error> {
         let me = self.me()?;
         let action = {
-            let s = self.shared.lock();
+            let mut s = self.shared.lock();
             if s.epoch != me.epoch {
                 return Err(Error::Locked);
             }
-            let st = &s.state;
-            match &st.wake {
+            let st = &mut s.state;
+            let blocked: std::collections::HashSet<String> =
+                st.blocked.iter().cloned().chain(st.notices.keys().filter(|d| crate::block::blocked_me(st, d)).cloned()).collect();
+            match st.wake.as_mut() {
                 None => WakeAction::Ignore,
-                Some(w) => w.on_wake(hint, now_ms(), |did| st.blocked.contains(did) || crate::block::blocked_me(st, did)),
+                Some(w) => w.on_wake(hint, now_ms(), |did| blocked.contains(did)),
             }
         };
         match &action {
@@ -116,6 +118,13 @@ impl NodeCtx {
                     tracing::info!("wake received: outcome EndCall (not available for calls)");
                     return Ok(WakeAction::IgnoreCall);
                 }
+            }
+            WakeAction::CodeWake => {
+                // A stranger holding our code: nobody to dial. The app keeps the node up for the
+                // usual window; their hello arrives as an ordinary contact request.
+                tracing::info!("wake received: outcome CodeWake");
+                // The code throttle outlives a restart.
+                self.persist_in_background(me.epoch);
             }
             WakeAction::Ignore => tracing::info!("wake received: outcome Ignore"),
             WakeAction::IgnoreCall => tracing::info!("wake received: outcome EndCall"),

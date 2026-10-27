@@ -385,6 +385,9 @@ impl Node {
         let slot = self.open();
         slot.me()?;
         retire_ticket(&mut slot.shared.lock().state, false);
-        slot.persist().map_err(Error::from)
+        let saved = slot.persist().map_err(Error::from);
+        // Their code wake tokens are taken back at the relay (`docs/push.md` "Code wake tokens").
+        slot.ctx.wake_kick();
+        saved
     }
 }

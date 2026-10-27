@@ -127,6 +127,7 @@ pub fn contact_hello_with(
         binding,
         grant_for_you: message,
         call_grant_for_you: call,
+        wake: None,
     };
     let pending = PendingContact {
         did: claim.iss,
@@ -226,6 +227,7 @@ pub fn accept_contact_hello_with(
         name: sanitize_name(&claim.name),
         grant_for_you: message,
         call_grant_for_you: call,
+        wake: None,
     };
     let contact = NewContact {
         did: att.did,

@@ -47,6 +47,11 @@ pub enum WakeOutcome {
     EndCall,
     /// A message wake: we are dialling this contact now (the app starts the node if it has not).
     DialedBack { did: String },
+    /// A message wake from someone holding our contact code (not a contact yet, so nobody to
+    /// dial): start the node and keep it up for the usual window, exactly as for `DialedBack`.
+    /// Shows nothing by itself; their request arrives as an ordinary contact request
+    /// (`ContactRequestEvents::on_contact_request`). `docs/push.md` "Code wake tokens".
+    CodeWake,
     /// A call wake: ring for `did` now. `name` is the user's own name for the contact (their
     /// alias, else the name they gave), or a neutral label when unknown. The caller dials us; we
     /// do not dial. See `Node::on_wake` for how the ring ends. `account`: the account of this
@@ -79,6 +84,7 @@ impl Node {
     /// A wake push arrived: `hint` is the opaque text the push carried (FCM data key `h`). Opens
     /// it with this account's own key and acts:
     /// - message wake: dials the contact back (queued if the node is not started yet);
+    /// - code wake (a stranger holding our code): `CodeWake`, nothing dialled; keep the node up;
     /// - call wake: `Ring { did, name }`. The app rings at once (CallKit, full-screen
     ///   notification) without dialling. When the caller's call arrives, the normal
     ///   `on_incoming_call` follows (the app matches it to the ring by `did`) and the ring is
@@ -162,6 +168,7 @@ impl Node {
             WakeAction::Ignore => WakeOutcome::Ignore,
             WakeAction::IgnoreCall => WakeOutcome::EndCall,
             WakeAction::DialBack { did } => WakeOutcome::DialedBack { did },
+            WakeAction::CodeWake => WakeOutcome::CodeWake,
             // One ring across the accounts: another one is in a call or rings (or, for a
             // background account, the user is in a group call), so the caller will be told
             // busy; no ring (and no `Ended` for it later).

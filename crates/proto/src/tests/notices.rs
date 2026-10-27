@@ -193,6 +193,7 @@ fn a_call_token_in_the_message_slot_is_refused() {
         binding,
         grant_for_you: issue_grant(&b.id, a.id.did(), M0, GTTL),
         call_grant_for_you: None,
+        wake: None,
     };
     assert_eq!(
         accept_contact_hello(&a.id, a.dev, &swapped, b.dev, M0 + 2, &Unrecorded, GTTL).err(),

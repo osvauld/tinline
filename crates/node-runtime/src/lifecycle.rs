@@ -148,6 +148,7 @@ impl NodeCtx {
         }
         self.notices_started();
         self.welcomes_started();
+        self.requests_started();
         if let Some(h) = self.hooks() {
             h.group_started();
         }
@@ -296,7 +297,7 @@ impl NodeCtx {
     }
 
     pub async fn ticket(self: &Arc<Self>) -> Result<String, Error> {
-        let me = self.me()?;
+        self.me()?;
         // Right after start the relay isn't known yet; a ticket without it leaves the joiner
         // to DNS discovery, so give the relay a few seconds to come up first.
         let relay = match self.endpoint() {
@@ -312,23 +313,58 @@ impl NodeCtx {
             }
             Err(_) => None,
         };
-        let text = {
-            let mut s = self.shared.lock();
-            let now = now();
-            if let Some(text) = &s.state.ticket
-                && let Ok(t) = ContactTicket::from_text(text)
-                && let Ok(claim) = t.verify(now)
+        self.ticket_with_relay(relay).await
+    }
+
+    /// `ticket` once the relay hint is known. With push on, a new ticket carries a code wake
+    /// token (`docs/push.md` "Code wake tokens"); a ticket is replaced when that no longer
+    /// matches: push turned on (once the relay seals a token) or off, or its token was dropped
+    /// (a new push token).
+    pub async fn ticket_with_relay(self: &Arc<Self>, relay: Option<String>) -> Result<String, Error> {
+        let me = self.me()?;
+        let now = now();
+        // The current one, if it may stay: `(text, whether its wake token is as it should be)`.
+        let (current, push) = {
+            let s = self.shared.lock();
+            let push = s.state.wake.as_ref().is_some_and(|w| w.target.is_some());
+            let current = s.state.ticket.as_ref().and_then(|text| {
+                let claim = ContactTicket::from_text(text).ok()?.verify(now).ok()?;
                 // Still ours (identity and device key unchanged: a restore makes a new key and a
                 // joiner dials the one named here), still days of life left, and points at our
                 // current relay so the joiner can dial without discovery.
-                && claim.iss == me.id.did()
-                && claim.device == me.device
-                && claim.name == me.profile.name
-                && claim.exp > now + 24 * 3600
-                && (relay.is_none() || claim.relay == relay)
-            {
-                return Ok(text.clone());
+                let ok = claim.iss == me.id.did()
+                    && claim.device == me.device
+                    && claim.name == me.profile.name
+                    && claim.exp > now + 24 * 3600
+                    && (relay.is_none() || claim.relay == relay);
+                let wake_ok = match &claim.wake {
+                    Some(_) => s.state.wake.as_ref().is_some_and(|w| w.target.is_some() && w.code_for(&claim.nonce).is_some()),
+                    None => !push,
+                };
+                ok.then(|| (text.clone(), wake_ok))
+            });
+            (current, push)
+        };
+        if let Some((text, true)) = &current {
+            return Ok(text.clone());
+        }
+        let (nonce, exp_min) = proto::ticket_nonce_and_exp(now, TICKET_TTL);
+        let nonce_text = wake::token_text(&nonce);
+        let code = match push {
+            true => self.register_code_token(&nonce_text, proto::ticket_exp_secs(exp_min) * 1000).await,
+            false => None,
+        };
+        // Push is on but the relay sealed nothing: keep a good ticket rather than churn the QR
+        // (asked again next time).
+        if push && code.is_none() && let Some((text, _)) = current {
+            return Ok(text);
+        }
+        let text = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(Error::Locked);
             }
+            let wake = code.and_then(|(pending, resp)| crate::push::apply_code_token(&mut s.state, pending, resp));
             // The one it replaces was handed out and stays good until it expires.
             if s.state
                 .ticket
@@ -340,14 +376,7 @@ impl NodeCtx {
                 retire_ticket(&mut s.state, true);
             }
             s.state.live_tickets.retain(|_, exp| *exp > now);
-            let ticket = proto::issue_contact_ticket(
-                &me.id,
-                me.device,
-                &me.profile.name,
-                relay,
-                now,
-                TICKET_TTL,
-            );
+            let ticket = proto::issue_contact_ticket_with(&me.id, me.device, &me.profile.name, relay, nonce, exp_min, wake);
             let text = ticket.to_text();
             if let Ok(c) = ticket.verify(now) {
                 s.state.live_tickets.insert(c.nonce, c.exp);
@@ -356,6 +385,8 @@ impl NodeCtx {
             text
         };
         self.persist_async(me.epoch).await?;
+        // A token that did not fit, or an older one replaced: the wake task takes it back.
+        self.wake_kick();
         Ok(text)
     }
 

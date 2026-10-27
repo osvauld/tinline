@@ -92,13 +92,21 @@ impl NodeCtx {
         }
         let stored = stored_contact(&new, hint, calls_allowed);
         let contact = Contact::from(&stored);
+        // Their wake token for us, from the hello (`docs/push.md` "Tokens at setup").
+        let handover = crate::push::handover_in(hello).cloned();
+        let fresh = wake::WakeState::new(proto::new_device_secret());
         let apply = |st: &mut State| {
             st.redeemed.insert(proto::redeemed_key(&new.did, &new.redeemed_nonce));
             if by_request {
                 st.req_tickets.remove(&new.redeemed_nonce);
             }
             st.contact_requests.remove(&new.did);
-            apply_contact(st, stored.clone(), new.device, false)
+            apply_contact(st, stored.clone(), new.device, false)?;
+            if let Some(h) = &handover {
+                st.wake.get_or_insert_with(|| fresh.clone());
+                crate::push::hold_handover(st, &new.did, new.device, h);
+            }
+            Ok::<(), Error>(())
         };
         apply(&mut next).map_err(HelloError::Failed)?;
         if let Some(b) = &backing {
@@ -174,6 +182,8 @@ impl NodeCtx {
                     Ok(Hello::Welcome(welcome, contact)) => {
                         // Durable now; only then does the joiner hear of it.
                         self.sink.on_contacts_changed();
+                        // Our wake token for them, when we have one already.
+                        let welcome = crate::push::with_handover(welcome, self.wake_handover(&contact.did));
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
                         drop(permit);

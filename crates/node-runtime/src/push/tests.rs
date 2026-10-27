@@ -32,6 +32,21 @@ pub(super) struct FakeRelay {
     pub(super) on_wake: Mutex<Option<WakeHook>>,
 }
 
+/// What the fake relay seals: canonical base64url (so it fits a contact ticket) of a marker,
+/// the tag and the kinds. [`fake_tag`] reads the tag back.
+fn fake_token(tag: &[u8; 16], kinds: Kinds) -> String {
+    let mut raw = b"fake".to_vec();
+    raw.extend_from_slice(tag);
+    raw.push(kinds.bits());
+    wake::token_text(&raw)
+}
+
+/// The tag inside a token of the fake relay.
+pub(super) fn fake_tag(token: &str) -> Option<[u8; 16]> {
+    let raw = wake::token_bytes(token)?;
+    raw.get(4..20)?.try_into().ok()
+}
+
 pub(super) fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
@@ -45,7 +60,7 @@ impl WakeRelay for FakeRelay {
         let result = if take_one(&self.fail_register) {
             Err(RelayError::status(503))
         } else {
-            let tokens = req.tags.iter().map(|t| IssuedToken { tag: t.tag, token: format!("fake-{}-{}", hex(&t.tag), t.kinds.bits()) }).collect();
+            let tokens = req.tags.iter().map(|t| IssuedToken { tag: t.tag, token: fake_token(&t.tag, t.kinds) }).collect();
             self.registers.lock().push(req);
             Ok(RegisterResponse { tokens })
         };

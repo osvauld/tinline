@@ -73,7 +73,7 @@ fn phones_start_on_wake(a: &T, lookup: &MemoryLookup, kind: Kind, phones: &[&T],
 }
 
 /// `a` and `b` are contacts and `a` holds the wake token `b` issued for it.
-async fn pair_with_token(lookup: &MemoryLookup) -> (T, T) {
+pub(super) async fn pair_with_token(lookup: &MemoryLookup) -> (T, T) {
     let (a, b) = (node(lookup).await, node(lookup).await);
     befriend(&a, &b);
     set_target(&b, Some(fcm(2)));
