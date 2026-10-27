@@ -273,6 +273,12 @@ impl ChatRt {
         core.sessions.lock().values().find(|s| s.did == did).cloned()
     }
 
+    /// Whether any chat session is up or being dialled (a background account stays open while
+    /// one is, `docs/multi-online.md`).
+    pub fn chat_busy(&self) -> bool {
+        self.chat_core().is_ok_and(|core| !core.sessions.lock().is_empty() || !core.dialing.lock().is_empty())
+    }
+
     pub fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
         core.sessions.lock().values().filter(|s| s.did == did).cloned().collect()
     }
@@ -360,13 +366,15 @@ impl ChatRt {
     }
 
     /// P6: chat needs a message token of ours that was not taken back (a block's cut-off); a
-    /// call token does not open chat. Renews the token when it is close to expiry.
+    /// call token does not open chat. Renews the token when it is close to expiry. An admitted
+    /// session (either direction) means `did` is reachable: its wake schedule starts over.
     pub(super) fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
         if self.token_check(did, grant, proto::Cap::Message).is_err() {
             self.log(format!("chat refused: {did}: no valid message token"));
             return Err(Error::Rejected("not accepted".into()));
         }
         self.ctx.renew_message_if_due(did, grant);
+        self.ctx.wake_reached(did);
         Ok(())
     }
 

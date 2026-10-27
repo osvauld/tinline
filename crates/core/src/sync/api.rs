@@ -63,7 +63,8 @@ sink_adapter!(
 
 impl Node {
     fn local_auth(&self, passphrase: Option<String>) -> Result<(), Error> {
-        let vault = match &self.inner.shared.lock().disk {
+        let slot = self.open();
+        let vault = match &slot.shared.lock().disk {
             Some(Disk::V2(p)) if p.vault.has_passphrase() => Some(p.vault.clone()),
             _ => None,
         };
@@ -91,33 +92,35 @@ impl Node {
 #[uniffi::export]
 impl Node {
     pub fn set_link_events(&self, events: Arc<dyn LinkEvents>) {
-        self.inner.sync.set_link_sink(Arc::new(LinkEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.link = Some(Arc::new(LinkEventsAdapter(events))));
     }
 
     /// E (unlocked, started): shows a QR (`OSVL1:...`, valid 5 minutes, one scan) for a new
     /// device to scan. Progress arrives through `LinkEvents`.
     pub fn link_show_qr(&self) -> Result<String, Error> {
-        Ok(self.inner.sync.link_show_qr()?)
+        Ok(self.open().sync.link_show_qr()?)
     }
 
     /// E: scans the QR a new device shows, and dials it.
     pub fn link_scan(&self, qr_text: String) -> Result<(), Error> {
-        Ok(self.inner.sync.link_scan(&qr_text)?)
+        Ok(self.open().sync.link_scan(&qr_text)?)
     }
 
     /// N (no account selected; `begin_new_account` first if needed): shows a QR. `device_label`
     /// is this install's name ("Pixel 8"), shown on E.
     pub fn link_new_show_qr(&self, device_label: String) -> Result<String, Error> {
-        self.inner.sync.require_no_account()?;
+        let slot = self.open();
+        slot.sync.require_no_account()?;
         let (secret, ep) = self.fresh_link_endpoint()?;
-        Ok(self.inner.sync.link_new_show_qr(device_label, secret, ep)?)
+        Ok(slot.sync.link_new_show_qr(device_label, secret, ep)?)
     }
 
     /// N: scans E's QR.
     pub fn link_new_scan(&self, qr_text: String, device_label: String) -> Result<(), Error> {
-        self.inner.sync.require_no_account()?;
+        let slot = self.open();
+        slot.sync.require_no_account()?;
         let (secret, ep) = self.fresh_link_endpoint()?;
-        Ok(self.inner.sync.link_new_scan(&qr_text, device_label, secret, ep)?)
+        Ok(slot.sync.link_new_scan(&qr_text, device_label, secret, ep)?)
     }
 
     /// E: the user compared the codes and agrees. With a passphrase on the account it must be
@@ -125,26 +128,27 @@ impl Node {
     /// platform must have asked for device authentication first (same bar as showing the
     /// recovery phrase, because that is what is sent). `NotFound` if no link is waiting.
     pub fn link_approve(&self, passphrase: Option<String>) -> Result<(), Error> {
-        self.inner.me()?;
+        let slot = self.open();
+        slot.me()?;
         self.local_auth(passphrase)?;
-        Ok(self.inner.sync.link_approve_cmd()?)
+        Ok(slot.sync.link_approve_cmd()?)
     }
 
     /// Abandons the link in progress (either side); `on_link_failed("cancelled")` follows if a
     /// peer was connected.
     pub fn link_cancel(&self) {
-        self.inner.sync.link_cancel();
+        self.open().sync.link_cancel();
     }
 
     /// The registry of this account: every install, this one first.
     pub fn linked_devices(&self) -> Vec<LinkedDevice> {
-        self.inner.sync.linked_devices().into_iter().map(LinkedDevice::from).collect()
+        self.open().sync.linked_devices().into_iter().map(LinkedDevice::from).collect()
     }
 
     /// Renames an install (its own name for this one: same as `set_device_label`).
     pub fn rename_device(&self, device: String, label: String) -> Result<(), Error> {
         let dev = proto::device_from_text(&device)?;
-        self.inner.sync.rename_device(dev, &label, |l| self.set_device_label(l))
+        self.open().sync.rename_device(dev, &label, |l| self.set_device_label(l))
     }
 
     /// Removes an install from the account: it stops syncing and ringing, and is told to drop the
@@ -152,20 +156,21 @@ impl Node {
     /// authentication otherwise, by the platform). Unlinking `this_device` removes the account from
     /// this device (`InCall` during a call). Not cryptographic revocation: see the design doc.
     pub fn unlink_device(&self, device: String, passphrase: Option<String>) -> Result<(), Error> {
+        let slot = self.open();
         let dev = proto::device_from_text(&device)?;
-        let me = self.inner.me()?;
+        let me = slot.me()?;
         self.local_auth(passphrase)?;
         if dev == me.device {
-            self.inner.sync.unlink_self_begin(dev, me.epoch)?;
+            slot.sync.unlink_self_begin(dev, me.epoch)?;
             let epoch = me.epoch;
             let r = self.run(move |inner| async move {
                 inner.sync.clone().remove_self_account(epoch).await;
                 Ok(())
             });
-            self.inner.sync.unlink_self_done();
+            slot.sync.unlink_self_done();
             return r;
         }
-        Ok(self.inner.sync.unlink_other_device(dev, me.epoch)?)
+        Ok(slot.sync.unlink_other_device(dev, me.epoch)?)
     }
 }
 
@@ -173,7 +178,7 @@ impl Node {
     /// For tests: the redeemed ticket nonces.
     #[doc(hidden)]
     pub fn redeemed_for_test(&self) -> Vec<String> {
-        let mut v: Vec<String> = self.inner.shared.lock().state.redeemed.iter().cloned().collect();
+        let mut v: Vec<String> = self.open().shared.lock().state.redeemed.iter().cloned().collect();
         v.sort();
         v
     }
@@ -181,7 +186,7 @@ impl Node {
     /// For tests: the blocked DIDs.
     #[doc(hidden)]
     pub fn blocked_for_test(&self) -> Vec<String> {
-        let mut v: Vec<String> = self.inner.shared.lock().state.blocked.iter().cloned().collect();
+        let mut v: Vec<String> = self.open().shared.lock().state.blocked.iter().cloned().collect();
         v.sort();
         v
     }
@@ -191,13 +196,13 @@ impl Node {
     #[doc(hidden)]
     pub fn self_probe_for_test(&self, device: String) -> bool {
         let Ok(dev) = proto::device_from_text(&device) else { return false };
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move { inner.sync.self_probe(dev).await.is_ok() }).unwrap_or(false)
     }
 
     /// For tests: forget the dial backoff and dial now.
     #[doc(hidden)]
     pub fn sync_now_for_test(&self) {
-        self.inner.sync_kick();
+        self.open().sync_kick();
     }
 }

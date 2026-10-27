@@ -53,7 +53,7 @@ fn stale_session_cannot_write_into_next_account() {
     let n = Node::new(root.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     n.create_identity("a".into(), "pw".into()).unwrap();
     let a = n.profile().unwrap().did;
-    let inner = n.inner.clone();
+    let inner = n.open().clone();
     let epoch_a = inner.me().unwrap().epoch;
     n.begin_new_account().unwrap();
     n.create_identity("b".into(), "pw".into()).unwrap();

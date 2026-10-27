@@ -197,7 +197,7 @@ class CallController(private val app: P2pApp) {
                 endSession(cur?.takeIf { it.info.callId == callId }, state.reason)
                 if (cur != null && cur.info.callId == callId) {
                     val reason = state.reason
-                    if (!everActive && uniffi.present.isMissedReason(reason, cur.info.incoming, everActive)) Notifications.missed(app, cur.info.peerName)
+                    if (!everActive && uniffi.present.isMissedReason(reason, cur.info.incoming, everActive)) Notifications.missed(app, AccountLabels.ringName(cur.info.peerName, cur.info.account?.name))
                     val s = cur.stats
                     val next = takeover; takeover = null
                     val loss = cur.lossPct
@@ -370,7 +370,7 @@ class CallController(private val app: P2pApp) {
         val id = info.callId
         videoNow = info.video
         val s = CallSession(
-            app.scope, app, audio, info.peerName.ifBlank { appString(R.string.call_default_name) }, info.incoming,
+            app.scope, app, audio, AccountLabels.ringName(info.peerName.ifBlank { appString(R.string.call_default_name) }, info.account?.name), info.incoming,
             // A video call (either side pressed Video) is a Telecom video call on the loudspeaker; a headset still wins.
             video = info.video, preferSpeaker = info.video,
             onAnswer = { systemAnswer(id) }, onDisconnect = { systemDisconnect(id) }, onSystemMute = { systemMute(id, it) },

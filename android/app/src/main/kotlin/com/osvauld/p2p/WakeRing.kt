@@ -5,8 +5,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** A call wake that rings before the caller's call has arrived (docs/push.md "Calls"). */
-data class WakeRingUi(val did: String, val name: String, val answered: Boolean = false)
+/**
+ * A call wake that rings before the caller's call has arrived (docs/push.md "Calls"). [account]: the name of the account of
+ * this phone it rings when that is not the open one ("Asha → Work"); answering switches to it (the core does).
+ */
+data class WakeRingUi(val did: String, val name: String, val answered: Boolean = false, val account: String? = null) {
+    /** What the ring shows as the caller. */
+    val title: String get() = AccountLabels.ringName(name, account)
+}
 
 /** The ring's state changes, pure so the handover to the real call is unit tested. The core owns the timing. */
 object WakeRingLogic {
@@ -17,8 +23,8 @@ object WakeRingLogic {
     fun isWakeCallId(id: String) = id.startsWith(PREFIX)
 
     /** A ring (or a repeat wake for the same contact: one ring only, an early answer is kept). */
-    fun ring(cur: WakeRingUi?, did: String, name: String): WakeRingUi =
-        if (cur?.did == did) cur.copy(name = name) else WakeRingUi(did, name)
+    fun ring(cur: WakeRingUi?, did: String, name: String, account: String? = null): WakeRingUi =
+        if (cur?.did == did) cur.copy(name = name, account = account) else WakeRingUi(did, name, account = account)
 
     fun answered(cur: WakeRingUi?): WakeRingUi? = cur?.copy(answered = true)
 
@@ -41,10 +47,11 @@ object WakeRing {
     val active: Boolean get() = _state.value != null
 
     /** A call wake: ring now (calls alerts off: the call still rings as an ordinary one when it arrives). */
-    fun ring(app: P2pApp, did: String, name: String) {
+    fun ring(app: P2pApp, did: String, name: String, account: String? = null) {
         if (!AlertPrefs.calls(app)) return
-        _state.value = WakeRingLogic.ring(_state.value, did, name)
-        Notifications.wakeRing(app, name)
+        val ring = WakeRingLogic.ring(_state.value, did, name, account)
+        _state.value = ring
+        Notifications.wakeRing(app, ring.title)
         app.calls.ringForWake()
     }
 

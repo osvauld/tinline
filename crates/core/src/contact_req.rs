@@ -51,7 +51,9 @@ pub enum AddOutcome {
     /// They added us at once (a re-add of an existing contact, or a group chat request ticket).
     Added { contact: Contact },
     /// Their device holds it for their user: "Request sent. Your line opens when Tara accepts."
-    /// `ContactRequestEvents::on_request_accepted` follows if they accept.
+    /// `ContactRequestEvents::on_request_accepted` follows if they accept. Also when their device
+    /// could not be reached: the request is then queued and sent (their phone woken when their
+    /// code allows) as soon as it can be, until their code expires.
     Requested { did: String, name: String },
 }
 
@@ -127,7 +129,7 @@ sink_adapter!(
 #[uniffi::export]
 impl Node {
     pub fn set_contact_request_events(&self, events: Arc<dyn ContactRequestEvents>) {
-        *self.inner.requests.events.lock() = Some(Arc::new(RequestEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.contact_request = Some(Arc::new(RequestEventsAdapter(events))));
     }
 
     /// Our code and its date. Same rules as `my_ticket`.
@@ -140,33 +142,36 @@ impl Node {
     /// Reads the first contact code in `text` without dialling: whose it is, or why it can't be
     /// used (not a code, our own, expired). The name of an expired code is still signed.
     pub fn peek_code(&self, text: String) -> CodePeek {
+        let slot = self.open();
         let Some(ticket) = find_card(&text) else { return CodePeek::NotACode };
         // `verify(0)` checks everything but the date.
         let Some(claim) = ContactTicket::from_text(&ticket).ok().and_then(|t| t.verify(0).ok()) else {
             return CodePeek::NotACode;
         };
-        if self.inner.me().is_ok_and(|me| claim.iss == me.id.did()) {
+        if slot.me().is_ok_and(|me| claim.iss == me.id.did()) {
             return CodePeek::Own;
         }
         if now() >= claim.exp {
             return CodePeek::Expired { name: proto::sanitize_name(&claim.name), did: claim.iss, expired_at: claim.exp };
         }
-        let known = self.inner.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
+        let known = slot.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
         CodePeek::Found { card: CardPeek { ticket, name: proto::sanitize_name(&claim.name), did: claim.iss, known } }
     }
 
     /// Adds someone by their code (any text holding one). Usually their device holds it as a
     /// request (`Requested`); blocks until it answered, at most ~45 s (dial 30 s, answer 15 s).
+    /// When their device cannot be reached the request is queued and this is `Requested` too.
     pub fn add_contact_by_code(&self, text: String) -> Result<AddOutcome, AddError> {
+        let slot = self.open();
         let ticket = find_card(&text).ok_or(AddError::NotACode)?;
         let claim = ContactTicket::from_text(&ticket).ok().and_then(|t| t.verify(0).ok()).ok_or(AddError::NotACode)?;
-        if self.inner.me().is_ok_and(|me| claim.iss == me.id.did()) {
+        if slot.me().is_ok_and(|me| claim.iss == me.id.did()) {
             return Err(AddError::OwnCode);
         }
         if now() >= claim.exp {
             return Err(AddError::Expired);
         }
-        let inner = self.inner.clone();
+        let inner = slot.clone();
         self.block_on(inner.ctx.clone().add_contact_outcome(ticket, crate::caps::ContactOrigin::Ticket))
             .map_err(AddError::from)?
             .map_err(AddError::from)
@@ -174,8 +179,9 @@ impl Node {
 
     /// Requests made with our code, waiting for our answer, oldest first ("Waiting for you").
     pub fn contact_requests(&self) -> Vec<ContactRequest> {
+        let slot = self.open();
         let now = now();
-        let s = self.inner.shared.lock();
+        let s = slot.shared.lock();
         let mut v: Vec<_> = s
             .state
             .contact_requests
@@ -190,13 +196,15 @@ impl Node {
     /// Requests we sent that their device holds for their user, oldest first ("Waiting for
     /// them"). Gone once they accept (the contact is there) or the code expires.
     pub fn sent_contact_requests(&self) -> Vec<ContactRequest> {
+        let slot = self.open();
         let now = now();
-        let s = self.inner.shared.lock();
+        let s = slot.shared.lock();
         let mut v: Vec<_> = s
             .state
             .sent_requests
             .iter()
-            .filter(|(did, r)| r.delivered && r.exp > now && !s.state.contacts.iter().any(|c| &c.did == *did))
+            // Delivered, or queued for delivery (`ticket` kept while it is retried).
+            .filter(|(did, r)| (r.delivered || r.ticket.is_some()) && r.exp > now && !s.state.contacts.iter().any(|c| &c.did == *did))
             .map(|(did, r)| ContactRequest { did: did.clone(), name: r.pending.name.clone(), at: r.at, expires_at: r.exp })
             .collect();
         v.sort_by_key(|r| r.at);
@@ -207,18 +215,19 @@ impl Node {
     /// with the Welcome (retried while they are offline). `NotFound` if there is no such request;
     /// `Rejected("blocked")` if we block them; `Protocol` if the code they used has expired since.
     pub fn accept_contact_request(&self, did: String) -> Result<Contact, Error> {
-        let me = self.inner.me()?;
-        let inner = self.inner.clone();
+        let slot = self.open();
+        let me = slot.me()?;
+        let inner = slot.clone();
         let contact = self.block_on(async move {
             let this = inner.clone();
             tokio::task::spawn_blocking(move || this.accept_request(&me, &did))
                 .await
                 .map_err(Error::join)?
         })??;
-        self.inner.sink.on_contacts_changed();
-        self.inner.ctx.welcome_kick(contact.did.clone());
-        self.inner.ctx.list_for_new_contact(&contact.did);
-        self.inner.log(format!("accepted contact request from {}", contact.name));
+        slot.sink.on_contacts_changed();
+        slot.ctx.welcome_kick(contact.did.clone());
+        slot.ctx.list_for_new_contact(&contact.did);
+        slot.log(format!("accepted contact request from {}", contact.name));
         Ok(contact)
     }
 }
@@ -227,7 +236,8 @@ impl Node {
     /// For tests that are not about requests: every good hello is welcomed at once, as before.
     #[doc(hidden)]
     pub fn auto_accept_contacts_for_test(&self, on: bool) {
-        self.inner.requests.auto_accept.store(on, Ordering::SeqCst);
+        self.hub.knobs.lock().auto_accept = on;
+        self.open().requests.auto_accept.store(on, Ordering::SeqCst);
     }
 }
 

@@ -156,42 +156,42 @@ sink_adapter!(
 #[uniffi::export]
 impl Node {
     pub fn set_chat_events(&self, events: Arc<dyn ChatEvents>) {
-        self.inner.chat.set_chat_sink(Arc::new(ChatEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.chat = Some(Arc::new(ChatEventsAdapter(events))));
     }
 
     /// Conversations, most recent activity first. One per contact.
     pub fn chats(&self) -> Result<Vec<Chat>, Error> {
-        Ok(self.inner.chat.chat_list()?)
+        Ok(self.open().chat.chat_list()?)
     }
 
     /// The messages of one UTC day; `day = None` is the newest day that has any. Only today's
     /// shard is loaded eagerly; older days are read from the local store when asked.
     pub fn chat_day(&self, peer_did: String, day: Option<String>) -> Result<DayPage, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_day(&peer_did, day).await })
     }
 
     /// Asks the peer for days older than `before_day` that we do not hold (needs a connection;
     /// blocks until answered or timed out). Returns how many days were added.
     pub fn fetch_older_history(&self, peer_did: String, before_day: String) -> Result<u32, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_fetch_history(&peer_did, before_day).await })
     }
 
     pub fn send_text(&self, peer_did: String, text: String, reply_to: Option<String>) -> Result<Message, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_send_message(&peer_did, text, reply_to, None).await })
     }
 
     /// Our own message only.
     pub fn edit_message(&self, peer_did: String, message_id: String, text: String) -> Result<Message, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_edit(&peer_did, &message_id, Some(text)).await })
     }
 
     /// Our own message only; clears the text, keeps the id.
     pub fn delete_message(&self, peer_did: String, message_id: String) -> Result<Message, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_edit(&peer_did, &message_id, None).await })
     }
 
@@ -199,7 +199,7 @@ impl Node {
     /// `ChatEvents::on_presence_changed`). A contact sends presence only while it is active
     /// with us (consent-based links, 2026-10-17), so false means "unknown", not "away".
     pub fn contact_online(&self, peer_did: String) -> bool {
-        self.inner.chat.presence_of(&peer_did)
+        self.open().chat.presence_of(&peer_did)
     }
 
     /// The user is typing in the conversation with `peer_did` (call it on each non-empty
@@ -207,7 +207,7 @@ impl Node {
     /// send and counts as activity with it: the session stays open and carries our presence
     /// for the idle window. Nothing about the typing is sent to the contact.
     pub fn chat_typing(&self, peer_did: String) {
-        self.inner.chat.chat_typing(&peer_did);
+        self.open().chat.chat_typing(&peer_did);
     }
 
     /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the
@@ -215,7 +215,7 @@ impl Node {
     /// contact is not wired yet (receipt exchange, roadmap M4).
     /// Blocking (an old unread day may be read from its blob first).
     pub fn mark_read(&self, peer_did: String) -> Result<(), Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_mark_read(&peer_did).await })
     }
 
@@ -228,7 +228,7 @@ impl Node {
         mime: String,
         text: Option<String>,
     ) -> Result<Message, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_send_file(&peer_did, PathBuf::from(path), mime, text, None).await })
     }
 
@@ -241,7 +241,7 @@ impl Node {
         duration_ms: u32,
         waveform: Vec<u8>,
     ) -> Result<Message, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move {
             chat.chat_send_file(&peer_did, PathBuf::from(path), "audio/ogg".into(), None, Some((duration_ms, waveform))).await
         })
@@ -250,7 +250,7 @@ impl Node {
     /// Starts fetching the attachment of a message now (progress via `on_transfer_progress`,
     /// the end via `on_message_changed`). Returns at once.
     pub fn download_attachment(&self, peer_did: String, message_id: String) -> Result<(), Error> {
-        Ok(self.inner.chat.chat_want(&peer_did, &message_id)?)
+        Ok(self.open().chat.chat_want(&peer_did, &message_id)?)
     }
 
     /// Gives up a download in progress (or one waiting to retry, or failed): the transfer stops,
@@ -258,44 +258,44 @@ impl Node {
     /// ("Tap to download"); `download_attachment` later starts from the beginning. A `Ready`
     /// attachment is left alone. The end is reported via `on_message_changed`.
     pub fn cancel_download(&self, peer_did: String, message_id: String) -> Result<(), Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_cancel(&peer_did, &message_id).await })
     }
 
     /// Decrypts a `Ready` attachment to `dest_path` (a voice message is saved the same way and
     /// played from the file). Blocks.
     pub fn save_attachment(&self, peer_did: String, message_id: String, dest_path: String) -> Result<(), Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_save(&peer_did, &message_id, PathBuf::from(dest_path)).await })
     }
 
     /// Attachments up to this many bytes download by themselves; 0 = never. Default 10 MB.
     pub fn set_auto_download_limit(&self, bytes: u64) -> Result<(), Error> {
-        self.inner.chat.chat_core()?.store.set_auto_download(bytes).map_err(Error::from)
+        self.open().chat.chat_core()?.store.set_auto_download(bytes).map_err(Error::from)
     }
 
     pub fn auto_download_limit(&self) -> Result<u64, Error> {
-        Ok(self.inner.chat.chat_core()?.store.auto_download())
+        Ok(self.open().chat.chat_core()?.store.auto_download())
     }
 
     /// Settings > Storage "Download pictures" (default `Always`). The size limit above still applies.
     pub fn picture_download(&self) -> Result<PictureDownload, Error> {
-        Ok(self.inner.chat.chat_core()?.store.picture_download())
+        Ok(self.open().chat.chat_core()?.store.picture_download())
     }
 
     pub fn set_picture_download(&self, policy: PictureDownload) -> Result<(), Error> {
-        self.inner.chat.chat_core()?.store.set_picture_download(policy).map_err(Error::from)
+        self.open().chat.chat_core()?.store.set_picture_download(policy).map_err(Error::from)
     }
 
     /// Settings > Privacy "Read receipts" (default on, per account on this device). Off: this
     /// account sends no read receipts in chats and groups; delivered receipts still go, and
     /// other people's reads still show. Reads made while off are never confirmed later.
     pub fn read_receipts(&self) -> Result<bool, Error> {
-        Ok(self.inner.chat.chat_core()?.store.read_receipts())
+        Ok(self.open().chat.chat_core()?.store.read_receipts())
     }
 
     pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
-        self.inner.chat.chat_core()?.store.set_read_receipts(on).map_err(Error::from)
+        self.open().chat.chat_core()?.store.set_read_receipts(on).map_err(Error::from)
     }
 
     /// Tells the core whether the connection is metered (mobile data), for `PictureDownload::Wifi`.
@@ -307,7 +307,7 @@ impl Node {
     /// What Tinline keeps for chats on this device (Settings > Storage): complete attachments by kind, and the
     /// chat file itself. Blocks (reads the chat records and one file size).
     pub fn storage_usage(&self) -> Result<StorageUsage, Error> {
-        let core = self.inner.chat.chat_core()?;
+        let core = self.open().chat.chat_core()?;
         let (pictures, files) = core.store.blob_usage()?;
         let messages = std::fs::metadata(core.dir.join("chat.redb")).map(|m| m.len()).unwrap_or(0);
         Ok(StorageUsage { pictures, files, messages })
@@ -319,7 +319,7 @@ impl Node {
     /// conversation cannot fetch its blobs.
     #[doc(hidden)]
     pub fn raw_fetch_blob(&self, did: String, hash: String, size: u64) -> Result<u64, Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_raw_fetch(&did, &hash, size).await })
     }
 }

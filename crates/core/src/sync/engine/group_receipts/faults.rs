@@ -20,8 +20,8 @@ async fn session(
     faults: bool,
     legacy: bool,
 ) -> usize {
-    let me = node.inner.me().unwrap();
-    let receiver = node.inner.group.group_core().unwrap();
+    let me = node.open().me().unwrap();
+    let receiver = node.open().group.group_core().unwrap();
     let receiving = async {
         let incoming = server
             .accept()
@@ -31,7 +31,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.sync.clone().self_run(incoming, false).await
+        node.open().sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client
@@ -260,7 +260,7 @@ async fn lost_request_reply_duplicate_and_reconnect_keep_original_proof_and_lega
             .unwrap();
         let _ = node.unlock_key().unwrap();
         node.commit_identity().unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (source, target, gid, original) =
             crate::group::engine::receipt_cores_for_test(me.id.clone(), me.epoch, me.epoch);
         let day = DocId::Day("1970-01-01".into());
@@ -275,7 +275,7 @@ async fn lost_request_reply_duplicate_and_reconnect_keep_original_proof_and_lega
                 .owed_days
                 .contains("1970-01-01")
         );
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let secret = proto::new_device_secret();
         let server = endpoint(me.profile.device_secret).await;
         let client = endpoint(secret).await;

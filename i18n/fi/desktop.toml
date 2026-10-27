@@ -2351,9 +2351,6 @@ text = "Wi-Fi-yhteydellä ja mobiilidatalla"
 [profile_online_now]
 text = "Verkossa nyt"
 
-[profile_only_the_selected_account]
-text = "Vain valittu tili on verkossa tällä tietokoneella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen."
-
 [profile_only_this_device_has]
 text = "Tilisi on vain tällä laitteella. Linkitä toinen laite, niin keskusteluistasi on toinen kopio. Palautussanasi tuovat takaisin tilisi, eivät viestejäsi."
 
@@ -2368,9 +2365,6 @@ text = "Avoimen lähdekoodin lisenssit"
 
 [profile_open_this_link]
 text = "Avataanko tämä linkki?"
-
-[profile_paused_tap_to_switch]
-text = "Tauolla · vaihda napauttamalla"
 
 [profile_people_see_when_youve]
 text = "Ihmiset näkevät, kun olet lukenut heidän viestinsä"

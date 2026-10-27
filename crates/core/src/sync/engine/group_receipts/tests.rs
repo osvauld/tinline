@@ -76,13 +76,13 @@ async fn authenticated_own_sessions_forward_exact_host_proof_and_reconcile_recei
         let b = Node::new(bd.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
         b.restore_identity(phrase, "synthetic proof phone".into(), String::new()).unwrap();
         let _ = b.unlock_key().unwrap(); b.commit_identity().unwrap();
-        let ma = a.inner.me().unwrap(); let mb = b.inner.me().unwrap();
+        let ma = a.open().me().unwrap(); let mb = b.open().me().unwrap();
         let (source, target, gid, original) = crate::group::engine::receipt_cores_for_test(ma.id.clone(), ma.epoch, mb.epoch);
-        *a.inner.group.core.lock() = Some(source.clone()); *b.inner.group.core.lock() = Some(target.clone());
+        *a.open().group.core.lock() = Some(source.clone()); *b.open().group.core.lock() = Some(target.clone());
         let server = endpoint(ma.profile.device_secret).await; let client = endpoint(mb.profile.device_secret).await;
         registry(&a, *client.id().as_bytes()); registry(&b, *server.id().as_bytes());
-        let ra = async { let conn = server.accept().await.unwrap().accept().unwrap().await.unwrap(); a.inner.sync.clone().self_run(conn, false).await };
-        let rb = async { let conn = client.connect(server.addr(), b"tinline/self/3").await.unwrap(); b.inner.sync.clone().self_run(conn, true).await };
+        let ra = async { let conn = server.accept().await.unwrap().accept().unwrap().await.unwrap(); a.open().sync.clone().self_run(conn, false).await };
+        let rb = async { let conn = client.connect(server.addr(), b"tinline/self/3").await.unwrap(); b.open().sync.clone().self_run(conn, true).await };
         let monitor = async {
             loop {
                 let held = target.store.storage_attestation(&gid, &digest(&original)).unwrap();

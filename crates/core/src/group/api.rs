@@ -27,21 +27,23 @@ pub use types::*;
 #[uniffi::export]
 impl Node {
     pub fn set_group_events(&self, events: Arc<dyn GroupEvents>) {
-        self.inner.group.set_group_sink(Arc::new(GroupEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.group = Some(Arc::new(GroupEventsAdapter(events))));
     }
 
     /// Groups this account is in (or was removed from / left), most recent activity first.
     pub fn groups(&self) -> Result<Vec<GroupSummary>, Error> {
-        let core = self.inner.group.group_core()?;
+        let slot = self.open();
+        let core = slot.group.group_core()?;
         let ids: Vec<String> = core.groups.lock().keys().cloned().collect();
-        let mut out: Vec<GroupSummary> = ids.iter().filter_map(|g| self.inner.group.group_summary(&core, g)).collect();
+        let mut out: Vec<GroupSummary> = ids.iter().filter_map(|g| slot.group.group_summary(&core, g)).collect();
         out.sort_by(|a, b| b.last.as_ref().map_or(0, |m| m.at).cmp(&a.last.as_ref().map_or(0, |m| m.at)));
         Ok(out)
     }
 
     pub fn group_detail(&self, group_id: String) -> Result<GroupDetail, Error> {
-        let core = self.inner.group.group_core()?;
-        Ok(self.inner.group.group_detail(&core, &group_id)?)
+        let slot = self.open();
+        let core = slot.group.group_core()?;
+        Ok(slot.group.group_detail(&core, &group_id)?)
     }
 
     /// Up to `limit` messages and system lines older than `before` (a cursor from an earlier
@@ -49,7 +51,8 @@ impl Node {
     /// the days it needs; `older` is `None` once every day we hold has been shown (history
     /// still arriving in the background shows up on the next call).
     pub fn group_messages(&self, group_id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error> {
-        let core = self.inner.group.group_core()?;
+        let slot = self.open();
+        let core = slot.group.group_core()?;
         let cursor = match &before {
             None => None,
             Some(c) => {
@@ -87,7 +90,7 @@ impl Node {
         };
         let start = items.len().saturating_sub(limit);
         let older = (start > 0 || more).then(|| items.get(start).map(|i| format!("{}:{}", i.at, i.id))).flatten();
-        let messages = items[start..].iter().filter_map(|i| self.inner.group.group_message(&core, &group_id, i)).collect();
+        let messages = items[start..].iter().filter_map(|i| slot.group.group_message(&core, &group_id, i)).collect();
         Ok(GroupPage { messages, older })
     }
 
@@ -96,14 +99,14 @@ impl Node {
     /// group tick (`Waiting` one tick, `Delivered` when every eligible member confirmed, `Read`
     /// when every eligible member read) and n/N. Blocking. Re-read after `on_group_changed`.
     pub fn group_receipts(&self, group_id: String, from_ms: u64, to_ms: u64) -> Result<Vec<crate::group::member_receipts::GroupReceiptStatus>, Error> {
-        let core = self.inner.group.group_core()?;
+        let core = self.open().group.group_core()?;
         Ok(core.member_receipts_range(&group_id, from_ms as i64, to_ms as i64, true)?)
     }
 
     /// One post's member receipts (any author: members see everyone's), for its details.
     /// `at_ms` is the post's `GroupMessage.at`. Blocking.
     pub fn group_message_receipts(&self, group_id: String, message_id: String, at_ms: u64) -> Result<crate::group::member_receipts::GroupReceiptStatus, Error> {
-        let core = self.inner.group.group_core()?;
+        let core = self.open().group.group_core()?;
         let at = at_ms as i64;
         core.member_receipts_range(&group_id, at, at, false)?.into_iter().find(|s| s.message_id == message_id).ok_or(Error::NotFound)
     }
@@ -111,10 +114,11 @@ impl Node {
     /// The cursor only moves forward; the step signs read receipts for the posts of others it
     /// covers (`engine::member_receipts`).
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
+        let slot = self.open();
+        let core = slot.group.group_core()?;
         // The account's read-receipt setting lives with the chat settings. Unknown = off: never
         // send a read confirmation the user may have turned off.
-        let reads = self.inner.chat.chat_core().map(|c| c.store.read_receipts()).unwrap_or(false);
+        let reads = slot.chat.chat_core().map(|c| c.store.read_receipts()).unwrap_or(false);
         core.mark_read(&group_id, reads)?;
         core.member_receipts_pump_and_push();
         Ok(())
@@ -127,7 +131,7 @@ impl Node {
         if name.is_empty() || name.len() > MAX_NAME {
             return Err(Error::Protocol("group name must be 1-100 bytes".into()));
         }
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.group_core()?;
             inner.group.group_ensure(&core).await?;
@@ -176,7 +180,7 @@ impl Node {
     /// asking again returns the same link while the host it names still hosts. Closing
     /// (`group_set_open(id, false)`) drops it.
     pub fn group_open_link(&self, group_id: String) -> Result<String, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.admin_core(&group_id)?;
             inner.group.group_ensure(&core).await?;
@@ -209,9 +213,10 @@ impl Node {
     /// new open joiners at once and drops the open link on the hosts we reach; members stay.
     /// Opening alone makes no link (`group_open_link`).
     pub fn group_set_open(&self, group_id: String, open: bool) -> Result<(), Error> {
-        let core = self.inner.group.admin_core(&group_id)?;
+        let slot = self.open();
+        let core = slot.group.admin_core(&group_id)?;
         if core.with_state(&group_id, |st| st.open).unwrap_or(false) != open {
-            self.inner.group.group_write(&core, &group_id, Body::Open { active: open })?;
+            slot.group.group_write(&core, &group_id, Body::Open { active: open })?;
         }
         if !open {
             let link = {
@@ -225,7 +230,7 @@ impl Node {
                 link
             };
             if let Some(link) = link {
-                self.inner.group.group_drop_open_code(&core, &group_id, &link);
+                slot.group.group_drop_open_code(&core, &group_id, &link);
             }
         }
         Ok(())
@@ -233,9 +238,10 @@ impl Node {
 
     /// Only the owner and admins may post (a channel), or everyone again (owner and admins).
     pub fn group_set_admins_only(&self, group_id: String, admins_only: bool) -> Result<(), Error> {
-        let core = self.inner.group.admin_core(&group_id)?;
+        let slot = self.open();
+        let core = slot.group.admin_core(&group_id)?;
         if core.with_state(&group_id, |st| st.admins_only).unwrap_or(false) != admins_only {
-            self.inner.group.group_write(&core, &group_id, Body::AdminsOnly { active: admins_only })?;
+            slot.group.group_write(&core, &group_id, Body::AdminsOnly { active: admins_only })?;
         }
         Ok(())
     }
@@ -244,7 +250,7 @@ impl Node {
     /// `None` if the link is not one, the host refuses it, or cannot be reached).
     pub fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
         let sc = super::code::ShortCode::parse(&token)?;
-        let inner = self.inner.clone();
+        let inner = self.open();
         let t = self
             .block_on(async move { inner.group.group_fetch(&sc).await })
             .ok()?
@@ -280,16 +286,17 @@ impl Node {
     }
 
     pub fn group_post(&self, group_id: String, text: String, reply_to: Option<String>) -> Result<GroupMessage, Error> {
+        let slot = self.open();
         if text.is_empty() || text.len() > MAX_TEXT {
             return Err(Error::Protocol("message must be 1-20000 bytes".into()));
         }
-        let core = self.inner.group.member_core(&group_id)?;
+        let core = slot.group.member_core(&group_id)?;
         // A channel (public group §1): only the owner and admins post. Others' posts would be
         // hidden on every device anyway (`post_visible`).
         if core.with_state(&group_id, |st| st.admins_only && !st.is_admin(&core.did)).unwrap_or(false) {
             return Err(Error::Rejected("admins only".into()));
         }
-        Ok(self.inner.group.group_write(&core, &group_id, Body::Post { text, reply_to, image: None })?)
+        Ok(slot.group.group_write(&core, &group_id, Body::Post { text, reply_to, image: None })?)
     }
 
     /// Why a post of ours will not be posted (`None`: it is not failed). A post written offline
@@ -297,7 +304,7 @@ impl Node {
     /// it and keeps it here with the reason ("Not posted: only admins post here"); its
     /// `delivery` is `Failed` while it is in this list. A later post of ours on the same day carries it along again.
     pub fn group_post_failure(&self, group_id: String, message_id: String) -> Result<Option<String>, Error> {
-        let core = self.inner.group.group_core()?;
+        let core = self.open().group.group_core()?;
         let groups = core.groups.lock();
         let live = groups.get(&group_id).ok_or(Error::NotFound)?;
         Ok(live.meta.failed_posts.get(&message_id).map(|f| f.reason.clone()))
@@ -305,40 +312,43 @@ impl Node {
 
     /// One admin flag on `member_did` (U9/U15: any 3 remove; final, visible to them).
     pub fn group_flag(&self, group_id: String, member_did: String) -> Result<(), Error> {
-        let core = self.inner.group.admin_core(&group_id)?;
+        let slot = self.open();
+        let core = slot.group.admin_core(&group_id)?;
         let ok = core.groups.lock().get(&group_id).is_some_and(|l| l.state.is_member(&member_did) && l.state.owner.as_deref() != Some(member_did.as_str()));
         if !ok {
             return Err(Error::Rejected("not a member that can be flagged".into()));
         }
-        Ok(self.inner.group.group_write(&core, &group_id, Body::Flag { member: member_did }).map(|_| ())?)
+        Ok(slot.group.group_write(&core, &group_id, Body::Flag { member: member_did }).map(|_| ())?)
     }
 
     /// Owner only: make `member_did` an admin, or not.
     pub fn group_set_admin(&self, group_id: String, member_did: String, admin: bool) -> Result<(), Error> {
-        let core = self.inner.group.member_core(&group_id)?;
+        let slot = self.open();
+        let core = slot.group.member_core(&group_id)?;
         let ok = core.groups.lock().get(&group_id).is_some_and(|l| l.state.owner.as_deref() == Some(core.did.as_str()) && l.state.is_member(&member_did));
         if !ok {
             return Err(Error::Rejected("only the owner can change admins of members".into()));
         }
-        Ok(self.inner.group.group_write(&core, &group_id, Body::Admin { member: member_did, admin }).map(|_| ())?)
+        Ok(slot.group.group_write(&core, &group_id, Body::Admin { member: member_did, admin }).map(|_| ())?)
     }
 
     /// Leaves the group (PROVISIONAL: the owner cannot leave).
     pub fn group_leave(&self, group_id: String) -> Result<(), Error> {
-        let core = self.inner.group.member_core(&group_id)?;
+        let slot = self.open();
+        let core = slot.group.member_core(&group_id)?;
         if core.groups.lock().get(&group_id).is_some_and(|l| l.state.owner.as_deref() == Some(core.did.as_str())) {
             return Err(Error::Rejected("the owner cannot leave".into()));
         }
-        Ok(self.inner.group.group_write(&core, &group_id, Body::Leave).map(|_| ())?)
+        Ok(slot.group.group_write(&core, &group_id, Body::Leave).map(|_| ())?)
     }
 
     /// This install's device ID for this account (hex): what an admin appoints as host.
     pub fn group_device_id(&self) -> Result<String, Error> {
-        Ok(hex::encode(self.inner.group.group_core()?.dev))
+        Ok(hex::encode(self.open().group.group_core()?.dev))
     }
 
     /// This device's group endpoint id, once it is up (`None` before any group).
     pub fn group_endpoint_id(&self) -> Option<String> {
-        self.inner.group.group_endpoint().map(|e| e.id().to_string())
+        self.open().group.group_endpoint().map(|e| e.id().to_string())
     }
 }

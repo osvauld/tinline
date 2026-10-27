@@ -5003,7 +5003,6 @@ en = "Paused · tap to switch"
 where = [
   "android settings_account_paused: Small line under an account that is not the selected one, in the account list on the Settings landing. Tapping the row switches to it.",
   "ios settings_account_paused: Subtitle of a non-selected account row.",
-  "desktop profile_paused_tap_to_switch: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
 text = "Tauolla · vaihda napauttamalla"
 
@@ -13799,6 +13798,55 @@ where = [
 ]
 text = "Käsitellään..."
 
+[t_8ffc8cb6a1]
+en = "{name} → {account}"
+where = [
+  "desktop accounts_ring_name: Desktop, several accounts on one computer: who is calling or wrote, and which of your accounts on this computer it is for (not the one open now). Title of the incoming call screen and of a message notification. {name} is the caller's or sender's name; {account} is the name of your account. Keep the arrow.",
+]
+text = ""
+
+[t_90150dab24]
+en = "{name} is calling you on {account}"
+where = [
+  "desktop accounts_is_calling_you_on: Desktop, incoming call notification for one of your other accounts on this computer (not the one open now). {name} is the caller's name; {account} is the name of your account.",
+]
+text = ""
+
+[t_a4bab23a7c]
+en = "Someone is calling you on {account}"
+where = [
+  "desktop accounts_someone_is_calling_you_on: Desktop, incoming call notification for one of your other accounts when the caller has no name. {account} is the name of your account.",
+]
+text = ""
+
+[t_b1dd3ac045]
+en = "New message"
+where = [
+  "desktop accounts_new_message: Desktop, body of a notification for a message to one of your other accounts on this computer (not the one open now). Its title names the sender and the account.",
+]
+text = ""
+
+[t_45a28a502e]
+en = "Tap to switch"
+where = [
+  "desktop accounts_tap_to_switch: Desktop, settings account list: small line under another account of this computer. Clicking the row switches to it.",
+]
+text = ""
+
+[t_6d24345057]
+en_one = "{count} new message · tap to switch"
+en_other = "{count} new messages · tap to switch"
+where = [
+  "desktop accounts_new_tap_to_switch: Desktop, settings account list: small line under another account of this computer that has unread messages. Clicking the row switches to it.",
+]
+
+[t_3039348cdc]
+en = "Every account here stays online on this computer, so calls and messages reach each of them. An account with a passphrase joins once you’ve unlocked it."
+where = [
+  "desktop accounts_every_account_stays_online: Desktop, settings: explanation under the account list. Accounts other than the open one keep running in the background.",
+]
+text = ""
+
 [t_3a211114f7]
 en = "Account removed from this computer"
 where = [
@@ -16377,13 +16425,6 @@ where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
 text = "Verkossa nyt"
-
-[t_11b4ba4260]
-en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
-where = [
-  "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
-]
-text = "Vain valittu tili on verkossa tällä tietokoneella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen."
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."

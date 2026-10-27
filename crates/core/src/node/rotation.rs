@@ -10,7 +10,7 @@ impl Node {
     /// When this device's private endpoint will rotate next (unix ms; periodic, on the same
     /// policy as the group endpoint, `set_group_rotation_policy`). `None` while locked.
     pub fn private_endpoint_rotation_due(&self) -> Option<u64> {
-        self.inner.ctx.private_rotation_due()
+        self.open().ctx.private_rotation_due()
     }
 
     /// Rotates this device's private endpoint now (a Settings "change it now"); the next periodic
@@ -24,13 +24,13 @@ impl Node {
     /// For tests: the overlap of the previous endpoint, in ms (`None`: `PRIVATE_OVERLAP_MS`).
     #[doc(hidden)]
     pub fn set_private_overlap_for_test(&self, ms: Option<u64>) {
-        *self.inner.rotation.overlap_ms_for_test.lock() = ms;
+        *self.open().rotation.overlap_ms_for_test.lock() = ms;
     }
 
     /// For tests: contacts marked `lost_touch`.
     #[doc(hidden)]
     pub fn lost_touch_for_test(&self) -> Vec<String> {
-        self.inner.shared.lock().state.lost_touch.iter().cloned().collect()
+        self.open().shared.lock().state.lost_touch.iter().cloned().collect()
     }
 
     /// For tests: a rotation that stops half way, as a crash would leave it: staged (the pending
@@ -38,7 +38,8 @@ impl Node {
     /// and `account.json`, but nothing swapped in memory. Reopen the node next.
     #[doc(hidden)]
     pub fn private_rotate_interrupted_for_test(&self, promoted: bool) -> Result<(), Error> {
-        let inner = &self.inner;
+        let slot = self.open();
+        let inner = &slot;
         let me = inner.me()?;
         let next = Zeroizing::new(proto::new_device_secret());
         let new_pub = cryptography::signature::public_key(&next);
@@ -69,7 +70,7 @@ impl Node {
     /// For tests: whether the previous endpoint is still bound.
     #[doc(hidden)]
     pub fn overlap_open_for_test(&self) -> bool {
-        self.inner.rotation.overlap.lock().is_some()
+        self.open().rotation.overlap.lock().is_some()
     }
 }
 

@@ -974,6 +974,9 @@ text = "على هذا الهاتف"
 [accounts_locked_not_ringing]
 text = "مقفل · لا يرن هنا"
 
+[accounts_rings_here]
+text = "يرن وينبهك هنا"
+
 [accounts_current_desc]
 text = "الحساب الحالي"
 
@@ -989,6 +992,9 @@ text = "الاستعادة بكلمات الاسترداد"
 [accounts_one_online_hint]
 text = "يكون حساب واحد متصلًا في كل مرة. المكالمات إلى حساب مقفل ترن فقط على أجهزتك الأخرى."
 
+[accounts_others_ring_hint]
+text = "يبقى الحساب المفتوح متصلًا. وتظل حساباتك الأخرى ترن هنا وتنبهك إلى الرسائل الجديدة."
+
 [accounts_finish_call_first]
 text = "يلزم إنهاء المكالمة أولًا"
 
@@ -997,6 +1003,9 @@ text = "التبديل إلى {name}؟"
 
 [accounts_switch_lead]
 text = "سيصبح حساب {current} غير متصل على هذا الهاتف. المكالمات إلى {current} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
+
+[accounts_switch_lead_push]
+text = "سيهدأ حساب {current} على هذا الهاتف. ومع ذلك ترن مكالمات {current} هنا وتصلك تنبيهات رسائله الجديدة."
 
 [accounts_passphrase_for]
 text = "عبارة مرور حساب {name}"
@@ -4614,3 +4623,6 @@ text = "مضيف"
 
 [groupsb_role_callhost_lc]
 text = "مضيف مكالمات"
+
+[notif_bg_message_text]
+text = "رسالة جديدة"

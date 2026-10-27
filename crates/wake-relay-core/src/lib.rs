@@ -11,7 +11,7 @@
 //! Nothing here carries content: no DID, name, message text or call detail.
 
 pub mod api;
-mod b64;
+pub mod b64;
 pub mod hint;
 pub mod jwt;
 pub mod push;

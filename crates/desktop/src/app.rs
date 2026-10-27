@@ -260,6 +260,8 @@ struct App {
     acct_menu: bool,
     /// Account the user is being asked to confirm switching to.
     switch_ask: Option<String>,
+    /// The conversation to open once the switch in flight lands (a background account's notification).
+    open_after_switch: Option<String>,
     /// Account the user is being asked to confirm removing.
     remove_ask: Option<String>,
     /// The account that was current when "new account" / "restore" started; Cancel goes back to it.
@@ -366,6 +368,8 @@ pub enum Target {
     Show,
     /// The conversation with this contact.
     Chat(String),
+    /// The conversation with `peer` in another account of this computer: switches to it first.
+    AccountChat { account: String, peer: String },
 }
 
 #[derive(Debug, Clone)]
@@ -397,6 +401,8 @@ enum Msg {
     SwitchNow(String),
     SwitchGo,
     Switched(Result<bool, String>),
+    /// `answer` of a call that rang another account returned: the core switched to it first.
+    AnsweredSwitched(Result<(), String>),
     /// Start a new account (`true`: restore from a phrase).
     NewAccount(bool),
     NewAccountBegun(Result<(), String>, bool),
@@ -837,6 +843,7 @@ impl App {
             accounts: node.accounts(),
             acct_menu: false,
             switch_ask: None,
+            open_after_switch: None,
             remove_ask: None,
             return_to: None,
             exists_hint: false,
@@ -2162,7 +2169,31 @@ impl App {
                 if let Some(c) = &self.call {
                     self.ctl.stop_ring();
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
+                    // A call for another account: the core opens that account first, then answers.
+                    if c.info.account.is_some() {
+                        self.busy = true;
+                        return blocking(move || node.answer(id).map_err(s), Msg::AnsweredSwitched);
+                    }
                     return blocking(move || node.answer(id).map_err(s), Msg::Done);
+                }
+            }
+            Msg::AnsweredSwitched(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        // The account that rang is the open one now: re-read everything for it, and
+                        // the call screen stops naming it (it is just "the call" from here on).
+                        self.reset_account_state();
+                        self.screen = Screen::Home;
+                        if let Some(c) = self.call.as_mut() {
+                            c.info.account = None;
+                        }
+                    }
+                    Err(e) => {
+                        self.reload_contacts();
+                        self.refresh_accounts();
+                        self.notice = Some(e);
+                    }
                 }
             }
             Msg::AnswerVideo => return self.answer_with_video(),
@@ -2276,6 +2307,7 @@ impl App {
             }
             Msg::Switched(r) => {
                 self.busy = false;
+                let open_chat = self.open_after_switch.take();
                 match r {
                     Ok(unlocked) => {
                         self.reset_account_state();
@@ -2284,7 +2316,11 @@ impl App {
                         self.return_to = None;
                         self.screen = Screen::Home;
                         if unlocked {
-                            return self.start_node();
+                            let mut tasks = vec![self.start_node()];
+                            if let Some(peer) = open_chat.filter(|p| self.selectable(p)) {
+                                tasks.push(self.update(Msg::Select(peer)));
+                            }
+                            return Task::batch(tasks);
                         }
                         self.screen = Screen::Unlock;
                         return self.probe_remember();
@@ -2497,7 +2533,7 @@ impl App {
             Ev::Incoming(info) => {
                 // Its ordinary ring: a waiting call whose call ended, or a fresh one.
                 self.waiting = None;
-                let name = info.peer_name.clone();
+                let line = crate::accounts_bg::calling_line(&info.peer_name, info.account.as_ref());
                 self.call = Some(CallView {
                     info: info.clone(),
                     state: CallState::Ringing,
@@ -2505,7 +2541,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &view::is_calling_line(&name), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &line, Target::Show); }
                 // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
                 // "Video" buttons work the moment they are pressed.
                 let mut tasks = vec![self.show_window(), self.find_camera()];
@@ -2554,14 +2590,37 @@ impl App {
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];
-                if let Target::Chat(did) = target
-                    && self.selectable(&did)
-                    && self.call.is_none()
-                {
-                    tasks.push(self.update(Msg::Select(did)));
+                let target = match target {
+                    // Already the open one (I switched since): just the conversation.
+                    Target::AccountChat { account, peer } if keystore::current_did(&self.node).as_deref() == Some(account.as_str()) => Target::Chat(peer),
+                    t => t,
+                };
+                match target {
+                    Target::Chat(did) if self.selectable(&did) && self.call.is_none() => tasks.push(self.update(Msg::Select(did))),
+                    // Switch first, then the conversation opens (`Switched`). Not during a call or another switch.
+                    Target::AccountChat { account, peer } if self.call.is_none() && !self.busy => {
+                        self.open_after_switch = Some(peer);
+                        self.switch_ask = Some(account);
+                        tasks.push(self.update(Msg::SwitchGo));
+                    }
+                    _ => {}
                 }
                 return Task::batch(tasks);
             }
+            Ev::Background { account, from_did, from_name } => {
+                // Notifications > Messages applies to every account; the core already left out blocked people
+                // and messages read on another device of mine.
+                if NOTIFY_MESSAGES.load(Ordering::Relaxed) {
+                    notify(
+                        &crate::accounts_bg::ring_name(&from_name, Some(&account)),
+                        crate::i18n::tr_str("accounts_new_message"),
+                        Target::AccountChat { account: account.did, peer: from_did },
+                    );
+                    self.play_received();
+                }
+                self.refresh_accounts();
+            }
+            Ev::Accounts => self.refresh_accounts(),
             Ev::Tray(TrayCmd::Quit) => return self.update(Msg::Quit),
         }
         Task::none()

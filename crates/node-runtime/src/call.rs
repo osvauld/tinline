@@ -424,6 +424,9 @@ impl NodeCtx {
             } else if live.waiting.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
                 live.waiting = None;
             }
+            if live.call.is_none() && live.waiting.is_none() {
+                self.floor.release(self.slot_id);
+            }
         }
         if let Some(conn) = call.conn.lock().take() {
             conn.close(0u32.into(), b"bye");
@@ -500,6 +503,12 @@ impl NodeCtx {
             .find(|c| c.info.call_id == call_id)
             .ok_or(Error::NotFound)?;
         call.cmd.send(cmd).map_err(|_| Error::NotFound)
+    }
+
+    /// Whether `call_id` is this slot's call (or the one waiting over it).
+    pub fn has_call(&self, call_id: &str) -> bool {
+        let live = self.live.lock();
+        live.call.iter().chain(live.waiting.iter()).any(|c| c.info.call_id == call_id)
     }
 
     pub fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {

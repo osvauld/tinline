@@ -69,4 +69,5 @@ fn reasons_and_relays_are_bounded() {
 mod find_card_tests;
 mod clip_tests;
 mod or_log_tests;
+mod call_floor_tests;
 

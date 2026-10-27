@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureAlwaysOn(this)
-        intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        chatFrom(intent)
         if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
         groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
@@ -79,6 +79,26 @@ class MainActivity : ComponentActivity() {
         app.requestsIn.value.firstOrNull { it.did == did }?.let { app.incoming.value = IncomingSheet(it.did, it.name, joined = false, theirs = false) }
     }
 
+    /**
+     * A tap on a message notification opens that chat. One of a background account (BackgroundNotifier) switches to that
+     * account first (its remembered key opens it); the chat opens once it is the open, unlocked account (Root waits for
+     * that). A switch refused during a call opens nothing: that chat belongs to the other account.
+     */
+    private fun chatFrom(intent: android.content.Intent?) {
+        val peer = intent?.getStringExtra(ChatNotifier.EXTRA_PEER) ?: return
+        val account = intent.getStringExtra(BackgroundNotifier.EXTRA_ACCOUNT)
+        intent.removeExtra(BackgroundNotifier.EXTRA_ACCOUNT)
+        if (account == null) { OpenChat.request.value = peer; return }
+        val app = P2pApp.get(this)
+        app.scope.launch {
+            app.ready.first { it }
+            if (app.accountDid.value != account) {
+                try { app.switchTo(account, null) } catch (e: Exception) { android.util.Log.w(P2pApp.TAG, "switch from notice: ${e.javaClass.simpleName}") }
+            }
+            if (app.accountDid.value == account) OpenChat.request.value = peer
+        }
+    }
+
     /** The group-call notification: Join takes the ringing call; a tap on the ongoing one returns to its screen. */
     private fun groupCallFrom(intent: android.content.Intent?) {
         val app = P2pApp.get(this)
@@ -93,7 +113,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         requestFrom(intent)
         groupCallFrom(intent)
-        intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        chatFrom(intent)
         if (intent.getBooleanExtra(Notifications.EXTRA_GROUPS, false)) OpenChat.groupsTab.value = true
         CardInbox.take(intent)
         GroupLinkInbox.take(intent)
@@ -328,7 +348,7 @@ private fun Root(app: P2pApp) {
                         onOpen = { ctx.startActivity(Intent(ctx, CallActivity::class.java)) },
                         onDecline = { app.calls.declineWaiting() }, onAnswer = { app.calls.endAndAnswer() })
                     u != null && u.info.incoming && u.state is CallState.Ringing -> RingHead.Ring(
-                        u.info.peerDid, u.info.peerName.ifBlank { ctx.getString(R.string.common_unknown) }, if (u.info.video) ctx.getString(R.string.shell_incoming_video_call) else ctx.getString(R.string.shell_incoming_call),
+                        u.info.peerDid, AccountLabels.ringName(u.info.peerName.ifBlank { ctx.getString(R.string.common_unknown) }, u.info.account?.name), if (u.info.video) ctx.getString(R.string.shell_incoming_video_call) else ctx.getString(R.string.shell_incoming_call),
                         onOpen = { ctx.startActivity(Intent(ctx, IncomingCallActivity::class.java)) },
                         onDecline = { app.calls.decline() },
                         onAnswer = { ctx.startActivity(Intent(ctx, CallActivity::class.java).putExtra(CallActivity.EXTRA_ANSWER, true)) })
