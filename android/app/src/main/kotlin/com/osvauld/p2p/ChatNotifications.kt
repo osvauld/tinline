@@ -145,7 +145,7 @@ object GroupNotifier {
         if (!AlertPrefs.groups(app)) return
         if (app.blocks.value.blockedByMe(m.authorDid)) return
         val who = m.authorName.trim().substringBefore(' ').ifBlank { app.getString(R.string.common_someone) }
-        lines.getOrPut(m.groupId) { mutableListOf() }.let { synchronized(it) { it.add(Line(who, m.text, m.at.toLong())); while (it.size > 6) it.removeAt(0) } }
+        lines.getOrPut(m.groupId) { mutableListOf() }.let { synchronized(it) { it.add(Line(who, GroupText.postLine(m), m.at.toLong())); while (it.size > 6) it.removeAt(0) } }
         val me = Person.Builder().setName(app.getString(R.string.common_you)).build()
         val style = NotificationCompat.MessagingStyle(me).setConversationTitle(groupName ?: app.getString(R.string.chat_notif_group)).setGroupConversation(true)
         lines[m.groupId]?.let { synchronized(it) { it.forEach { l -> style.addMessage(l.text, l.at, Person.Builder().setName(l.who).build()) } } }
