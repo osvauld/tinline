@@ -96,6 +96,10 @@ pub trait GroupApi {
     fn group_image_path(&self, _id: String, _message_id: String) -> Option<String> {
         None
     }
+    /// Voice posts: load one now (tap, or try again).
+    fn group_fetch_voice(&self, _id: String, _message_id: String) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 impl GroupApi for Node {
@@ -137,6 +141,9 @@ impl GroupApi for Node {
     }
     fn group_image_path(&self, id: String, message_id: String) -> Option<String> {
         Node::group_image_path(self, id, message_id)
+    }
+    fn group_fetch_voice(&self, id: String, message_id: String) -> Result<(), Error> {
+        Node::group_fetch_voice(self, id, message_id)
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         Node::group_flag(self, id, did)
@@ -336,6 +343,8 @@ pub(super) enum Job {
     PostImage { gid: String, path: String, caption: String },
     /// Load a post's picture now (tap to load, or try again).
     FetchImage { gid: String, id: String },
+    /// Load a voice post's recording now (tap to load, or try again).
+    FetchVoice { gid: String, id: String },
     /// Open the pictures of these posts into files (the first time decrypts them).
     ImagePaths { gid: String, ids: Vec<String> },
     Flag { gid: String, did: String },
@@ -381,6 +390,7 @@ impl Job {
                 Lm::Posted(r, caption)
             }
             Job::FetchImage { gid, id } => Lm::ImageAsked(api.group_fetch_image(gid, id).map_err(gerr)),
+            Job::FetchVoice { gid, id } => Lm::ImageAsked(api.group_fetch_voice(gid, id).map_err(gerr)),
             Job::ImagePaths { gid, ids } => {
                 let paths = ids.into_iter().map(|id| (id.clone(), api.group_image_path(gid.clone(), id))).collect();
                 Lm::ImagePaths(paths)
@@ -533,6 +543,12 @@ pub(super) enum Lm {
     Image(String, String),
     ImagePaths(Vec<(String, Option<String>)>),
     ImageAsked(Result<(), String>),
+    /// Voice posts: load one that is not here; play/pause (the app's one voice player, shared
+    /// with 1:1 chats), seek to a fraction, and the opened file to play.
+    LoadVoice(String),
+    VoiceToggle(String),
+    VoiceSeek(String, f32),
+    VoiceReady(String, Result<std::path::PathBuf, String>),
 }
 
 /// What a step asks of the app around it.
@@ -869,6 +885,12 @@ impl GroupsLive {
                 let Some(gid) = self.open.clone() else { return out };
                 out.job = Some(Job::FetchImage { gid, id });
             }
+            Lm::LoadVoice(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::FetchVoice { gid, id });
+            }
+            // Played by the app (`App::update_live`), which holds the player.
+            Lm::VoiceToggle(_) | Lm::VoiceSeek(..) | Lm::VoiceReady(..) => {}
             Lm::Image(gid, id) => {
                 self.image_asked.remove(&id);
                 if self.open.as_deref() == Some(gid.as_str()) {
@@ -1566,8 +1588,12 @@ pub(super) fn preview(s: &GroupSummary, me: &str) -> String {
     }
 }
 
-/// A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one.
+/// A post in one line: its text, "Voice message", "Photo" for a picture alone, "Photo · caption"
+/// with one.
 pub(super) fn post_line(m: &GroupMessage) -> String {
+    if m.voice.is_some() {
+        return crate::i18n::tr("chat_voice_message");
+    }
     match (&m.image, m.text.is_empty()) {
         (Some(_), true) => crate::i18n::tr("group_post_photo"),
         (Some(_), false) => crate::i18n::tr_args("group_post_photo_caption", &[("caption", &m.text)]),
@@ -1608,10 +1634,55 @@ impl super::App {
                 |p| super::Msg::Live(Lm::Picked(p)),
             );
         }
+        match m {
+            Lm::VoiceToggle(id) => return self.live_voice_toggle(id),
+            Lm::VoiceSeek(id, f) => {
+                if let Some((pid, pl)) = &self.chat.player
+                    && *pid == id
+                {
+                    pl.seek((f * pl.duration_ms() as f32) as u32);
+                    return Task::none();
+                }
+                // Seeking a bubble that is not playing starts it.
+                return self.live_voice_toggle(id);
+            }
+            // Leaving the group stops its voice message.
+            Lm::Close | Lm::Open(_) if self.chat.player.as_ref().is_some_and(|(pid, _)| self.live.msgs.iter().any(|x| x.id == *pid)) => {
+                self.chat.player = None;
+            }
+            Lm::VoiceReady(id, r) => {
+                match r.and_then(|p| crate::voice::Player::play(&p)) {
+                    Ok(pl) => self.chat.player = Some((id, pl)),
+                    Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_play", &[("error", e.as_str())])),
+                }
+                return Task::none();
+            }
+            _ => {}
+        }
         let node = self.node.clone();
         let out = self.live.step(&*node, m);
         let t = self.after_live(out);
         Task::batch([t, self.live_image_paths()])
+    }
+
+    /// Play or pause a voice post: the one player the app has (a 1:1 voice message stops). The
+    /// first play opens the recording into a file (a job).
+    fn live_voice_toggle(&mut self, id: String) -> Task<super::Msg> {
+        if let Some((pid, pl)) = &self.chat.player
+            && *pid == id
+            && !pl.finished()
+        {
+            if pl.is_paused() { pl.resume() } else { pl.pause() }
+            return Task::none();
+        }
+        self.chat.player = None;
+        let Some(gid) = self.live.open.clone() else { return Task::none() };
+        let node = self.node.clone();
+        let i = id.clone();
+        super::blocking(
+            move || node.group_voice_path(gid, i).map(std::path::PathBuf::from).ok_or_else(|| crate::i18n::tr("common_try_again")),
+            move |r| super::Msg::Live(Lm::VoiceReady(id.clone(), r)),
+        )
     }
 
     /// Opens the pictures of loaded posts that are here but not opened yet (a job: the first
