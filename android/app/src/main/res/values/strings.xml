@@ -666,6 +666,8 @@
     <string name="accounts_on_this_phone">On this phone</string>
     <!-- Line under another account in the switcher: it is locked, so calls do not ring on this phone. -->
     <string name="accounts_locked_not_ringing">Locked · not ringing here</string>
+    <!-- Line under another account in the switcher on a phone with wake-ups: it is not open, but its calls still ring and its messages still notify on this phone. -->
+    <string name="accounts_rings_here">Rings and notifies here</string>
     <!-- Screen-reader description of the tick next to the current account. -->
     <string name="accounts_current_desc">Current account</string>
     <!-- Row in the account sheet that starts creating a new account. -->
@@ -676,12 +678,16 @@
     <string name="accounts_restore">Restore with recovery phrase</string>
     <!-- Hint at the bottom of the account switcher. -->
     <string name="accounts_one_online_hint">One account is online at a time. Calls to a locked account ring only on your other devices.</string>
+    <!-- Hint at the bottom of the account switcher on a phone with wake-ups (push): only the open account stays connected, the others wake for their calls and messages. -->
+    <string name="accounts_others_ring_hint">The account you have open stays online. Your other accounts still ring and tell you about new messages here.</string>
     <!-- Message shown when switching account is refused because a call is going on. -->
     <string name="accounts_finish_call_first">Finish your call first</string>
     <!-- Heading of the switch-confirmation screen. {name} is the nickname of the account to switch to. -->
     <string name="accounts_switch_to">Switch to %1$s?</string>
     <!-- Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once). -->
     <string name="accounts_switch_lead">%1$s goes offline on this phone. Calls to %1$s will ring only on your other linked devices until you switch back.</string>
+    <!-- Explanation on the switch-confirmation screen on a phone with wake-ups (push), when the account being left has its key remembered here: it sleeps but still rings and notifies. {current} is the nickname of the account that is open now (it appears twice but is passed once). -->
+    <string name="accounts_switch_lead_push">%1$s goes quiet on this phone. Calls to %1$s still ring here, and you still hear about its new messages.</string>
     <!-- Label of the passphrase field on the switch-confirmation screen. {name} is the account's nickname. -->
     <string name="accounts_passphrase_for">Passphrase for %1$s</string>
     <!-- Reassuring hint on the switch-confirmation screen when no call is going on. -->
@@ -1850,6 +1856,8 @@
     <string name="notif_wake_notice_title">You may have a new message</string>
     <!-- Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived. -->
     <string name="notif_wake_notice_text">Open Tinline and unlock to catch up.</string>
+    <!-- Text of a message notification for an account that is not the open one. The title is the sender and the account ("Asha · Work"); no message text is shown. -->
+    <string name="notif_bg_message_text">New message</string>
     <!-- Text of the notification shown during a call. -->
     <string name="notif_return_to_call">Tap to return to the call</string>
     <!-- Notification action: leave a group call. -->

@@ -353,14 +353,17 @@
     <string name="accounts_online_here">এই ফোনে অনলাইন</string>
     <string name="accounts_on_this_phone">এই ফোনে</string>
     <string name="accounts_locked_not_ringing">লক করা · এখানে রিং হবে না</string>
+    <string name="accounts_rings_here">এখানে রিং হবে আর জানাবে</string>
     <string name="accounts_current_desc">বর্তমান অ্যাকাউন্ট</string>
     <string name="accounts_create">নতুন অ্যাকাউন্ট তৈরি করুন</string>
     <string name="accounts_link">অন্য ডিভাইস থেকে অ্যাকাউন্ট লিঙ্ক করুন</string>
     <string name="accounts_restore">রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন</string>
     <string name="accounts_one_online_hint">একবারে একটি অ্যাকাউন্ট অনলাইনে থাকে। লক করা অ্যাকাউন্টে কল এলে শুধু আপনার অন্য ডিভাইসগুলোতে রিং হয়।</string>
+    <string name="accounts_others_ring_hint">যে অ্যাকাউন্ট খোলা আছে, সেটি অনলাইনে থাকে। আপনার অন্য অ্যাকাউন্টগুলোতেও এখানে রিং হয় আর নতুন মেসেজের খবর আসে।</string>
     <string name="accounts_finish_call_first">আগে কলটি শেষ করুন</string>
     <string name="accounts_switch_to">%1$s-এ বদলাবেন?</string>
     <string name="accounts_switch_lead">এই ফোনে %1$s অফলাইন হয়ে যাবে। আপনি আবার ফিরে না আসা পর্যন্ত %1$s-এ কল এলে শুধু আপনার অন্য লিঙ্ক করা ডিভাইসগুলোতে রিং হবে।</string>
+    <string name="accounts_switch_lead_push">এই ফোনে %1$s চুপচাপ থাকবে। তবু %1$s-এ কল এলে এখানে রিং হবে আর নতুন মেসেজের খবর আসবে।</string>
     <string name="accounts_passphrase_for">%1$s-এর পাসফ্রেজ</string>
     <string name="accounts_not_on_call">আপনি এখন কলে নেই। থাকলে, বদলালে কলটি শেষ হয়ে যেত।</string>
     <string name="accounts_switching">বদলানো হচ্ছে…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline নিজে থেকেই আবার ঘুমিয়ে পড়বে।</string>
     <string name="notif_wake_notice_title">আপনার একটা নতুন মেসেজ এসে থাকতে পারে</string>
     <string name="notif_wake_notice_text">সব দেখে নিতে Tinline খুলে আনলক করুন।</string>
+    <string name="notif_bg_message_text">নতুন মেসেজ</string>
     <string name="notif_return_to_call">কলে ফিরে যেতে ট্যাপ করুন</string>
     <string name="notif_leave">ছেড়ে দিন</string>
     <string name="notif_end_call">কল শেষ করুন</string>
