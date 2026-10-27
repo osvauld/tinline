@@ -2359,9 +2359,6 @@ text = "على Wi-Fi وبيانات الجوال"
 [profile_online_now]
 text = "متصل الآن"
 
-[profile_only_the_selected_account]
-text = "الحساب المحدد وحده يكون متصلًا على هذا الحاسوب. التبديل يوقف الآخر مؤقتًا: لا تصله مكالمات حتى تحديده من جديد."
-
 [profile_only_this_device_has]
 text = "هذا الجهاز وحده يحمل حسابك. يمكنك ربط جهاز آخر للاحتفاظ بنسخة ثانية من دردشاتك. كلمات الاسترداد تستعيد حسابك، لا رسائلك."
 
@@ -2376,9 +2373,6 @@ text = "تراخيص المصدر المفتوح"
 
 [profile_open_this_link]
 text = "فتح هذا الرابط؟"
-
-[profile_paused_tap_to_switch]
-text = "متوقف مؤقتًا · النقر للتبديل"
 
 [profile_people_see_when_youve]
 text = "يعرف الآخرون متى قرأت رسائلهم"
