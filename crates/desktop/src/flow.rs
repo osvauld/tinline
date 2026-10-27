@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use p2pcore::{Error, Node};
+use p2pcore::{Error, LockState, Node};
 
 use crate::keystore::{self, Store};
 
@@ -65,9 +65,10 @@ pub fn finish_link(st: &dyn Store, data: &Path, node: &Node, pass: Option<String
 }
 
 /// Switches to `did`; opens it with its remembered key when it has one. `Ok(true)` = unlocked.
+/// An account that was running in the background (`KeepAll`) opens unlocked as it was.
 pub fn switch_to(st: &dyn Store, data: &Path, node: &Node, did: &str) -> Result<bool, Error> {
     node.switch_account(did.to_string())?;
-    Ok(keystore::auto_unlock(st, data, node))
+    Ok(node.lock_state() == LockState::Unlocked || keystore::auto_unlock(st, data, node))
 }
 
 /// Removes a non-current account and the key remembered for it.
