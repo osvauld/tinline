@@ -366,14 +366,17 @@
     <string name="accounts_online_here">En ligne sur ce téléphone</string>
     <string name="accounts_on_this_phone">Sur ce téléphone</string>
     <string name="accounts_locked_not_ringing">Verrouillé · ne sonne pas ici</string>
+    <string name="accounts_rings_here">Sonne et vous prévient ici</string>
     <string name="accounts_current_desc">Compte actuel</string>
     <string name="accounts_create">Créer un nouveau compte</string>
     <string name="accounts_link">Associer un compte depuis un autre appareil</string>
     <string name="accounts_restore">Restaurer avec mes mots de récupération</string>
     <string name="accounts_one_online_hint">Un seul compte est en ligne à la fois. Les appels vers un compte verrouillé ne sonnent que sur vos autres appareils.</string>
+    <string name="accounts_others_ring_hint">Le compte ouvert reste en ligne. Vos autres comptes sonnent quand même ici et vous signalent les nouveaux messages.</string>
     <string name="accounts_finish_call_first">Terminez d’abord votre appel</string>
     <string name="accounts_switch_to">Passer à %1$s ?</string>
     <string name="accounts_switch_lead">%1$s passe hors ligne sur ce téléphone. Les appels vers %1$s sonneront seulement sur vos autres appareils associés jusqu’à ce que vous reveniez.</string>
+    <string name="accounts_switch_lead_push">%1$s se met en veille sur ce téléphone. Les appels vers %1$s sonnent quand même ici, et ses nouveaux messages vous sont signalés.</string>
     <string name="accounts_passphrase_for">Phrase secrète de %1$s</string>
     <string name="accounts_not_on_call">Vous n’êtes pas en appel. Si vous l’étiez, changer de compte y mettrait fin.</string>
     <string name="accounts_switching">Changement…</string>
@@ -968,6 +971,7 @@
     <string name="notif_wake_service_text">Tinline se remettra en veille tout seul.</string>
     <string name="notif_wake_notice_title">Vous avez peut-être un nouveau message</string>
     <string name="notif_wake_notice_text">Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé.</string>
+    <string name="notif_bg_message_text">Nouveau message</string>
     <string name="notif_return_to_call">Touchez pour revenir à l’appel</string>
     <string name="notif_leave">Quitter</string>
     <string name="notif_end_call">Raccrocher</string>

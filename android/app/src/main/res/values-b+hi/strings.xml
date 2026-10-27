@@ -353,14 +353,17 @@
     <string name="accounts_online_here">इस फ़ोन पर ऑनलाइन</string>
     <string name="accounts_on_this_phone">इस फ़ोन पर</string>
     <string name="accounts_locked_not_ringing">लॉक है · यहाँ घंटी नहीं बजेगी</string>
+    <string name="accounts_rings_here">यहाँ घंटी बजेगी और सूचना आएगी</string>
     <string name="accounts_current_desc">मौजूदा खाता</string>
     <string name="accounts_create">नया खाता बनाएँ</string>
     <string name="accounts_link">दूसरे डिवाइस से खाता लिंक करें</string>
     <string name="accounts_restore">रिकवरी शब्दों से वापस लाएँ</string>
     <string name="accounts_one_online_hint">एक समय में एक खाता ऑनलाइन रहता है। लॉक खाते की कॉल सिर्फ़ आपके दूसरे डिवाइस पर बजती हैं।</string>
+    <string name="accounts_others_ring_hint">जो खाता खुला है, वह ऑनलाइन रहता है। आपके दूसरे खातों की कॉल भी यहाँ बजती हैं और नए संदेशों की सूचना आती है।</string>
     <string name="accounts_finish_call_first">पहले अपनी कॉल पूरी करें</string>
     <string name="accounts_switch_to">%1$s पर जाएँ?</string>
     <string name="accounts_switch_lead">इस फ़ोन पर %1$s ऑफ़लाइन हो जाएगा। जब तक आप वापस इस खाते पर न आएँ, %1$s की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।</string>
+    <string name="accounts_switch_lead_push">इस फ़ोन पर %1$s शांत रहेगा। %1$s की कॉल फिर भी यहाँ बजेंगी और नए संदेशों की सूचना आएगी।</string>
     <string name="accounts_passphrase_for">%1$s का पासफ़्रेज़</string>
     <string name="accounts_not_on_call">अभी कोई कॉल नहीं चल रही। अगर चल रही होती, तो खाता बदलने से वह कट जाती।</string>
     <string name="accounts_switching">खाता बदल रहा है…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline अपने-आप फिर से सो जाएगा।</string>
     <string name="notif_wake_notice_title">आपके लिए शायद कोई नया संदेश है</string>
     <string name="notif_wake_notice_text">देखने के लिए Tinline खोलें और अनलॉक करें।</string>
+    <string name="notif_bg_message_text">नया संदेश</string>
     <string name="notif_return_to_call">कॉल पर लौटने के लिए टैप करें</string>
     <string name="notif_leave">छोड़ें</string>
     <string name="notif_end_call">कॉल काटें</string>

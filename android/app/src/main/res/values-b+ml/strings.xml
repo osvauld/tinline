@@ -353,14 +353,17 @@
     <string name="accounts_online_here">ഈ ഫോണിൽ ഓൺലൈനാണ്</string>
     <string name="accounts_on_this_phone">ഈ ഫോണിൽ</string>
     <string name="accounts_locked_not_ringing">ലോക്ക് ചെയ്തിരിക്കുന്നു · ഇവിടെ റിംഗ് ചെയ്യില്ല</string>
+    <string name="accounts_rings_here">ഇവിടെ റിംഗ് ചെയ്യും, അറിയിക്കും</string>
     <string name="accounts_current_desc">നിലവിലെ അക്കൗണ്ട്</string>
     <string name="accounts_create">പുതിയ അക്കൗണ്ട് സൃഷ്ടിക്കുക</string>
     <string name="accounts_link">മറ്റൊരു ഉപകരണത്തിൽ നിന്ന് അക്കൗണ്ട് ലിങ്ക് ചെയ്യുക</string>
     <string name="accounts_restore">വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുനഃസ്ഥാപിക്കുക</string>
     <string name="accounts_one_online_hint">ഒരു സമയം ഒരു അക്കൗണ്ട് മാത്രമേ ഓൺലൈനിലുണ്ടാകൂ. ലോക്ക് ചെയ്ത അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും.</string>
+    <string name="accounts_others_ring_hint">തുറന്നിരിക്കുന്ന അക്കൗണ്ട് ഓൺലൈനിൽ തുടരും. നിങ്ങളുടെ മറ്റ് അക്കൗണ്ടുകളിലേക്കുള്ള കോളുകളും ഇവിടെ റിംഗ് ചെയ്യും, പുതിയ സന്ദേശങ്ങൾ അറിയിക്കും.</string>
     <string name="accounts_finish_call_first">ആദ്യം നിങ്ങളുടെ കോൾ പൂർത്തിയാക്കുക</string>
     <string name="accounts_switch_to">%1$s എന്ന അക്കൗണ്ടിലേക്ക് മാറണോ?</string>
     <string name="accounts_switch_lead">ഈ ഫോണിൽ %1$s ഓഫ്‌ലൈനാകും. നിങ്ങൾ ഈ അക്കൗണ്ടിലേക്ക് തിരികെ മാറുന്നതുവരെ, %1$s എന്ന അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ ലിങ്ക് ചെയ്ത മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും.</string>
+    <string name="accounts_switch_lead_push">ഈ ഫോണിൽ %1$s നിശ്ശബ്ദമാകും. എങ്കിലും %1$s എന്ന അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ ഇവിടെ റിംഗ് ചെയ്യും, പുതിയ സന്ദേശങ്ങൾ അറിയിക്കും.</string>
     <string name="accounts_passphrase_for">%1$s എന്ന അക്കൗണ്ടിന്റെ പാസ്‌ഫ്രേസ്</string>
     <string name="accounts_not_on_call">ഇപ്പോൾ കോളൊന്നും നടക്കുന്നില്ല. നടക്കുന്നുണ്ടായിരുന്നെങ്കിൽ, അക്കൗണ്ട് മാറുമ്പോൾ അത് അവസാനിക്കുമായിരുന്നു.</string>
     <string name="accounts_switching">മാറുന്നു…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline തനിയെ വീണ്ടും ഉറങ്ങും.</string>
     <string name="notif_wake_notice_title">നിങ്ങൾക്ക് പുതിയ സന്ദേശം വന്നിട്ടുണ്ടാകാം</string>
     <string name="notif_wake_notice_text">എല്ലാം കാണാൻ Tinline തുറന്ന് അൺലോക്ക് ചെയ്യുക.</string>
+    <string name="notif_bg_message_text">പുതിയ സന്ദേശം</string>
     <string name="notif_return_to_call">കോളിലേക്ക് മടങ്ങാൻ ടാപ്പ് ചെയ്യുക</string>
     <string name="notif_leave">പുറത്തുകടക്കുക</string>
     <string name="notif_end_call">കോൾ അവസാനിപ്പിക്കുക</string>

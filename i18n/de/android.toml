@@ -952,6 +952,9 @@ text = "Auf diesem Handy"
 [accounts_locked_not_ringing]
 text = "Gesperrt · klingelt hier nicht"
 
+[accounts_rings_here]
+text = "Klingelt und meldet sich hier"
+
 [accounts_current_desc]
 text = "Aktuelles Konto"
 
@@ -967,6 +970,9 @@ text = "Mit 24 Wörtern wiederherstellen"
 [accounts_one_online_hint]
 text = "Es ist immer nur ein Konto online. Anrufe an ein gesperrtes Konto klingeln nur auf deinen anderen Geräten."
 
+[accounts_others_ring_hint]
+text = "Das geöffnete Konto bleibt online. Deine anderen Konten klingeln trotzdem hier und melden dir neue Nachrichten."
+
 [accounts_finish_call_first]
 text = "Beende zuerst deinen Anruf"
 
@@ -975,6 +981,9 @@ text = "Zu {name} wechseln?"
 
 [accounts_switch_lead]
 text = "{current} geht auf diesem Handy offline. Anrufe an {current} klingeln nur auf deinen anderen verknüpften Geräten, bis du zurückwechselst."
+
+[accounts_switch_lead_push]
+text = "{current} ruht auf diesem Handy. Anrufe an {current} klingeln trotzdem hier, und neue Nachrichten werden dir gemeldet."
 
 [accounts_passphrase_for]
 text = "Passphrase für {name}"
@@ -2713,6 +2722,9 @@ text = "Vielleicht hast du eine neue Nachricht"
 
 [notif_wake_notice_text]
 text = "Öffne Tinline und entsperre es, um alles zu sehen."
+
+[notif_bg_message_text]
+text = "Neue Nachricht"
 
 [notif_return_to_call]
 text = "Tippe, um zum Anruf zurückzukehren"

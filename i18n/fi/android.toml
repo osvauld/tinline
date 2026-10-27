@@ -952,6 +952,9 @@ text = "Tällä puhelimella"
 [accounts_locked_not_ringing]
 text = "Lukittu · ei soi täällä"
 
+[accounts_rings_here]
+text = "Soi ja ilmoittaa täällä"
+
 [accounts_current_desc]
 text = "Nykyinen tili"
 
@@ -967,6 +970,9 @@ text = "Palauta palautussanoilla"
 [accounts_one_online_hint]
 text = "Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi."
 
+[accounts_others_ring_hint]
+text = "Avoinna oleva tili pysyy verkossa. Muut tilisi soivat silti ja kertovat uusista viesteistä täällä."
+
 [accounts_finish_call_first]
 text = "Lopeta ensin puhelusi"
 
@@ -975,6 +981,9 @@ text = "Vaihdetaanko tiliin {name}?"
 
 [accounts_switch_lead]
 text = "{current} siirtyy pois verkosta tällä puhelimella. Puhelut tilille {current} soivat vain muilla linkitetyillä laitteillasi, kunnes vaihdat takaisin."
+
+[accounts_switch_lead_push]
+text = "{current} hiljenee tällä puhelimella. Puhelut tilille {current} soivat silti täällä, ja saat tiedon sen uusista viesteistä."
 
 [accounts_passphrase_for]
 text = "Salalause: {name}"
@@ -2713,6 +2722,9 @@ text = "Sinulle voi olla uusi viesti"
 
 [notif_wake_notice_text]
 text = "Avaa Tinline ja avaa lukitus, niin näet, mitä on tullut."
+
+[notif_bg_message_text]
+text = "Uusi viesti"
 
 [notif_return_to_call]
 text = "Palaa puheluun napauttamalla"

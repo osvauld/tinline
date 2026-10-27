@@ -965,6 +965,9 @@ text = "Sur ce téléphone"
 [accounts_locked_not_ringing]
 text = "Verrouillé · ne sonne pas ici"
 
+[accounts_rings_here]
+text = "Sonne et vous prévient ici"
+
 [accounts_current_desc]
 text = "Compte actuel"
 
@@ -980,6 +983,9 @@ text = "Restaurer avec mes mots de récupération"
 [accounts_one_online_hint]
 text = "Un seul compte est en ligne à la fois. Les appels vers un compte verrouillé ne sonnent que sur vos autres appareils."
 
+[accounts_others_ring_hint]
+text = "Le compte ouvert reste en ligne. Vos autres comptes sonnent quand même ici et vous signalent les nouveaux messages."
+
 [accounts_finish_call_first]
 text = "Terminez d’abord votre appel"
 
@@ -988,6 +994,9 @@ text = "Passer à {name} ?"
 
 [accounts_switch_lead]
 text = "{current} passe hors ligne sur ce téléphone. Les appels vers {current} sonneront seulement sur vos autres appareils associés jusqu’à ce que vous reveniez."
+
+[accounts_switch_lead_push]
+text = "{current} se met en veille sur ce téléphone. Les appels vers {current} sonnent quand même ici, et ses nouveaux messages vous sont signalés."
 
 [accounts_passphrase_for]
 text = "Phrase secrète de {name}"
@@ -2730,6 +2739,9 @@ text = "Vous avez peut-être un nouveau message"
 
 [notif_wake_notice_text]
 text = "Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé."
+
+[notif_bg_message_text]
+text = "Nouveau message"
 
 [notif_return_to_call]
 text = "Touchez pour revenir à l’appel"

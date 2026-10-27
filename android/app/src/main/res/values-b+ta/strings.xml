@@ -353,14 +353,17 @@
     <string name="accounts_online_here">இந்த ஃபோனில் ஆன்லைனில் உள்ளது</string>
     <string name="accounts_on_this_phone">இந்த ஃபோனில்</string>
     <string name="accounts_locked_not_ringing">பூட்டப்பட்டுள்ளது · இங்கே ஒலிக்காது</string>
+    <string name="accounts_rings_here">இங்கே ஒலிக்கும், அறிவிக்கும்</string>
     <string name="accounts_current_desc">தற்போதைய கணக்கு</string>
     <string name="accounts_create">புதிய கணக்கை உருவாக்கு</string>
     <string name="accounts_link">வேறு சாதனத்திலிருந்து கணக்கை இணை</string>
     <string name="accounts_restore">மீட்பு வார்த்தைகளால் மீட்டெடு</string>
     <string name="accounts_one_online_hint">ஒரே நேரத்தில் ஒரு கணக்கு மட்டுமே ஆன்லைனில் இருக்கும். பூட்டப்பட்ட கணக்குக்கு வரும் அழைப்புகள் உங்கள் மற்ற சாதனங்களில் மட்டுமே ஒலிக்கும்.</string>
+    <string name="accounts_others_ring_hint">திறந்திருக்கும் கணக்கு ஆன்லைனில் இருக்கும். உங்கள் மற்ற கணக்குகளுக்கான அழைப்புகளும் இங்கே ஒலிக்கும், புதிய செய்திகளையும் தெரிவிக்கும்.</string>
     <string name="accounts_finish_call_first">முதலில் உங்கள் அழைப்பை முடியுங்கள்</string>
     <string name="accounts_switch_to">%1$s கணக்குக்கு மாறவா?</string>
     <string name="accounts_switch_lead">இந்த ஃபோனில் %1$s ஆஃப்லைன் ஆகும். நீங்கள் மீண்டும் இந்தக் கணக்குக்கு மாறும் வரை, %1$s கணக்குக்கான அழைப்புகள் உங்கள் மற்ற இணைக்கப்பட்ட சாதனங்களில் மட்டுமே ஒலிக்கும்.</string>
+    <string name="accounts_switch_lead_push">இந்த ஃபோனில் %1$s அமைதியாக இருக்கும். ஆனாலும் %1$s கணக்குக்கான அழைப்புகள் இங்கே ஒலிக்கும், புதிய செய்திகளும் தெரிவிக்கப்படும்.</string>
     <string name="accounts_passphrase_for">%1$s கணக்கின் கடவுச்சொற்றொடர்</string>
     <string name="accounts_not_on_call">இப்போது அழைப்பு எதுவும் நடக்கவில்லை. நடந்திருந்தால், கணக்கை மாற்றும்போது அது முடிந்துவிடும்.</string>
     <string name="accounts_switching">மாறுகிறது…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline தானாகவே மீண்டும் ஓய்வுக்குச் செல்லும்.</string>
     <string name="notif_wake_notice_title">உங்களுக்குப் புதிய செய்தி வந்திருக்கலாம்</string>
     <string name="notif_wake_notice_text">என்ன வந்திருக்கிறது என்று பார்க்க, Tinline-ஐத் திறங்கள்.</string>
+    <string name="notif_bg_message_text">புதிய செய்தி</string>
     <string name="notif_return_to_call">அழைப்புக்குத் திரும்பத் தட்டுங்கள்</string>
     <string name="notif_leave">வெளியேறு</string>
     <string name="notif_end_call">அழைப்பை முடி</string>
