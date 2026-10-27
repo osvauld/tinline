@@ -21,7 +21,8 @@
 //! Slice 3b, the sending side: [`NodeCtx::wake_device`] asks the relay to wake one device of a
 //! contact (the throttle and the 410/403 bookkeeping are `WakeState::wake_for` / `wake_result`).
 //! - Messages: `chat_runtime`'s dial loop calls [`NodeCtx::wake_unreached`] when a dial failed
-//!   with something to deliver, and [`NodeCtx::fast_redial`] for the pause before the next dial
+//!   with something to deliver (each device is woken on `wake::msg_wake_due`'s schedule, which
+//!   [`NodeCtx::wake_reached`] starts over), and [`NodeCtx::fast_redial`] for the pause before the next dial
 //!   (faster than the normal backoff for [`MSG_REDIAL_AT_MS`] after a wake was sent).
 //! - Calls: `call.rs`'s `Leg` wakes the callee device (kind `call`) after its first dial failed
 //!   and keeps redialling it every [`CALL_REDIAL_MS`] for [`CALL_WAKE_DIAL_MS`]; the call stays
@@ -452,9 +453,24 @@ impl NodeCtx {
         }
     }
 
-    /// The contact was reached: the fast redials are over.
-    pub fn wake_reached(&self, did: &str) {
+    /// `did` was reached (a dial connected, or they connected to us): the fast redials are over,
+    /// and the `msg` wake schedule of their devices and of a queued request to them starts over
+    /// (`wake::msg_wake_due`), so a later silence wakes promptly again. Saved when it changed.
+    pub fn wake_reached(self: &Arc<Self>, did: &str) {
         self.push.woken.lock().remove(did);
+        let epoch = {
+            let mut s = self.shared.lock();
+            let st = &mut s.state;
+            let mut changed = st.wake.as_mut().is_some_and(|w| w.reached(did));
+            if let Some(r) = st.sent_requests.get_mut(did).filter(|r| r.wakes != 0) {
+                r.wakes = 0;
+                changed = true;
+            }
+            changed.then_some(s.epoch)
+        };
+        if let Some(epoch) = epoch {
+            self.persist_in_background(epoch);
+        }
     }
 
     /// Our platform push token: `Some` registers contacts' tokens at the relay and hands them
@@ -801,6 +817,8 @@ impl NodeCtx {
 mod code;
 mod ring;
 pub use code::{CODE_REGISTER_TIMEOUT, HANDOVER_WAIT, apply_code_token, handover_in, hold_handover, with_handover};
+#[cfg(test)]
+mod backoff_tests;
 #[cfg(test)]
 mod code_tests;
 #[cfg(test)]

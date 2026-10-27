@@ -66,6 +66,25 @@ pub fn apply_code_token(
     }
 }
 
+/// The code's token to wake the owner of queued request `r` with at `now_ms`, recording the wake
+/// on `r`: only while it is undelivered, its code is live and carries a token the relay has not
+/// refused, and `wake::msg_wake_due` allows another (0, 30 s, 2, 10, 30 min, then hourly; reset
+/// by `NodeCtx::wake_reached`). Pure, for a fake clock in tests.
+pub(crate) fn take_code_wake(r: &mut crate::store::SentRequest, now_ms: u64) -> Option<String> {
+    if r.delivered || r.wake_dead || !wake::msg_wake_due(r.last_wake_ms, r.wakes, now_ms) {
+        return None;
+    }
+    let wake = r
+        .ticket
+        .as_deref()
+        .and_then(|t| proto::ContactTicket::from_text(t).ok())
+        .and_then(|t| t.verify(now_ms / 1000).ok())
+        .and_then(|c| c.wake)?;
+    r.last_wake_ms = Some(now_ms);
+    r.wakes = r.wakes.saturating_add(1);
+    Some(wake::token_text(&wake))
+}
+
 /// Keeps the token `did`'s device gave us in its hello or Welcome. Call once `did` is our contact.
 pub fn hold_handover(st: &mut State, did: &str, device: [u8; 32], h: &WakeHandover) -> bool {
     let Some(kinds) = Kinds::from_bits(h.kinds) else {
@@ -163,8 +182,9 @@ impl NodeCtx {
     }
 
     /// Wakes the owner of the code our queued request to `did` uses, with the code's token: only
-    /// when it carries one the relay has not refused, and at most once per
-    /// `wake::MSG_WAKE_EVERY_MS`. `true`: the relay accepted (202); the fast redials follow
+    /// when it carries one the relay has not refused, and on the schedule of
+    /// `wake::msg_wake_due` (0, 30 s, 2, 10, 30 min, then hourly, until their device is reached:
+    /// `wake_reached`). `true`: the relay accepted (202); the fast redials follow
     /// (`fast_redial`). Never logs the token.
     pub async fn wake_code(self: &Arc<Self>, did: &str) -> bool {
         let Ok(me) = self.me() else { return false };
@@ -174,27 +194,15 @@ impl NodeCtx {
             if s.epoch != me.epoch {
                 return false;
             }
-            let Some(r) = s.state.sent_requests.get_mut(did) else {
-                return false;
-            };
-            if r.delivered
-                || r.wake_dead
-                || r.last_wake_ms
-                    .is_some_and(|t| now < t.saturating_add(wake::MSG_WAKE_EVERY_MS))
-            {
-                return false;
-            }
-            let Some(wake) = r
-                .ticket
-                .as_deref()
-                .and_then(|t| proto::ContactTicket::from_text(t).ok())
-                .and_then(|t| t.verify(now / 1000).ok())
-                .and_then(|c| c.wake)
+            let Some(token) = s
+                .state
+                .sent_requests
+                .get_mut(did)
+                .and_then(|r| take_code_wake(r, now))
             else {
                 return false;
             };
-            r.last_wake_ms = Some(now);
-            wake::token_text(&wake)
+            token
         };
         let status = self.wake_relay().wake(token, Kind::Msg).await;
         if status == 410 {

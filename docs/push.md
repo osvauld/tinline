@@ -194,8 +194,8 @@ handed out after contact setup, so a stranger had no way to wake us.
   push turned off (its token was revoked), or a new push token (the old token died with it).
 - **The joiner queues.** If the first dial to the code's device has not connected after
   `MSG_EARLY_WAKE_MS` (3 s) and the code carries a token, the joiner sends a `msg` wake with it
-  while the dial goes on; a failed dial also wakes (at most once per 30 s,
-  `wake::MSG_WAKE_EVERY_MS`; a 410 stops it). The request is kept (`SentRequest::ticket`), the
+  while the dial goes on; a failed dial also wakes (on the backoff
+  below, `wake::msg_wake_due`; a 410 stops it). The request is kept (`SentRequest::ticket`), the
   app gets `Requested`, and a background outbox redials on `MSG_REDIAL_AT_MS` after a wake, else
   2, 5, 15, 30, 60, 300, then every 900 s (`QUEUE_RETRY_SECS`, PROVISIONAL), until the owner
   answers or the code expires; it survives restarts. A code without a token is queued and
@@ -248,8 +248,14 @@ learns who holds the code.
   (Cloudflare's limiter counts over 10 or 60 s windows only, so no daily cap for now.)
   **Measured 2026-10-24:** the limiter is approximate and per Cloudflare location: a burst of 12
   `msg` wakes on one token got 8 through before 429s. So the relay limit is a coarse abuse cap;
-  the exact limit is the sender's own: the core sends at most one `msg` wake per device per 30 s
-  and only after a failed dial.
+  the exact limit is the sender's own: the core sends a `msg` wake only after a failed dial, and
+  per target (a contact's device, a queued request) on a backoff: 0, 30 s, 2, 10, 30 min after
+  the first, then hourly, about 24 a day and about 170 in a week (`wake::MSG_WAKE_GAPS_MS`,
+  PROVISIONAL). Reaching the target (a dial connects, or a chat session with them is admitted)
+  starts it over (`WakeState::reached`, `NodeCtx::wake_reached`); the count is kept in the
+  sealed state (`Held::msg_wakes`, `SentRequest::wakes`), so a restart does not restart it.
+  Messages and the Welcome go through the same per-device schedule; call wakes are not part of
+  it (`CALL_WAKE_EVERY_MS`, per call).
 - **User-Agent:** `osvauld.com`'s Cloudflare bot protection answers `403 error code: 1010` to
   generic client agents (e.g. `Python-urllib`). The apps send `Tinline/<version>`.
 - Answers: 202 sent; 410 drop the token (expired, revoked, push token gone, relay key retired);

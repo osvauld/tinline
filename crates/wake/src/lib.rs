@@ -24,6 +24,8 @@ use wake_relay_core::token::{MAX_TOKEN_CHARS, MAX_TOKEN_LIFE_MS};
 pub use wake_relay_core::{Kind, Kinds, Target};
 
 #[cfg(test)]
+mod backoff_tests;
+#[cfg(test)]
 mod code_tests;
 #[cfg(test)]
 mod tests;
@@ -38,6 +40,34 @@ pub const RENEW_BEFORE_MS: u64 = 7 * DAY_MS;
 /// At most one `msg` wake per device this often (PROVISIONAL: the relay's rate limiter is only
 /// approximate, so this is the real limit).
 pub const MSG_WAKE_EVERY_MS: u64 = 30_000;
+/// The least time between `msg` wakes of one target that does not answer, after the 1st, 2nd,
+/// 3rd, 4th and every later wake: wakes at 0, 30 s, 2 min, 10 min, 30 min from the first, then
+/// hourly, about 24 a day (PROVISIONAL, `docs/notifications-plan.md` N2). Reaching the target
+/// starts it over ([`WakeState::reached`]); [`MSG_WAKE_EVERY_MS`] stays the floor.
+pub const MSG_WAKE_GAPS_MS: [u64; 5] = [
+    MSG_WAKE_EVERY_MS,
+    90_000,
+    8 * 60_000,
+    20 * 60_000,
+    60 * 60_000,
+];
+
+/// The least time after the last `msg` wake of a target before the next, when `count` wakes
+/// have gone out since it was last reached ([`MSG_WAKE_GAPS_MS`]).
+pub fn msg_wake_gap_ms(count: u32) -> u64 {
+    let i = (count as usize)
+        .saturating_sub(1)
+        .min(MSG_WAKE_GAPS_MS.len() - 1);
+    MSG_WAKE_GAPS_MS[i]
+}
+
+/// Whether a `msg` wake of a target may go out at `now_ms`: never woken, or the gap of
+/// [`msg_wake_gap_ms`] has passed since `last_ms`. Pure; the caller records the wake
+/// (`last_ms = now`, `count += 1`) and resets `count` when the target is reached.
+pub fn msg_wake_due(last_ms: Option<u64>, count: u32, now_ms: u64) -> bool {
+    !last_ms.is_some_and(|t| now_ms < t.saturating_add(msg_wake_gap_ms(count)))
+}
+
 /// At most one `call` wake per device this often (PROVISIONAL: the caller redials every ~1 s, a
 /// wake should not repeat that fast).
 pub const CALL_WAKE_EVERY_MS: u64 = 10_000;
@@ -84,6 +114,9 @@ pub struct Held {
     pub kinds: Kinds,
     pub last_wake_ms: Option<u64>,
     pub last_call_wake_ms: Option<u64>,
+    /// `msg` wakes since this contact was last reached, for [`msg_wake_due`].
+    #[serde(default)]
+    pub msg_wakes: u32,
 }
 
 /// `Held` with its key; lists rather than tuple-keyed maps so the state stays JSON-friendly.
@@ -460,6 +493,7 @@ impl WakeState {
                     kinds,
                     last_wake_ms: None,
                     last_call_wake_ms: None,
+                    msg_wakes: 0,
                 },
             }),
         }
@@ -474,7 +508,8 @@ impl WakeState {
     }
 
     /// The token to POST to `/v1/wake` for this device, if we hold a live one that allows `kind`
-    /// and we have not woken it too recently. Records the wake when it returns a token.
+    /// and we have not woken it too recently (`msg`: [`msg_wake_due`]; `call`:
+    /// [`CALL_WAKE_EVERY_MS`]). Records the wake when it returns a token.
     pub fn wake_for(
         &mut self,
         did: &str,
@@ -486,15 +521,39 @@ impl WakeState {
         if h.exp_ms <= now_ms || !h.kinds.allows(kind) {
             return None;
         }
-        let (last, every) = match kind {
-            Kind::Msg => (&mut h.last_wake_ms, MSG_WAKE_EVERY_MS),
-            Kind::Call => (&mut h.last_call_wake_ms, CALL_WAKE_EVERY_MS),
-        };
-        if last.is_some_and(|t| now_ms < t.saturating_add(every)) {
-            return None;
+        match kind {
+            Kind::Msg => {
+                if !msg_wake_due(h.last_wake_ms, h.msg_wakes, now_ms) {
+                    return None;
+                }
+                h.last_wake_ms = Some(now_ms);
+                h.msg_wakes = h.msg_wakes.saturating_add(1);
+            }
+            Kind::Call => {
+                if h.last_call_wake_ms
+                    .is_some_and(|t| now_ms < t.saturating_add(CALL_WAKE_EVERY_MS))
+                {
+                    return None;
+                }
+                h.last_call_wake_ms = Some(now_ms);
+            }
         }
-        *last = Some(now_ms);
         Some(h.token.clone())
+    }
+
+    /// `did` was reached (a dial connected): its `msg` wake schedule starts over, so a later
+    /// silence wakes promptly again (the 30 s floor stays). Whether anything changed.
+    pub fn reached(&mut self, did: &str) -> bool {
+        let mut changed = false;
+        for e in self
+            .held
+            .iter_mut()
+            .filter(|e| e.did == did && e.held.msg_wakes != 0)
+        {
+            e.held.msg_wakes = 0;
+            changed = true;
+        }
+        changed
     }
 
     /// Learns from the relay's HTTP status for a wake: 410 the token is dead, drop it; 403 the

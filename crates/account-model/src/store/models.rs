@@ -359,10 +359,13 @@ pub struct SentRequest {
     /// `None` once delivered, and for a request that is not queued.
     #[serde(default)]
     pub ticket: Option<String>,
-    /// When we last asked the relay to wake them with the code's token (unix ms): one wake per
-    /// `wake::MSG_WAKE_EVERY_MS` at most.
+    /// When we last asked the relay to wake them with the code's token (unix ms), and how many
+    /// wakes have gone out since their device was last reached: the next follows
+    /// `wake::msg_wake_due` (0, 30 s, 2, 10, 30 min, then hourly).
     #[serde(default)]
     pub last_wake_ms: Option<u64>,
+    #[serde(default)]
+    pub wakes: u32,
     /// The relay answered 410 for the code's token: it is dead, wake no more.
     #[serde(default)]
     pub wake_dead: bool,

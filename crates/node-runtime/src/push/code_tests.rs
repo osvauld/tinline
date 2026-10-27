@@ -47,7 +47,7 @@ fn persistable(t: &T) {
     t.ctx.set_setup_dial_timeout(DIAL_MS);
 }
 
-async fn setup_node(lookup: &MemoryLookup) -> T {
+pub(super) async fn setup_node(lookup: &MemoryLookup) -> T {
     let t = node(lookup).await;
     persistable(&t);
     t
@@ -145,7 +145,7 @@ fn phone_wakes(
     outcomes
 }
 
-fn claim_of(code: &str) -> proto::InviteClaim {
+pub(super) fn claim_of(code: &str) -> proto::InviteClaim {
     ContactTicket::from_text(code)
         .unwrap()
         .verify(crate::now())

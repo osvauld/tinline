@@ -6,7 +6,7 @@
 //!   answer. With `early_wake` it wakes the owner's phone with the code's token (if it carries
 //!   one) when the dial has not connected after `MSG_EARLY_WAKE_MS`, while the dial goes on.
 //! - [`NodeCtx::request_kick`] retries it in the background: after a failed dial it wakes the owner
-//!   (at most once per `wake::MSG_WAKE_EVERY_MS`) and redials on the fast schedule
+//!   (on `wake::msg_wake_due`'s schedule: 0, 30 s, 2, 10, 30 min, then hourly) and redials on the fast schedule
 //!   (`push::MSG_REDIAL_AT_MS`), else on [`QUEUE_RETRY_SECS`], until the owner answers
 //!   (`ContactPending`, a Welcome, a refusal or their block notice) or the code expires. The
 //!   queue is the sealed `State::sent_requests`, so it survives a restart (`requests_started`).

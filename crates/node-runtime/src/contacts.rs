@@ -72,6 +72,7 @@ impl NodeCtx {
                     delivered: prior.as_ref().is_some_and(|p| p.delivered),
                     ticket: Some(ticket.to_text()),
                     last_wake_ms: prior.as_ref().and_then(|p| p.last_wake_ms),
+                    wakes: prior.as_ref().map_or(0, |p| p.wakes),
                     wake_dead: false,
                 },
             );
