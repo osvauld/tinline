@@ -206,6 +206,21 @@ impl NodeCtx {
         self.push.rings.map.lock().get(did).is_some_and(|r| r.expires > Instant::now())
     }
 
+    /// A wake ring the user has not declined is open, for any contact (only one ring at a time
+    /// across the accounts of a device, `docs/multi-online.md`).
+    pub fn wake_ringing_any(&self) -> bool {
+        let now = Instant::now();
+        self.push.rings.map.lock().values().any(|r| r.expires > now && r.early != Early::Declined)
+    }
+
+    /// This account is no longer the one on the screen: a wake ring answered early rings again
+    /// when its call arrives (naming the account), instead of connecting where nobody hears it.
+    pub fn wake_rings_unanswer(&self) {
+        for r in self.push.rings.map.lock().values_mut().filter(|r| r.early == Early::Answered) {
+            r.early = Early::Undecided;
+        }
+    }
+
     fn wake_ring(self: &Arc<Self>, did: &str) {
         let now = Instant::now();
         let rings = &self.push.rings;

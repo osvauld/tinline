@@ -261,9 +261,12 @@ pub struct NodeCtx {
 
 /// Who holds the device's one 1:1 call: the slot whose `Live` has a call (or a ringing one).
 /// Taken under that slot's `live` lock, released when its call and waiting call are both gone.
+/// It also knows every slot on it (`join_floor`), for what keeps the others' calls out besides
+/// a 1:1 call: a group call, and a wake ring (one ring at a time across the accounts).
 #[derive(Default)]
 pub struct CallFloor {
     holder: Mutex<Option<u64>>,
+    members: Mutex<Vec<Weak<NodeCtx>>>,
 }
 
 impl CallFloor {
@@ -288,6 +291,28 @@ impl CallFloor {
 
     pub fn held_by_other(&self, slot: u64) -> bool {
         self.holder.lock().is_some_and(|h| h != slot)
+    }
+
+    fn join(&self, ctx: &Arc<NodeCtx>) {
+        let mut m = self.members.lock();
+        m.retain(|w| w.strong_count() > 0);
+        m.push(Arc::downgrade(ctx));
+    }
+
+    /// The other slots on this floor (the list is not held while they are asked).
+    fn others(&self, slot: u64) -> Vec<Arc<NodeCtx>> {
+        self.members.lock().iter().filter_map(Weak::upgrade).filter(|c| c.slot_id != slot).collect()
+    }
+
+    /// The user is in a group call on another slot's account. May be asked with the asking
+    /// slot's `live` held (lock order `live -> group-call session`, as `in_group_call`).
+    pub fn group_call_elsewhere(&self, slot: u64) -> bool {
+        self.others(slot).iter().any(|c| c.hooks().is_some_and(|h| h.in_group_call()))
+    }
+
+    /// Another slot rings for a wake (a ring the user has not declined).
+    pub fn wake_ring_elsewhere(&self, slot: u64) -> bool {
+        self.others(slot).iter().any(|c| c.wake_ringing_any())
     }
 }
 
@@ -323,10 +348,16 @@ impl NodeCtx {
         }
     }
 
-    /// Shares `floor` with the other account slots of this device (before the `Arc`).
+    /// Shares `floor` with the other account slots of this device (before the `Arc`; then
+    /// `join_floor`).
     pub fn with_floor(mut self, floor: Arc<CallFloor>) -> Self {
         self.floor = floor;
         self
+    }
+
+    /// Makes this slot one the others on its floor ask about group calls and wake rings.
+    pub fn join_floor(self: &Arc<Self>) {
+        self.floor.join(self);
     }
 
     /// Installs the engines' side of the seam (p2pcore does it right after building its `Arc`).

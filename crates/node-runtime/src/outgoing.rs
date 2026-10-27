@@ -62,8 +62,13 @@ impl NodeCtx {
                 if !self.floor.take(self.slot_id) {
                     return Err(Error::InCall);
                 }
-                // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
-                if self.hooks().is_some_and(|h| h.in_group_call()) {
+                // The user is in a group call (G6), on this account or another of the device:
+                // incoming 1:1 calls get Busy, outgoing InCall. And one ring at a time: an
+                // incoming call while another account rings for a wake is busy too.
+                if self.hooks().is_some_and(|h| h.in_group_call())
+                    || self.floor.group_call_elsewhere(self.slot_id)
+                    || (call.info.incoming && self.floor.wake_ring_elsewhere(self.slot_id))
+                {
                     self.floor.release(self.slot_id);
                     return Err(Error::InCall);
                 }
