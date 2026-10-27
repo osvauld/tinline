@@ -1,5 +1,5 @@
-//! Image posts (public group §5): sealing a picture into the group blob store and the post that
-//! names it. The app calls are p2pcore's `group::api::images`.
+//! Image and voice posts (public group §5): sealing a picture or a recording into the group blob
+//! store and the post that names it. The app calls are p2pcore's `group::api::images`.
 
 use super::*;
 use crate::images::Prepared;
@@ -16,17 +16,38 @@ impl GroupRt {
         caption: String,
     ) -> Result<GroupMessage, Error> {
         let img = self.group_image_add(core, gid, &p, mime).await?;
-        let (entry, changed) = match core.write(
-            gid,
-            Body::Post {
-                text: caption,
-                reply_to: None,
-                image: Some(img.clone()),
-            },
-        ) {
+        let body = Body::Post { text: caption, reply_to: None, image: Some(img.clone()) };
+        self.group_post_blob(core, gid, img, body).await
+    }
+
+    /// Seals a finished recording (Ogg Opus, checked by the caller) into the group's blob store
+    /// and writes the voice post that names it.
+    pub async fn group_post_voice(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        ogg: &[u8],
+        duration_ms: u32,
+        waveform: Vec<u8>,
+    ) -> Result<GroupMessage, Error> {
+        let voice = self.group_voice_add(core, gid, ogg, duration_ms, waveform).await?;
+        let blob = voice.as_blob();
+        self.group_post_blob(core, gid, blob, Body::Voice { reply_to: None, voice }).await
+    }
+
+    /// Writes `body`, a post naming the blob `blob` that is already sealed into our store; on a
+    /// refused write the blob goes again.
+    async fn group_post_blob(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        blob: ImageRef,
+        body: Body,
+    ) -> Result<GroupMessage, Error> {
+        let (entry, changed) = match core.write(gid, body) {
             Ok(x) => x,
             Err(e) => {
-                self.group_image_abandon(core, gid, &img).await;
+                self.group_image_abandon(core, gid, &blob).await;
                 return Err(e);
             }
         };
@@ -35,7 +56,7 @@ impl GroupRt {
             post: entry.id.clone(),
             author: core.did.clone(),
             at: entry.rec.at,
-            image: img.clone(),
+            image: blob,
             ready: true,
             wanted: false,
             failed: false,
@@ -47,19 +68,11 @@ impl GroupRt {
         }
         let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();
         self.group_after(core, changed, None);
-        let item = item.unwrap_or(Item {
-            id: entry.id.clone(),
-            kind: ItemKind::Post,
-            author: core.did.clone(),
-            subject: core.did.clone(),
-            at: entry.rec.at,
-            text: String::new(),
-            reply_to: None,
-            image: Some(img),
-            before_removal: false,
-            peer: entry.peer,
-            counter: entry.counter,
-        });
+        // Not shown yet (pending): the post as we wrote it.
+        let item = match item {
+            Some(i) => i,
+            None => core.with_state(gid, |st| crate::state::post_item(&entry, st)).flatten().ok_or(Error::NotFound)?,
+        };
         self.group_message(core, gid, &item).ok_or(Error::NotFound)
     }
 

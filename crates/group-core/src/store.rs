@@ -66,6 +66,9 @@ pub struct PostBrief {
     /// The post's image, if any (the list shows "Photo" for an image without text).
     #[serde(default)]
     pub image: Option<super::record::ImageRef>,
+    /// The post's recording, if it is a voice post (the list shows "Voice message").
+    #[serde(default)]
+    pub voice: Option<super::record::VoiceRef>,
     /// Where the record sits in its day doc (delivery state of our own posts).
     pub peer: u64,
     pub counter: i32,

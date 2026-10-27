@@ -1,5 +1,6 @@
-//! Image posts (`docs/design/public-group.md` §5): posting a picture, loading one on tap, the
-//! opened file, and the auto-download setting. The runtime is `engine::images`.
+//! Image and voice posts (`docs/design/public-group.md` §5): posting a picture or a voice
+//! message, loading one on tap, the opened file, and the auto-download setting (shared by both).
+//! The runtime is `engine::images`.
 
 use super::*;
 use crate::chat::store::PictureDownload;
@@ -69,6 +70,41 @@ impl Node {
         }
     }
 
+    /// Posts the voice message in the file at `path` (Ogg Opus, 16 kHz mono, from the app's
+    /// recorder: the 1:1 `send_voice` format). The core checks the file plays and takes its
+    /// duration from it; `waveform` is about 64 peaks, 0..=255. Same checks as `group_post`
+    /// (member, `Rejected("admins only")` in a channel). The recording is sealed and fetched as a
+    /// picture is (`GroupMessage::voice`). Blocking (reads and seals the file).
+    pub fn group_post_voice(
+        &self,
+        group_id: String,
+        path: String,
+        waveform: Vec<u8>,
+    ) -> Result<GroupMessage, Error> {
+        let slot = self.open();
+        let core = slot.group.group_core()?;
+        slot.group.group_post_check(&core, &group_id)?;
+        let (ogg, duration_ms) = voice_file(&path)?;
+        if waveform.len() > crate::group::record::MAX_VOICE_BARS {
+            return Err(Error::Protocol("a waveform has at most 64 bars".into()));
+        }
+        self.run(|inner| async move {
+            inner.group.group_post_voice(&core, &group_id, &ogg, duration_ms, waveform).await
+        })
+    }
+
+    /// Loads the recording of voice post `message_id` now (tap, or try again after `Failed`);
+    /// `on_group_image` reports when its state changes, as for pictures.
+    pub fn group_fetch_voice(&self, group_id: String, message_id: String) -> Result<(), Error> {
+        self.group_fetch_image(group_id, message_id)
+    }
+
+    /// The recording of voice post `message_id` as an Ogg Opus file on this device, once it is
+    /// here (`None` before); play it with `VoiceDecoder`. Blocking (opens it the first time).
+    pub fn group_voice_path(&self, group_id: String, message_id: String) -> Option<String> {
+        self.group_image_path(group_id, message_id)
+    }
+
     /// Settings: when group pictures download by themselves on this device (default `Wifi`:
     /// not on a metered connection, which the app reports with `set_connection_metered`).
     pub fn group_image_auto_download(&self) -> Result<PictureDownload, Error> {
@@ -82,6 +118,21 @@ impl Node {
         slot.group.group_images_pump(&core);
         Ok(())
     }
+}
+
+/// The bytes of a voice file to post and its duration: it must be a voice message the
+/// decoder plays (Ogg Opus, mono, within `MAX_VOICE_FILE`) and within the group limits.
+fn voice_file(path: &str) -> Result<(Vec<u8>, u32), Error> {
+    use crate::group::record::{MAX_VOICE_BYTES, MAX_VOICE_MS};
+    let duration_ms = crate::voice::VoiceDecoder::open(path.to_string())?.duration_ms();
+    let ogg = std::fs::read(path)?;
+    if ogg.is_empty() || ogg.len() as u64 > MAX_VOICE_BYTES {
+        return Err(Error::Protocol("voice message too large".into()));
+    }
+    if !(1..=MAX_VOICE_MS).contains(&duration_ms) {
+        return Err(Error::Protocol("voice message too long or empty".into()));
+    }
+    Ok((ogg, duration_ms))
 }
 
 /// Test hooks that release builds do not have (Rust only: not exported through uniffi).

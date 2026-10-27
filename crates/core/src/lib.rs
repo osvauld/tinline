@@ -49,7 +49,7 @@ mod voice;
 pub use error::Error;
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact, PeerBlocks};
-pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupImage, GroupImageState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary, OnlineMember};
+pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupImage, GroupImageState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary, GroupVoice, OnlineMember};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::rotation::RotationPolicy;
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
