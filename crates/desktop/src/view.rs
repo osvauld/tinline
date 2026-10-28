@@ -246,7 +246,13 @@ impl App {
 
     fn notice_bar(&self, t: Tok) -> El<'_> {
         match &self.notice {
-            Some(n) => ui::raised(container(tx(n.clone(), 14.0, t.on_primary_c)).padding([10, 14]).width(Fill), t, ui::Depth::Pop, ui::plain(t.primary_c, 10.0)),
+            Some(n) => {
+                let mut content = row![container(tx(n.clone(), 14.0, t.on_primary_c)).width(Fill)].spacing(10).align_y(Alignment::Center);
+                if self.screen == Screen::Home {
+                    content = content.push(button(ui::icon(Icon::X, 16.0, t.on_primary_c)).padding(5).style(button::text).on_press(Msg::DismissNotice));
+                }
+                ui::raised(container(content).padding([10, 14]).width(Fill), t, ui::Depth::Pop, ui::plain(t.primary_c, 10.0))
+            }
             None => Space::new().into(),
         }
     }

@@ -1542,6 +1542,11 @@ one = "{count} call host ready. Calls start through it."
 other = "{count} call hosts ready. Calls start through them."
 note = "Group info, call hosts section. {count} is how many call hosts are ready."
 
+[group_call_hosts_appointed]
+one = "{count} device is appointed to host calls."
+other = "{count} devices are appointed to host calls."
+note = "Group info, call hosts section. Counts appointed devices, including offline or busy devices; this does not claim availability."
+
 [group_calls_go_through_the]
 text = "Calls go through the other call hosts"
 note = "Desktop, groups (in group_live_view.rs, live_menu)."

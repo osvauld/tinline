@@ -288,6 +288,7 @@ struct App {
     me: Option<Contact>,
     busy: bool,
     notice: Option<String>,
+    notice_timer: crate::notice_timer::NoticeTimer,
     /// Bumped when a message is sent; the sidebar mark plucks its string on each change.
     mark_pluck: u64,
     status: NodeStatus,
@@ -322,6 +323,7 @@ struct App {
     shots: u32,
     fetching: bool,
     chat: ChatState,
+    message_alerts: crate::message_alerts::MessageAlerts,
     /// The window has keyboard focus (false with no window).
     focused: bool,
     /// A contact card found on the clipboard, offered as "Add <name>?".
@@ -372,6 +374,7 @@ pub enum Target {
 enum Msg {
     Ev(EvBox),
     Tick,
+    DismissNotice,
     /// A display frame while a transition runs.
     Frame(Instant),
     WindowOpened(#[allow(dead_code)] window::Id),
@@ -550,7 +553,8 @@ fn events() -> impl iced::futures::Stream<Item = Msg> {
     iced::stream::channel(64, async |mut out| {
         let rx = crate::EV_RX.get().and_then(|m| m.lock().unwrap().take());
         let Some(mut rx) = rx else { return };
-        while let Some(ev) = rx.recv().await {
+        let mut pending = None;
+        while let Some(ev) = crate::event_batch::next(&mut rx, &mut pending).await {
             let _ = out.send(Msg::Ev(EvBox(std::sync::Mutex::new(Some(ev))))).await;
         }
     })
@@ -633,6 +637,30 @@ pub(crate) static NOTIFY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atom
 
 /// A desktop notification, off the UI thread (some servers block on show). Clicking it (the
 /// "default" action, Linux) sends `target` back into the app.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn notify(summary: &str, body: &str, target: Target) {
+    // Reuse one runtime rather than keeping an OS thread per notification alive until
+    // the user dismisses it. Both the server call and action listener have a deadline.
+    static RUNTIME: std::sync::OnceLock<Option<tokio::runtime::Runtime>> = std::sync::OnceLock::new();
+    let Some(rt) = RUNTIME.get_or_init(|| tokio::runtime::Builder::new_multi_thread().worker_threads(1).enable_all().build().ok()) else { return };
+    let (summary, body) = (summary.to_string(), body.to_string());
+    rt.spawn(async move {
+        let mut n = notify_rust::Notification::new();
+        n.appname("Tinline").summary(&summary).body(&body).timeout(10_000)
+            .action("default", crate::i18n::tr_str("common_open"));
+        if let Ok(Ok(handle)) = tokio::time::timeout(Duration::from_secs(5), n.show_async()).await {
+            let _ = tokio::time::timeout(Duration::from_secs(120), handle.wait_for_action_async(|action| {
+                if matches!(action, notify_rust::NotificationResponse::Default)
+                    && let Some(init) = INIT.get()
+                {
+                    let _ = init.tx.send(Ev::Open(target));
+                }
+            })).await;
+        }
+    });
+}
+
+#[cfg(not(all(unix, not(target_os = "macos"))))]
 fn notify(summary: &str, body: &str, target: Target) {
     let (summary, body) = (summary.to_string(), body.to_string());
     std::thread::spawn(move || {
@@ -716,6 +744,7 @@ impl App {
 
     /// Everything tied to the account that was in memory is dropped when another one is selected.
     fn reset_account_state(&mut self) {
+        self.message_alerts = Default::default();
         self.leave_chat();
         let tab = self.chat.tab;
         let account_epoch = self.chat.account_epoch.checked_add(1).expect("chat account epoch exhausted");
@@ -858,6 +887,7 @@ impl App {
             me: node.profile().map(|p| self_contact(&p.did)),
             busy: false,
             notice: None,
+            notice_timer: Default::default(),
             mark_pluck: 0,
             status: node.status(),
             contacts: node.contacts(),
@@ -882,6 +912,7 @@ impl App {
             shots: 0,
             fetching: false,
             chat: ChatState::default(),
+            message_alerts: Default::default(),
             focused: false,
             offer: None,
             dismissed: Default::default(),
@@ -1271,6 +1302,7 @@ impl App {
         }
         let old_owner = self.profile_owner();
         let task = self.update_inner(msg);
+        self.notice_timer.update(&mut self.notice, self.screen == Screen::Home && !self.busy, Instant::now());
         self.settle_motion();
         self.call_ui.bind(self.call.as_ref().map(|c| c.info.call_id.as_str()));
         if identity_may_change {
@@ -1289,6 +1321,7 @@ impl App {
 
     fn update_inner(&mut self, msg: Msg) -> Task<Msg> {
         match msg {
+            Msg::DismissNotice => self.notice = None,
             Msg::Frame(now) => self.fx.now = now,
             Msg::Ev(b) => {
                 let Some(ev) = b.0.lock().unwrap().take() else { return Task::none() };
@@ -2442,7 +2475,8 @@ impl App {
                     let attended = self.win.is_some() && self.focused;
                     match &g {
                         crate::GroupEv::Message(m) if !m.outgoing && m.kind == p2pcore::GroupItemKind::Post
-                            && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did) => {
+                            && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did)
+                            && self.message_alerts.allow(m.at, Instant::now()) => {
                             let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("app_a_group").into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
                             notify(&group, &crate::i18n::tr_args("app_text", &[("name", &(who).to_string()),("value", &(crate::app::group_live::post_line(m)).to_string())]), Target::Show);

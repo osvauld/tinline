@@ -1169,9 +1169,25 @@ impl App {
 
     /// Core chat events, already on the UI loop.
     pub(super) fn on_chat_event(&mut self, ev: ChatEv) -> Task<Msg> {
-        let t = self.on_chat_event_inner(ev);
+        let events = match ev { ChatEv::Batch(events) => events, ev => vec![ev] };
+        let mut tasks = Vec::new();
+        let mut marks_changed = false;
+        let mut read_peer = None;
+        for ev in events {
+            marks_changed |= matches!(&ev, ChatEv::Added(_) | ChatEv::Changed(_) | ChatEv::Chat(_) | ChatEv::Delivery(..));
+            if let ChatEv::Added(m) = &ev
+                && !m.outgoing && self.chat_visible() && self.chat.peer.as_deref() == Some(m.peer_did.as_str())
+                && self.win.is_some() && self.focused
+            {
+                read_peer = Some(m.peer_did.clone());
+            }
+            tasks.push(self.on_chat_event_inner(ev));
+        }
+        if let Some(peer) = read_peer { tasks.push(self.mark_read(&peer)); }
         self.sync_ticks();
-        Task::batch([t, self.ensure_thumbs(), self.refresh_marks()])
+        tasks.push(self.ensure_thumbs());
+        if marks_changed { tasks.push(self.refresh_marks()); }
+        Task::batch(tasks)
     }
 
     fn on_chat_event_inner(&mut self, ev: ChatEv) -> Task<Msg> {
@@ -1181,12 +1197,15 @@ impl App {
                 let open = self.chat_visible() && self.chat.peer.as_deref() == Some(peer.as_str());
                 // Seen only if the window exists and the user is in it.
                 let attended = open && self.win.is_some() && self.focused;
-                if incoming && !attended && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) {
+                let alert = incoming && !self.blocks.blocked_by_me(&peer)
+                    && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed)
+                    && self.message_alerts.allow(m.at, std::time::Instant::now());
+                if alert && !attended {
                     notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
                 }
                 // audio.ts `received`: the can, tapped once, for a message in front of me and for one that raised a notification
                 // (the window away); Notifications > Messages and blocks apply, and Quiet is checked by the player.
-                if incoming && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) && !self.blocks.blocked_by_me(&peer) {
+                if alert {
                     self.play_received();
                 }
                 let receipt = if open && !incoming { self.load_receipt(&peer, &m.id) } else { Task::none() };
@@ -1194,14 +1213,11 @@ impl App {
                 if open && !incoming {
                     self.refresh_undelivered();
                 }
-                if incoming && attended {
-                    return Task::batch([receipt, self.mark_read(&peer)]);
-                }
                 return receipt;
             }
             // Also raised when the contact's signed receipts for the shown version were committed.
             ChatEv::Changed(m) => {
-                let receipt = if m.outgoing { self.load_receipt(&m.peer_did, &m.id) } else { Task::none() };
+                let receipt = if m.outgoing && self.chat.peer.as_deref() == Some(m.peer_did.as_str()) { self.load_receipt(&m.peer_did, &m.id) } else { Task::none() };
                 self.chat.upsert(m);
                 return receipt;
             }
@@ -1228,6 +1244,7 @@ impl App {
                     self.chat.progress.insert(hash, (done, total));
                 }
             }
+            ChatEv::Batch(events) => return self.on_chat_event(ChatEv::Batch(events)),
         }
         Task::none()
     }

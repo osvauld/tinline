@@ -640,7 +640,9 @@ impl App {
             (None, None) => body = body.push(container(meta).align_right(Fill).padding(Padding { top: 6.0, ..Padding::ZERO })),
         }
         let pad = if pbox.is_some() { Padding { top: 3.0, right: 3.0, bottom: 6.0, left: 3.0 } } else { Padding::from([8, 13]) };
-        let mut bubble = shaped(container(body).width(Length::Shrink).padding(pad).max_width(max_bub), radii, if m.deleted { Color::TRANSPARENT } else { bg });
+        let frame = container(body).width(Length::Shrink).padding(pad).max_width(max_bub);
+        let frame = crate::photo_frame::constrain(frame, pbox.map(|(width, _)| width), pad);
+        let mut bubble = shaped(frame, radii, if m.deleted { Color::TRANSPARENT } else { bg });
         if m.deleted {
             bubble = bubble.stroke(t.hairline, 1.0);
         } else if hit == Some(true) || self.chat.flash.as_ref().is_some_and(|(id, at)| *id == m.id && at.elapsed().as_millis() < 1200) {

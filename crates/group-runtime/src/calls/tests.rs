@@ -45,3 +45,42 @@ fn gcall_calls_reported_conditions_shape_the_status() {
     let l = Cond::from(conditions(GroupCallDeviceClass::Desktop, false, 250));
     assert_eq!(own_status("g", href(), Some(l), false).unwrap().power, PowerState::Battery(100));
 }
+
+#[test]
+fn gcall_calls_refresh_local_busy_status_before_the_periodic_tick() {
+    struct Quiet;
+    impl node_runtime::NodeSink for Quiet {
+        fn on_status(&self, _: node_runtime::NodeStatus) {}
+        fn on_contacts_changed(&self) {}
+        fn on_incoming_call(&self, _: node_runtime::CallInfo) {}
+        fn on_call_state(&self, _: String, _: node_runtime::CallState) {}
+        fn on_log(&self, _: String) {}
+    }
+    struct TestDir(std::path::PathBuf);
+    impl Drop for TestDir {
+        fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); }
+    }
+    let directory = TestDir(std::env::temp_dir().join(format!("gcall-status-{}", hex::encode(proto::new_device_secret()))));
+    std::fs::create_dir(&directory.0).unwrap();
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let accounts = account_model::accounts::AccountDirs::open(directory.0.clone()).unwrap();
+    let ctx = Arc::new(node_runtime::NodeCtx::new(runtime.handle().clone(), accounts, node_runtime::Shared::new(), Arc::new(Quiet)));
+    let rt = Arc::new(GroupRt::new(ctx, Default::default()));
+    let (core, gid, _) = crate::engine::own_content_core_for_test(identity::generate().0, 0, false);
+    let host = HostRef { holder_did: core.did.clone(), ..href() };
+    let now = now_ms();
+    rt.gcall.set_cond(Cond::phone(20, false));
+    rt.calls_publish_status(&core, &gid, host.clone(), now);
+    let key = (host.holder_did.clone(), host.device_slot);
+    assert!(rt.calls.st.lock().statuses[&gid][&key].1.busy);
+    // Charging makes the host eligible immediately, without waiting for a refresh interval.
+    rt.gcall.set_cond(Cond::phone(20, true));
+    rt.calls_publish_status(&core, &gid, host.clone(), now + 1);
+    let st = rt.calls.st.lock();
+    let (blob, status) = &st.statuses[&gid][&key];
+    assert!(!status.busy);
+    assert_eq!(blob.open().unwrap(), *status);
+    assert_eq!(rank::rank_admitted(&[status.clone()], &RankCtx {
+        gid: &gid, call_id: "fresh", expected: 2, starter: Some(&host), now_ms: now + 1,
+    }), vec![host]);
+}
