@@ -140,5 +140,10 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
       to ErrorCorrectionLevel.L (no logo on the contact QR) and 260 → 300 dp; desktop contact QR
       260 → 388 px (4 px per module) and level L. iOS already uses L. Phone-to-phone scan worked on
       2026-10-28 (moto ↔ Pixel), so this is for small or far screens, not a blocker.
+- [ ] N6: a contact code made on a device without push (desktop, Liberum) also names the account's
+      phone (device key + code wake token), so a request reaches the phone when the laptop is off or
+      asleep. Today such a code carries no wake-up and points only at the laptop: the request waits
+      on the joiner's side until the laptop is back. Makes the code longer again (see the QR item).
+      Test: desktop code, desktop off, phone asleep: the request lands on the phone.
 - [ ] Group voice: run_policy `group_voice` core-it step (left out of the dev merge 1f0858e1 while
       `.tasks/run-policy.toml` is uncommitted on dev); iOS admins-only composer lock for text.
