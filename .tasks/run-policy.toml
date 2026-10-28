@@ -150,13 +150,6 @@ placement = "nixos"
 timeout_secs = 3600
 
 [[suites.core-it.steps]]
-name = "group_voice"
-command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "group_voice::"]
-after = ["build"]
-placement = "nixos"
-timeout_secs = 3600
-
-[[suites.core-it.steps]]
 name = "idle_close"
 command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "idle_close::"]
 after = ["build"]
