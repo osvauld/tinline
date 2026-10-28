@@ -26,7 +26,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--install", action="store_true")
     ap.add_argument("--serial", action="append", default=[])
-    ap.add_argument("--abis", help="comma list, e.g. x86_64 or x86_64,arm64-v8a")
+    ap.add_argument("--abis", help="comma list, e.g. x86_64 or x86_64,arm64-v8a (default arm64-v8a; "
+                                   "both for --bundle)")
     ap.add_argument("--release", action="store_true",
                     help="minified release APK (signed with the debug key unless RELEASE_* gradle properties are set; "
                          "has no DebugReceiver, so the e2e scripts cannot drive it)")
@@ -35,6 +36,8 @@ def main():
                          "versionCode = commit count, so every upload from a later commit is higher")
     ap.add_argument("--debug-rust", action="store_true", help="cargo debug profile (faster build, slow audio)")
     a = ap.parse_args()
+    # Phones are arm64-v8a; Play also gets x86_64 (Chromebooks, emulators), as the CI release does.
+    a.abis = a.abis or ("x86_64,arm64-v8a" if a.bundle else "arm64-v8a")
 
     env = dict(os.environ)
     sdk = Path(env.setdefault("ANDROID_HOME", str(Path.home() / "Android/Sdk")))
@@ -51,8 +54,7 @@ def main():
         code = subprocess.run(["git", "rev-list", "--count", "HEAD"], cwd=ROOT, capture_output=True, text=True,
                               check=True).stdout.strip()
         gradle.append(f"-PversionCode={code}")
-    if a.abis:
-        gradle.append(f"-Pabis={a.abis}")
+    gradle.append(f"-Pabis={a.abis}")
     if a.debug_rust:
         gradle.append("-PrustRelease=false")
     lock = [sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "build_android", "--"]
@@ -60,7 +62,7 @@ def main():
     # these install dirs. Idempotent: an up-to-date build only re-checks the tarball hash.
     env.setdefault("ANDROID_NDK_HOME", str(sdk / "ndk/28.2.13676358"))
     triples = {"arm64-v8a": "aarch64-linux-android", "x86_64": "x86_64-linux-android"}
-    for abi in (a.abis or "x86_64,arm64-v8a").split(","):
+    for abi in a.abis.split(","):
         subprocess.run(lock + [sys.executable, str(ROOT / "scripts/build_libaom.py"), "--target", triples[abi.strip()]],
                        cwd=ROOT, env=env, check=True, stdout=subprocess.DEVNULL)
     subprocess.run(lock + gradle, cwd=ROOT / "android", env=env, check=True)
