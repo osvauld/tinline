@@ -11,6 +11,10 @@ plugins {
 val videoHdCapture = (findProperty("videoHdCapture") as String? ?: "false").toBooleanStrictOrNull()
     ?: throw GradleException("-PvideoHdCapture must be true or false")
 
+// ABIs to build the core for and package. Phones are arm64-v8a, so that is the default; each extra ABI
+// is a full cargo release build of the core. Emulator and Play builds pass -Pabis=x86_64,arm64-v8a.
+val abis = (findProperty("abis") as String? ?: "arm64-v8a").split(",").map { it.trim() }
+
 // Firebase settings for the `play` edition only (docs/push.md). Nothing here is a secret that may
 // be committed: values come from -P properties, environment variables or the gitignored
 // android/firebase.properties (see firebase.properties.example). With none set the play build still
@@ -43,7 +47,7 @@ android {
         versionName = (findProperty("versionName") as String?) ?: "0.2.4"
         // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
         // would make Play offer the app to devices where the core can't load.
-        ndk { abiFilters += (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() } }
+        ndk { abiFilters += abis }
     }
     // Two editions of one codebase (docs/push.md "Editions"). `play`: wakes by FCM (the only Google SDK,
     // firebase-messaging), always-on is a Settings option. `liberum`: no Google or Firebase code at all,
@@ -143,7 +147,7 @@ val repoRoot = rootProject.projectDir.parentFile
 val sdkDir: String = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
     ?: "${System.getProperty("user.home")}/Android/Sdk"
 val ndkDir = "$sdkDir/ndk/28.2.13676358"
-val rustAbis = (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() }
+val rustAbis = abis
 require(rustAbis.isNotEmpty() && rustAbis.all { it in setOf("x86_64", "arm64-v8a") }) {
     "-Pabis must contain only x86_64 and/or arm64-v8a"
 }
