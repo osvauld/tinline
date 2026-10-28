@@ -390,7 +390,7 @@ private fun Root(app: P2pApp) {
                     stack.add(Route.Chat(did, hit))
                 }, onGroup = { SearchJump.pending.value = null; stack.add(Route.Group(it)) },
                     onContact = { SearchJump.pending.value = null; stack.add(Route.Contact(it)) })
-                is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
+                is Route.Group -> key(r.id) { GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say) }
                 is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onLink = { stack.add(Route.GroupToken(r.id)) }, onAddMembers = { stack.add(Route.AddMembers(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
                     onChat = { stack.add(Route.Chat(it)) })
                 is Route.GroupToken -> GroupTokenLive(app, r.id, onBack = ::pop)
@@ -410,14 +410,16 @@ private fun Root(app: P2pApp) {
                     val self = r.did == app.currentDid()
                     val name = if (self) stringResource(R.string.common_you) else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: stringResource(R.string.common_unknown)
                     val blocks by app.blocks.collectAsState()
-                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
+                    // Keyed by the contact: opening another chat over this one (a notification tap) must not reuse its
+                    // message list, or the first contact's messages show in the second chat.
+                    key(r.did) { ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
                         block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null), blocks.callGate(r.did, c != null)),
                         onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
                         notDelivered = { id -> app.notDeliveredReason(r.did, id) },
                         onInfo = if (c != null) ({ stack.add(Route.Contact(r.did)) }) else null,
                         searchHit = r.searchHit,
                         calls = app.history.collectAsState().value.filter { it.peerDid == r.did },
-                        onVideo = { app.video.wantCamera = true; call(r.did) })
+                        onVideo = { app.video.wantCamera = true; call(r.did) }) }
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 // Add contact is a sheet over Chats (the first screen's hero shows through and pulls tight behind it).
