@@ -136,3 +136,9 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
 - [ ] Rotation follow-ups: a dial in flight on a retired group endpoint can wait ~20 s; "lost touch"
       is one-sided and has no recovery through a shared group host yet.
 - [ ] After the core: the Kotlin audit, then the iced desktop audit.
+- [ ] Contact QR after the longer v0.2.4 code (666 chars, ~97 modules at M): Android `AddContactSheet.kt`
+      to ErrorCorrectionLevel.L (no logo on the contact QR) and 260 → 300 dp; desktop contact QR
+      260 → 388 px (4 px per module) and level L. iOS already uses L. Phone-to-phone scan worked on
+      2026-10-28 (moto ↔ Pixel), so this is for small or far screens, not a blocker.
+- [ ] Group voice: run_policy `group_voice` core-it step (left out of the dev merge 1f0858e1 while
+      `.tasks/run-policy.toml` is uncommitted on dev); iOS admins-only composer lock for text.
