@@ -54,12 +54,16 @@ mod call_field;
 mod call_ui;
 mod raise;
 mod media;
+mod photo_frame;
 mod camera;
 mod frames;
 mod video_surface;
 mod reason;
 mod single;
 mod startup;
+mod message_alerts;
+mod notice_timer;
+mod event_batch;
 mod tray;
 mod ui;
 mod voice;
@@ -210,6 +214,7 @@ impl p2pcore::GroupEvents for GroupBridge {
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.
 pub enum ChatEv {
+    Batch(Vec<ChatEv>),
     Added(Message),
     Changed(Message),
     Chat(Chat),

@@ -423,6 +423,7 @@ fn en(key: &str) -> Option<Msg> {
         "group_blocked_you" => Msg::Text("Blocked you"),
         "group_call_hosts" => Msg::Text("Call hosts"),
         "group_call_hosts_ready" => Msg::Plural(&[("one", "{count} call host ready. Calls start through it."), ("other", "{count} call hosts ready. Calls start through them.")]),
+        "group_call_hosts_appointed" => Msg::Plural(&[("one", "{count} device is appointed to host calls."), ("other", "{count} devices are appointed to host calls.")]),
         "group_calls_go_through_the" => Msg::Text("Calls go through the other call hosts"),
         "group_can_invite_flag_members" => Msg::Text("Can invite, flag members and appoint hosts"),
         "group_carries_the_groups_calls" => Msg::Text("Carries the group’s calls; a computer that stays on is best"),

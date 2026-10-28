@@ -480,7 +480,12 @@ impl App {
         }
         let (fg, bg) = if m.outgoing { (t.on_primary_c, t.primary_c) } else { (t.ink, t.bub_in) };
         let metac = if m.outgoing { t.bub_meta_out } else { t.bub_meta_in };
-        let inner = max_bub - 26.0;
+        let photo_box = m.image.as_ref().map(|img| {
+            let (w, h) = (img.width.max(1) as f32, img.height.max(1) as f32);
+            let scale = ((max_bub - 26.0).min(300.0) / w).min(340.0 / h);
+            ((w * scale).max(80.0).round(), (h * scale).max(40.0).round())
+        });
+        let inner = photo_box.map_or(max_bub - 26.0, |(width, _)| width);
         let mut c = column![].spacing(0).width(Length::Shrink);
         // MessageRow `.who`: the sender's first name in their hue, on the first of their run.
         if !m.outgoing && !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
@@ -518,8 +523,8 @@ impl App {
             });
             meta_w += tw + 3.0;
         }
-        if let Some(img) = &m.image {
-            c = c.push(container(self.live_image(t, m, img, inner, fg)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
+        if let (Some(img), Some(size)) = (&m.image, photo_box) {
+            c = c.push(container(self.live_image(t, m, img, size, fg)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
         }
         if let Some(v) = &m.voice {
             c = c.push(container(self.live_voice(t, m, v)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
@@ -542,7 +547,10 @@ impl App {
         }
         let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
         let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
-        let mut b = shaped(container(c).padding([8, 13]).max_width(max_bub), radii, bg);
+        let pad = Padding::from([8, 13]);
+        let frame = container(c).padding(pad).max_width(max_bub);
+        let frame = crate::photo_frame::constrain(frame, photo_box.map(|(width, _)| width), pad);
+        let mut b = shaped(frame, radii, bg);
         if !m.outgoing { b = b.stroke(t.bub_in_line, 1.0); }
         // The reply action: a 28 px button beside the bubble (its room kept, so nothing reflows).
         let hot = self.live.hover.as_deref() == Some(m.id.as_str());
@@ -569,11 +577,8 @@ impl App {
     /// picture's shape from the start, the 4x3 colour preview until it is here, then the picture.
     /// Not downloaded (the auto-download setting said wait): its size and "Load photo"; on its way:
     /// "Loading..."; failed: "Try again".
-    fn live_image<'a>(&'a self, t: Tok, m: &'a GroupMessage, img: &'a p2pcore::GroupImage, inner: f32, fg: Color) -> El<'a> {
+    fn live_image<'a>(&'a self, t: Tok, m: &'a GroupMessage, img: &'a p2pcore::GroupImage, (bw, bh): (f32, f32), fg: Color) -> El<'a> {
         use p2pcore::GroupImageState as St;
-        let (w, h) = (img.width.max(1) as f32, img.height.max(1) as f32);
-        let s = (inner.min(300.0) / w).min(340.0 / h);
-        let (bw, bh) = ((w * s).max(80.0).round(), (h * s).max(40.0).round());
         let r: iced::border::Radius = 10.0.into();
         let mut st = iced::widget::stack![container(Space::new()).width(bw).height(bh)
             .style(move |_: &iced::Theme| iced::widget::container::Style { background: Some(ui::alpha(fg, 0.08).into()), border: Border { radius: r, ..Default::default() }, ..Default::default() })];
@@ -808,7 +813,7 @@ impl App {
             let ready = d.call_hosts.len();
             let ch_line = if ready == 0 { crate::i18n::tr_str("group_this_group_has_no").to_string() }
                 else if d.am_call_host && d.call_hosts.len() == 1 { crate::i18n::tr_str("group_this_computer_carries_the").to_string() }
-                else { crate::i18n::tr_count("group_call_hosts_ready", ready as u64, &[]) };
+                else { crate::i18n::tr_count("group_call_hosts_appointed", ready as u64, &[]) };
             let mut c = column![h2(crate::i18n::tr_str("group_call_hosts"), None), status(ready > 0, ch_line)];
             for h in d.call_hosts.iter().filter(|h| !h.is_me) {
                 let name = self.live_name(&h.did, &h.name);
