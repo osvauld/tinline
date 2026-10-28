@@ -985,7 +985,6 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
 /** Voice message body: decrypts the attachment to the cache once, then hands the file to the player. */
 @Composable
 private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean, source: ChatSource, onDownload: () -> Unit) {
-    val c = Tin.c
     val ctx = LocalContext.current
     var path by remember(m.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(m.id, ready) {
@@ -999,14 +998,7 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
     }
     val p = path
     if (p != null) VoiceBubbleContent(m.id, p, a.durationMs.toInt(), a.waveform, out)
-    else Row(Modifier.widthIn(min = 230.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        val remote = !ready && a.state != TransferState.DOWNLOADING
-        Box(
-            Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
-            contentAlignment = Alignment.Center,
-        ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, stringResource(if (remote) R.string.conv_voice_download else R.string.conv_voice_loading), tint = c.onPr) }
-        Text(uniffi.present.clockMs(a.durationMs.toUInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
-    }
+    else VoicePendingContent(a.durationMs.toInt(), remote = !ready && a.state != TransferState.DOWNLOADING, failed = false, outgoing = out, onDownload = onDownload)
 }
 
 // ------------------------------------------------------------------ blocking

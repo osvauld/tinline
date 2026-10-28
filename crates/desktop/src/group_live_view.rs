@@ -372,7 +372,9 @@ impl App {
     }
 
     /// Composer.svelte for a group: the reply chip, the picture button (public group §5; the text
-    /// goes with the picture as its caption), the field and the round send button.
+    /// goes with the picture as its caption), the field and the round send button, which is the
+    /// 1:1 mic while the field is empty. Recording (the app's one recorder) swaps the row for the
+    /// 1:1 record bar.
     fn live_composer(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
@@ -393,7 +395,13 @@ impl App {
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)));
         }
         let value = &self.live.input;
-        let can = !value.trim().is_empty() && !self.live.sending;
+        if let Some((r, _, crate::voice::RecTo::Group(_))) = &self.chat.rec {
+            let bar = crate::voice::record_bar(t, r.elapsed_ms(), Msg::Chat(crate::app::chat::Cm::RecSend), Msg::Chat(crate::app::chat::Cm::RecCancel));
+            c = c.push(bar);
+            return container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into();
+        }
+        let has_text = !value.trim().is_empty();
+        let can = has_text && !self.live.sending;
         let field = text_input(crate::i18n::tr_str("common_message"), value)
             .id(COMPOSER)
             .on_input(|v| l(Lm::Input(v)))
@@ -409,9 +417,14 @@ impl App {
                     icon: t.ink2, placeholder: t.ink2, value: t.ink, selection: ui::alpha(t.accent, 0.3),
                 }
             });
-        let send = button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
-            .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
-            .on_press_maybe(can.then_some(l(Lm::Send)));
+        let send: El = if has_text {
+            button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+                .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
+                .on_press_maybe(can.then_some(l(Lm::Send)))
+                .into()
+        } else {
+            crate::voice::mic_button(t, Msg::Chat(crate::app::chat::Cm::RecStart))
+        };
         let busy = self.live.sending;
         let attach = button(container(crate::pg_icons::pgi("image", 24.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
             .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))
@@ -508,6 +521,9 @@ impl App {
         if let Some(img) = &m.image {
             c = c.push(container(self.live_image(t, m, img, inner, fg)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
         }
+        if let Some(v) = &m.voice {
+            c = c.push(container(self.live_voice(t, m, v)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
+        }
         let te = message_body(&m.text, fg);
         let (lines, last) = live_wrap(&m.text, inner);
         let fits = last + 10.0 + meta_w <= inner;
@@ -589,6 +605,34 @@ impl App {
             st = st.push(container(e).center_x(bw).center_y(bh));
         }
         st.width(bw).height(bh).into()
+    }
+
+    /// A voice post: the 1:1 voice bubble's inside (play, waveform, time) once the recording is
+    /// here, on the app's one voice player. Before: Download (auto-download said wait), Loading...
+    /// or Try again, beside its length, in the same 260 px row so nothing moves when it arrives.
+    fn live_voice<'a>(&'a self, t: Tok, m: &'a GroupMessage, v: &'a p2pcore::GroupVoice) -> El<'a> {
+        use p2pcore::GroupImageState as St;
+        if v.state == St::Ready {
+            let (playing, pos) = match &self.chat.player {
+                Some((pid, p)) if *pid == m.id => (!p.is_paused() && !p.finished(), Some(p.position_ms())),
+                _ => (false, None),
+            };
+            let view = crate::voice::VoiceView { waveform: &v.waveform, duration_ms: v.duration_ms, position_ms: pos, playing };
+            let sid = m.id.clone();
+            return crate::voice::bubble(t, view, m.outgoing, l(Lm::VoiceToggle(m.id.clone())), move |f| l(Lm::VoiceSeek(sid.clone(), f)));
+        }
+        let pill = |label_: &'static str| -> El<'a> {
+            button(container(semi(label_, 13.0, t.on_accent)).center_y(32)).padding([0, 16]).height(32)
+                .style(move |_: &iced::Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
+                .on_press(l(Lm::LoadVoice(m.id.clone()))).into()
+        };
+        let ink = if m.outgoing { t.on_primary_c } else { t.ink2 };
+        let what: El = match v.state {
+            St::Remote => pill(crate::i18n::tr_str("chat_download")),
+            St::Failed => pill(crate::i18n::tr_str("common_try_again")),
+            _ => container(tx(crate::i18n::tr_str("common_loading"), 13.0, ink)).center_y(32).into(),
+        };
+        row![what, tx(present::time::clock_ms(v.duration_ms), 12.0, ink).font(ui::MONO)].spacing(10).align_y(Alignment::Center).width(Length::Fixed(260.0)).into()
     }
 
     /// In the removed person's chat: when, why and by whom, plainly.

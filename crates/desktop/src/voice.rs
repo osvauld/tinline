@@ -2,8 +2,8 @@
 //! recorder/decoder (16 kHz mono), and the iced widgets for the bubble and the record bar.
 //!
 //! Recording is click-driven (a mouse cannot hold): click the mic to start, click Send to finish,
-//! Esc or the bin to cancel. Nothing here is wired into a screen yet; `cargo run -p desktop
-//! --example voice_demo` shows and exercises it all.
+//! Esc or the bin to cancel. The app has one recorder, for a 1:1 chat or a group ([`RecTo`]);
+//! `cargo run -p desktop --example voice_demo` exercises the widgets on their own.
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -113,6 +113,31 @@ macro_rules! by_format {
 // ---------------------------------------------------------------------------------------------
 // Recorder
 // ---------------------------------------------------------------------------------------------
+
+/// Where a recording goes: the conversation that was open when it started (a 1:1 chat by DID, or
+/// a group by id). The app has one recorder for both; it records only while that conversation
+/// stays open, so a recording never lands in another chat.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RecTo {
+    Peer(String),
+    Group(String),
+}
+
+impl RecTo {
+    /// The open conversation to record for: the 1:1 chat, else the open group, else none.
+    pub fn of(peer: Option<&str>, group: Option<&str>) -> Option<Self> {
+        match (peer, group) {
+            (Some(p), _) => Some(Self::Peer(p.to_string())),
+            (None, Some(g)) => Some(Self::Group(g.to_string())),
+            (None, None) => None,
+        }
+    }
+
+    /// Its conversation is still the one on screen.
+    pub fn is_open(&self, peer: Option<&str>, group: Option<&str>) -> bool {
+        Self::of(peer, group).as_ref() == Some(self)
+    }
+}
 
 /// A running recording on the default input device. Dropping it without `finish` cancels.
 pub struct Recorder {

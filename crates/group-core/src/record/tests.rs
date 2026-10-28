@@ -308,3 +308,41 @@ fn image_posts_are_bounded() {
         assert_eq!(open_record(&forge(&rec(&a, "g", bad), &a).to_bytes(), "g"), Err(RecordError::Malformed));
     }
 }
+
+fn voice(size: u64, duration_ms: u32, bars: usize) -> VoiceRef {
+    VoiceRef { hash: [1; 32], key: [2; 32], size, duration_ms, waveform: vec![9; bars] }
+}
+
+// KIND: unit (group voice) — a voice post is a post (day doc, judged per post), carries the 1:1
+// voice format, and its declared size, duration and waveform are bounded on every device. Posts
+// written before voice posts existed still decode: `Voice` is a new variant at the end.
+#[test]
+fn voice_posts_are_bounded() {
+    let a = acct();
+    let post = |v: VoiceRef| Body::Voice { reply_to: None, voice: v };
+    assert!(post(voice(1, 1, 0)).is_post() && Body::Post { text: "x".into(), reply_to: None, image: None }.is_post());
+    assert!(!Body::Leave.is_post());
+    for ok in [post(voice(48_000, 2_000, 64)), post(voice(MAX_VOICE_BYTES, MAX_VOICE_MS, 0)), Body::Voice { reply_to: Some("ab".into()), voice: voice(1, 1, 1) }] {
+        let r = rec(&a, "g", ok);
+        assert_eq!(open_record(&r.sign(&a).to_bytes(), "g").unwrap(), r);
+    }
+    for bad in [
+        post(voice(0, 1_000, 64)),
+        post(voice(MAX_VOICE_BYTES + 1, 1_000, 64)),
+        post(voice(10, 0, 64)),
+        post(voice(10, MAX_VOICE_MS + 1, 64)),
+        post(voice(10, 1_000, MAX_VOICE_BARS + 1)),
+        Body::Voice { reply_to: Some("x".repeat(65)), voice: voice(10, 1_000, 64) },
+    ] {
+        assert_eq!(open_record(&forge(&rec(&a, "g", bad), &a).to_bytes(), "g"), Err(RecordError::Malformed));
+    }
+    // The blob as the image runtime keeps it.
+    let b = voice(10, 1_000, 64).as_blob();
+    assert_eq!((b.hash, b.key, b.size, b.mime.as_str()), ([1; 32], [2; 32], 10, VOICE_MIME));
+    // Variant indices are the wire tags: `Post` keeps 3 and `Voice` comes after `AdminsOnly`
+    // (13), so records written before voice posts existed decode unchanged.
+    let tag = |b: &Body| cryptography::codec::to_bytes(b).unwrap()[0];
+    assert_eq!(tag(&Body::Post { text: "x".into(), reply_to: None, image: None }), 3);
+    assert_eq!(tag(&Body::AdminsOnly { active: true }), 13);
+    assert_eq!(tag(&post(voice(1, 1, 0))), 14);
+}

@@ -16,6 +16,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -470,5 +471,26 @@ fun VoiceBubbleContent(id: String, path: String, durationMs: Int, waveform: Byte
             }
         }
         Text(uniffi.present.clockMs(shown.toUInt()), fontFamily = PlexMono, fontSize = 12.sp, color = if (outgoing) c.onPrc else c.ink2)
+    }
+}
+
+/**
+ * The inside of a voice message bubble before its file is here (1:1 chats and groups): the round button, then the
+ * duration. [remote]: not downloaded, the button loads it; [failed]: could not be fetched, the button tries again;
+ * otherwise it is on its way and the button waits.
+ */
+@Composable
+fun VoicePendingContent(durationMs: Int, remote: Boolean, failed: Boolean, outgoing: Boolean, onDownload: () -> Unit, modifier: Modifier = Modifier) {
+    val c = Tin.c
+    val tap = remote || failed
+    val icon = when { failed -> PgIcons.Retry; remote -> PgIcons.Download; else -> PgIcons.Play }
+    val label = stringResource(when { failed -> R.string.groups_photo_retry; remote -> R.string.conv_voice_download; else -> R.string.conv_voice_loading })
+    Row(modifier.widthIn(min = 230.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(c.pr)
+                .clickable(enabled = tap, role = androidx.compose.ui.semantics.Role.Button) { onDownload() },
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, label, tint = c.onPr) }
+        Text(uniffi.present.clockMs(durationMs.toUInt()), fontFamily = PlexMono, fontSize = 12.sp, color = if (outgoing) c.onPrc else c.ink2)
     }
 }

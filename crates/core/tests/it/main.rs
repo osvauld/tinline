@@ -25,6 +25,7 @@ mod group_core;
 mod group_g2;
 mod group_g3;
 mod group_shards;
+mod group_voice;
 mod idle_close;
 mod lifecycle;
 mod link;

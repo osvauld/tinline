@@ -1082,8 +1082,8 @@ impl App {
             .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!editing).then_some(t.surface2), 22.0))
             .on_press_maybe((!editing).then_some(Msg::Chat(Cm::Attach)));
         let line: El = match &self.chat.rec {
-            Some((r, _)) => voice::record_bar(t, r.elapsed_ms(), Msg::Chat(Cm::RecSend), Msg::Chat(Cm::RecCancel)),
-            None => row![attach, container(editor).width(Fill), last].spacing(6).align_y(Alignment::End).into(),
+            Some((r, _, voice::RecTo::Peer(_))) => voice::record_bar(t, r.elapsed_ms(), Msg::Chat(Cm::RecSend), Msg::Chat(Cm::RecCancel)),
+            _ => row![attach, container(editor).width(Fill), last].spacing(6).align_y(Alignment::End).into(),
         };
         let mut col = column![];
         if let Some(c) = chip {

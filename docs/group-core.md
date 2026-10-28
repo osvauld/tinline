@@ -84,7 +84,7 @@ the user was away; each is listed at the end.
   `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links, `Hello.presence` and `Presence`; `docs/design/public-group.md`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
   The same endpoint also speaks `tinline/gcall/1` (calls) and the stock iroh-blobs ALPN for the
-  pictures of image posts (public group §5, `engine/images.rs`): a request is served only if a
+  pictures of image posts and the recordings of voice posts (public group §5, `engine/images.rs`): a request is served only if a
   visible post of a group we hold names the hash and the requester's endpoint is, in that group, a
   current member on a session we host or an active host. Members fetch only from hosts; hosts
   fetch from the author's session or other hosts.
