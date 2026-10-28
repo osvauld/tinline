@@ -26,6 +26,13 @@ object WakeRingLogic {
     fun ring(cur: WakeRingUi?, did: String, name: String, account: String? = null): WakeRingUi =
         if (cur?.did == did) cur.copy(name = name, account = account) else WakeRingUi(did, name, account = account)
 
+    /**
+     * Whether a wake for [did] starts a ring that should alert (notification, full-screen, ringtone). A repeat wake for
+     * the contact already ringing alerts nothing: it would restart the ringtone and bring an answered ring
+     * ("Connecting…") back as a fresh incoming call.
+     */
+    fun alerts(cur: WakeRingUi?, did: String): Boolean = cur?.did != did
+
     fun answered(cur: WakeRingUi?): WakeRingUi? = cur?.copy(answered = true)
 
     /** The core ended the ring (`on_call_state("wake:<did>", Ended)`); another contact's end changes nothing. */
@@ -49,8 +56,10 @@ object WakeRing {
     /** A call wake: ring now (calls alerts off: the call still rings as an ordinary one when it arrives). */
     fun ring(app: P2pApp, did: String, name: String, account: String? = null) {
         if (!AlertPrefs.calls(app)) return
-        val ring = WakeRingLogic.ring(_state.value, did, name, account)
+        val cur = _state.value
+        val ring = WakeRingLogic.ring(cur, did, name, account)
         _state.value = ring
+        if (!WakeRingLogic.alerts(cur, did)) return
         Notifications.wakeRing(app, ring.title)
         app.calls.ringForWake()
     }
