@@ -2,8 +2,9 @@
 //! tokens"): a contact request whose owner's device could not be reached is queued, not dropped.
 //!
 //! - [`NodeCtx::send_request`] is one delivery: a fresh `ContactHello` from the stored code
-//!   (`SentRequest::ticket`), carrying our wake token for them when we have one, a dial, the
-//!   answer. With `early_wake` it wakes the owner's phone with the code's token (if it carries
+//!   (`SentRequest::ticket`), carrying our wake token for them, a dial, the answer. With push on,
+//!   a request by code does not go out without that token ([`SendErr::NoToken`]: held and
+//!   retried, for at most `push::HANDOVER_HOLD_MS`). With `early_wake` it wakes the owner's phone with the code's token (if it carries
 //!   one) when the dial has not connected after `MSG_EARLY_WAKE_MS`, while the dial goes on.
 //! - [`NodeCtx::request_kick`] retries it in the background: after a failed dial it wakes the owner
 //!   (on `wake::msg_wake_due`'s schedule: 0, 30 s, 2, 10, 30 min, then hourly) and redials on the fast schedule
@@ -33,6 +34,9 @@ pub enum SendErr {
     Unreached { error: Error, maybe_delivered: bool },
     /// A final answer (refused, blocked, the code expired); the request is gone.
     Final(Error),
+    /// Not sent: push is on but our wake token for them is not registered yet. Without it they
+    /// could not wake us once we are contacts, so the request waits (nothing was dialled).
+    NoToken,
 }
 
 impl NodeCtx {
@@ -50,12 +54,14 @@ impl NodeCtx {
         self.requests.dial_ms.store(ms, Ordering::Relaxed);
     }
 
-    /// One delivery of our request to `did` (see the module docs).
+    /// One delivery of our request to `did` (see the module docs). `by_code`: a queued request by
+    /// code, held back while push is on and our token for them is missing.
     pub async fn send_request(
         self: &Arc<Self>,
         me: &Me,
         did: &str,
         early_wake: bool,
+        by_code: bool,
     ) -> Result<Attempt, SendErr> {
         let unreached = |error: Error| SendErr::Unreached {
             error,
@@ -98,8 +104,24 @@ impl NodeCtx {
         )
         .map_err(|e| SendErr::Final(e.into()))?;
         let handover = self
-            .await_wake_handover(did, crate::push::HANDOVER_WAIT)
+            .await_wake_handover(did, crate::push::HELLO_HANDOVER_WAIT)
             .await;
+        if handover.is_none()
+            && by_code
+            && self.push_target().is_some()
+            && now_ms() < req.at.saturating_add(crate::push::HANDOVER_HOLD_MS)
+        {
+            tracing::info!(
+                "contact request to {} held: no wake token for them yet",
+                crate::short(did)
+            );
+            return Err(SendErr::NoToken);
+        }
+        tracing::info!(
+            "contact request to {} carries a wake token: {}",
+            crate::short(did),
+            if handover.is_some() { "yes" } else { "no" }
+        );
         let mut hello = crate::push::with_handover(hello, handover);
         if let Msg::ContactHello { relay, .. } = &mut hello {
             *relay = relay_of(&ep);
@@ -257,7 +279,7 @@ impl NodeCtx {
                     // Stopped: `requests_started` picks it up again.
                     break;
                 }
-                match this.send_request(&me, &did, false).await {
+                match this.send_request(&me, &did, false, true).await {
                     Ok(Attempt::Pending) => {
                         this.sink.on_contacts_changed();
                         break;
@@ -281,6 +303,8 @@ impl NodeCtx {
                         tracing::debug!("contact request to {}: {error}", crate::short(&did));
                         this.wake_code(&did).await;
                     }
+                    // Nothing was dialled: no wake, just try again after the pause.
+                    Err(SendErr::NoToken) => {}
                 }
             }
             this.requests.sending.lock().remove(&did);
@@ -326,7 +350,7 @@ impl NodeCtx {
                 None => s.state.sent_requests.remove(did),
             };
         };
-        match self.send_request(me, did, queue).await {
+        match self.send_request(me, did, queue, queue).await {
             Ok(Attempt::Added(contact)) => Ok(AddOutcome::Added { contact }),
             Ok(Attempt::Pending) => Ok(AddOutcome::Requested {
                 did: did.to_string(),
@@ -339,6 +363,16 @@ impl NodeCtx {
                     self.persist_logged(me.epoch).await;
                 }
                 Err(e)
+            }
+            Err(SendErr::NoToken) => {
+                self.log(format!(
+                    "contact request to {name} queued: waiting for our wake token for them"
+                ));
+                self.request_kick(did.to_string(), true);
+                Ok(AddOutcome::Requested {
+                    did: did.to_string(),
+                    name,
+                })
             }
             Err(SendErr::Unreached { error, .. }) if queue => {
                 self.log(format!("contact request to {name} queued: {error}"));

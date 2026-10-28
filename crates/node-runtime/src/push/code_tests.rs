@@ -55,9 +55,9 @@ pub(super) async fn setup_node(lookup: &MemoryLookup) -> T {
 
 /// What the app would have been told about contact requests.
 #[derive(Default)]
-struct Reqs {
-    requests: Mutex<Vec<ContactRequest>>,
-    accepted: Mutex<Vec<Contact>>,
+pub(super) struct Reqs {
+    pub(super) requests: Mutex<Vec<ContactRequest>>,
+    pub(super) accepted: Mutex<Vec<Contact>>,
     /// Run when a request is accepted (what the node holds at that moment).
     probe: Mutex<Option<Arc<dyn Fn() -> Option<String> + Send + Sync>>>,
     probed: Mutex<Vec<Option<String>>>,
@@ -76,7 +76,7 @@ impl ContactRequestSink for Reqs {
     }
 }
 
-fn listen(t: &T) -> Arc<Reqs> {
+pub(super) fn listen(t: &T) -> Arc<Reqs> {
     let r = Arc::new(Reqs::default());
     *t.ctx.requests.events.lock() = Some(r.clone());
     r
@@ -102,7 +102,7 @@ fn hint_for(owner: &T, token: &str, kind: Kind) -> String {
 
 /// Every wake `sender` asks its relay for reaches `phone` as a push: `phone` opens it (`on_wake`,
 /// outcomes recorded) and, unless it ignored it, starts after `delay`.
-fn phone_wakes(
+pub(super) fn phone_wakes(
     sender: &T,
     phone: &T,
     lookup: &MemoryLookup,
@@ -324,7 +324,7 @@ async fn wake_code_ii_a_request_without_a_token_is_queued_and_delivered_later() 
 }
 
 /// B adds A by code (both awake), A holds the request. Both have push.
-async fn requested_pair(lookup: &MemoryLookup) -> (T, T, Arc<Reqs>, Arc<Reqs>) {
+pub(super) async fn requested_pair(lookup: &MemoryLookup) -> (T, T, Arc<Reqs>, Arc<Reqs>) {
     let (a, b) = (setup_node(lookup).await, setup_node(lookup).await);
     set_target(&a, Some(fcm(1)));
     set_target(&b, Some(fcm(2)));

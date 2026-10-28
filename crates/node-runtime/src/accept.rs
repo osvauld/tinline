@@ -88,6 +88,11 @@ impl NodeCtx {
                 return Err(HelloError::Failed(Error::Locked));
             }
             apply(&mut s.state).map_err(|e| HelloError::Refused(e.to_string()))?;
+            tracing::info!(
+                "contact request from {} carries a wake token: {}",
+                crate::short(&new.did),
+                if crate::push::handover_in(hello).is_some() { "yes" } else { "no" }
+            );
             return Ok(Hello::Held { request: crate::contact_req::request_view(&new.did, &held), fresh });
         }
         let stored = stored_contact(&new, hint, calls_allowed);

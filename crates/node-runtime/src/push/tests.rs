@@ -30,6 +30,8 @@ pub(super) struct FakeRelay {
     /// The HTTP status a wake gets; 0: 202.
     pub(super) wake_status: AtomicU32,
     pub(super) on_wake: Mutex<Option<WakeHook>>,
+    /// How long a register takes to answer, in ms (a slow relay).
+    pub(super) register_delay_ms: std::sync::atomic::AtomicU64,
 }
 
 /// What the fake relay seals: canonical base64url (so it fits a contact ticket) of a marker,
@@ -64,7 +66,13 @@ impl WakeRelay for FakeRelay {
             self.registers.lock().push(req);
             Ok(RegisterResponse { tokens })
         };
-        Box::pin(async move { result })
+        let delay = self.register_delay_ms.load(Ordering::SeqCst);
+        Box::pin(async move {
+            if delay > 0 {
+                tokio::time::sleep(Duration::from_millis(delay)).await;
+            }
+            result
+        })
     }
 
     fn wake(&self, token: String, kind: Kind) -> BoxFuture<u16> {
@@ -264,8 +272,12 @@ pub(super) fn set_target(t: &T, target: Option<Target>) {
     }
 }
 
-pub(super) async fn eventually(what: &str, mut ok: impl FnMut() -> bool) {
-    for _ in 0..400 {
+pub(super) async fn eventually(what: &str, ok: impl FnMut() -> bool) {
+    eventually_within(what, Duration::from_secs(20), ok).await
+}
+
+pub(super) async fn eventually_within(what: &str, within: Duration, mut ok: impl FnMut() -> bool) {
+    for _ in 0..within.as_millis() / 50 {
         if ok() {
             return;
         }

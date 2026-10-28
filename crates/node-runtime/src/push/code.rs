@@ -7,7 +7,10 @@
 //! - Joiner side: [`NodeCtx::wake_code`] wakes the owner of a code we hold a queued request for,
 //!   with the code's token (`request_out.rs`).
 //! - Setup: [`NodeCtx::wake_handover`] is our token for a DID as `ContactHello` /
-//!   `ContactWelcome` carry it; [`hold_handover`] keeps the one they gave us.
+//!   `ContactWelcome` carry it; [`hold_handover`] keeps the one they gave us. Reading a code
+//!   ([`NodeCtx::code_peeked`], "Add Maya?") registers ours for its owner ahead, and a hello by
+//!   code waits for it ([`HELLO_HANDOVER_WAIT`], then held up to [`HANDOVER_HOLD_MS`]): a hello
+//!   without one leaves the owner unable to wake us once we are contacts.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -27,6 +30,17 @@ pub const CODE_REGISTER_TIMEOUT: Duration = Duration::from_secs(5);
 /// before sending a hello or a Welcome without one (PROVISIONAL; the normal `WakeTokens` round
 /// still hands it over later).
 pub const HANDOVER_WAIT: Duration = Duration::from_secs(3);
+/// How long one delivery of a request by code waits for our token for the owner (PROVISIONAL).
+/// Usually there at once: reading the code registered it ([`NodeCtx::code_peeked`]).
+pub const HELLO_HANDOVER_WAIT: Duration = Duration::from_secs(15);
+/// How long a request by code is held back (queued, retried) while push is on and we still have
+/// no token for its owner, counted from when it was made (PROVISIONAL). After that it goes
+/// without one, so a relay that is down does not stop people adding each other; the token is
+/// handed over later by `WakeTokens`.
+pub const HANDOVER_HOLD_MS: u64 = 10 * 60 * 1000;
+/// How long a code read but not used ("Add Maya?" left open or cancelled) keeps the token
+/// registered for its owner; then it is taken back (PROVISIONAL).
+pub const PEEK_HOLD: Duration = Duration::from_secs(10 * 60);
 
 /// Code tokens of tickets that no longer add contacts go to the revoke outbox; expired ones are
 /// forgotten. Whether anything changed.
@@ -142,6 +156,36 @@ impl NodeCtx {
                 None
             }
         }
+    }
+
+    /// The user is looking at `did`'s code ("Add Maya?"): with push on, our wake task registers
+    /// the token our hello will carry now, while they decide. Not used within [`PEEK_HOLD`] (a
+    /// cancel, or the sheet left open), it is taken back. Call for a code of someone who is not
+    /// a contact yet.
+    pub fn code_peeked(self: &Arc<Self>, did: &str) {
+        if self.push_target().is_none() {
+            return;
+        }
+        self.push
+            .peeked
+            .lock()
+            .insert(did.to_string(), Instant::now());
+        self.wake_kick();
+        // A round after the hold ends takes an unused token back.
+        let weak = Arc::downgrade(self);
+        self.handle.spawn(async move {
+            tokio::time::sleep(PEEK_HOLD + Duration::from_secs(1)).await;
+            if let Some(this) = weak.upgrade() {
+                this.wake_kick();
+            }
+        });
+    }
+
+    /// The DIDs whose code was read within [`PEEK_HOLD`]; older ones are forgotten.
+    pub(super) fn peeked_now(&self) -> std::collections::BTreeSet<String> {
+        let mut p = self.push.peeked.lock();
+        p.retain(|_, at| at.elapsed() < PEEK_HOLD);
+        p.keys().cloned().collect()
     }
 
     /// Our wake token for `did`, as the contact setup hands it over; `None` while we have none.
