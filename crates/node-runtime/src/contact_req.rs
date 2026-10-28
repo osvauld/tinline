@@ -76,6 +76,15 @@ pub struct ReqRt {
     pub dial_ms: std::sync::atomic::AtomicU64,
 }
 
+/// Whether we hold a wake token from `did` (any of its devices), for the setup's log lines.
+fn holds_token(st: &crate::store::State, did: &str) -> bool {
+    st.wake.as_ref().is_some_and(|w| w.held.iter().any(|e| e.did == did))
+}
+
+fn yes_no(b: bool) -> &'static str {
+    if b { "yes" } else { "no" }
+}
+
 pub fn request_view(did: &str, r: &HeldRequest) -> ContactRequest {
     ContactRequest { did: did.to_string(), name: r.name.clone(), at: r.at, expires_at: r.exp }
 }
@@ -145,6 +154,7 @@ impl NodeCtx {
             return Err(Error::Locked);
         }
         apply(&mut s.state)?;
+        tracing::info!("kept a wake token from the request of {}: {}", crate::short(did), yes_no(holds_token(&s.state, did)));
         Ok(contact)
     }
 
@@ -177,6 +187,9 @@ impl NodeCtx {
                         // Their wake token for us came with the Welcome.
                         if applied.is_ok() && let Some(h) = &handover {
                             crate::push::hold_handover(&mut s.state, &did, new.device, h);
+                        }
+                        if applied.is_ok() {
+                            tracing::info!("kept a wake token from the welcome of {}: {}", crate::short(&did), yes_no(holds_token(&s.state, &did)));
                         }
                         applied
                     };
@@ -242,6 +255,9 @@ impl NodeCtx {
                     0 => this.await_wake_handover(&did, crate::push::HANDOVER_WAIT).await,
                     _ => this.wake_handover(&did),
                 };
+                if round == 0 {
+                    tracing::info!("welcome to {} carries a wake token: {}", crate::short(&did), yes_no(h.is_some()));
+                }
                 let send = WelcomeOut { welcome: crate::push::with_handover(out.welcome.clone(), h), ..out.clone() };
                 match this.deliver_welcome(&ep, &did, &send).await {
                     Ok(true) => {

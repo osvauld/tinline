@@ -239,6 +239,9 @@ pub struct PushRt {
     woken: Mutex<HashMap<String, Instant>>,
     /// Wake rings and queued dial-backs of the receiving side (`ring.rs`).
     pub(super) rings: ring::Rings,
+    /// DIDs whose code the user is looking at ("Add Maya?"), and since when: a token of ours for
+    /// them is registered now, so the hello does not wait for it (`code.rs` `code_peeked`).
+    pub(super) peeked: Mutex<HashMap<String, Instant>>,
 }
 
 #[derive(Default)]
@@ -287,11 +290,22 @@ fn live_contact(st: &State, did: &str) -> bool {
     st.contacts.iter().any(|c| c.did == did) && !st.blocked.contains(did) && !crate::block::blocked_me(st, did)
 }
 
-/// Whether we owe `did` a wake token of ours: a live contact, or someone we sent a contact
+/// Whether we owe `did` a wake token of ours: a live contact, someone we sent a contact
 /// request to that is still open (our hello carries the token, so their Accept can wake us to
-/// deliver the Welcome; `docs/push.md` "Tokens at setup").
-fn token_wanted(st: &State, did: &str) -> bool {
-    live_contact(st, did) || requested(st, did)
+/// deliver the Welcome; `docs/push.md` "Tokens at setup"), or someone whose code is on our screen
+/// (`peeked`, from [`NodeCtx::peeked_now`]).
+fn token_wanted(st: &State, did: &str, peeked: &BTreeSet<String>) -> bool {
+    live_contact(st, did) || requested(st, did) || peeked_fresh(st, did, peeked)
+}
+
+/// `did`'s code is on our screen and they are nobody yet (no contact, no open request, no block
+/// either way): the token our hello will carry is registered ahead.
+fn peeked_fresh(st: &State, did: &str, peeked: &BTreeSet<String>) -> bool {
+    peeked.contains(did)
+        && !st.contacts.iter().any(|c| c.did == did)
+        && !requested(st, did)
+        && !st.blocked.contains(did)
+        && !crate::block::blocked_me(st, did)
 }
 
 /// An open contact request of ours to `did` (not yet their contact, not blocked either way).
@@ -304,25 +318,29 @@ fn requested(st: &State, did: &str) -> bool {
 }
 
 /// The kinds each live contact should hold from us: message always, call when allowed. An open
-/// request of ours gets the kinds our hello gave (`SentRequest::calls_allowed`).
-fn wanted(st: &State) -> Vec<(String, Kinds)> {
+/// request of ours gets the kinds our hello gave (`SentRequest::calls_allowed`), a peeked code
+/// the kinds a hello by code would give.
+fn wanted(st: &State, peeked: &BTreeSet<String>) -> Vec<(String, Kinds)> {
     let kinds = |call: bool| if call { Kinds::ALL } else { Kinds::MSG };
     st.contacts
         .iter()
         .filter(|c| live_contact(st, &c.did))
         .map(|c| (c.did.clone(), kinds(c.calls_allowed)))
         .chain(st.sent_requests.iter().filter(|(d, _)| requested(st, d)).map(|(d, r)| (d.clone(), kinds(r.calls_allowed))))
+        .chain(peeked.iter().filter(|d| peeked_fresh(st, d, peeked)).map(|d| {
+            (d.clone(), kinds(crate::caps::policy_for(st, d, crate::caps::ContactOrigin::Ticket).call))
+        }))
         .collect()
 }
 
 /// Takes back and forgets the tokens of every DID we no longer owe one (a block, a contact
 /// deleted by their block notice, a request that was refused or ran out). Whether anything
 /// changed.
-fn forget_gone(st: &mut State) -> bool {
+fn forget_gone(st: &mut State, peeked: &BTreeSet<String>) -> bool {
     let gone: Vec<String> = {
         let Some(w) = &st.wake else { return false };
         let dids: BTreeSet<&String> = w.issued.iter().map(|e| &e.did).chain(w.held.iter().map(|e| &e.did)).collect();
-        dids.into_iter().filter(|d| !token_wanted(st, d)).cloned().collect()
+        dids.into_iter().filter(|d| !token_wanted(st, d, peeked)).cloned().collect()
     };
     let mut changed = !gone.is_empty();
     for did in &gone {
@@ -601,6 +619,7 @@ impl NodeCtx {
         let mut failed = false;
 
         // What is owed, read fresh.
+        let peeked = self.peeked_now();
         let (revokes, plan, dirty) = {
             let mut s = self.shared.lock();
             if s.epoch != me.epoch {
@@ -610,8 +629,8 @@ impl NodeCtx {
             if st.wake.is_none() {
                 return Round::Done;
             }
-            let dirty = forget_gone(st) | code::retire_codes(st);
-            let want = wanted(st);
+            let dirty = forget_gone(st, &peeked) | code::retire_codes(st);
+            let want = wanted(st, &peeked);
             let Some(w) = st.wake.as_ref() else { return Round::Done };
             (w.take_revokes(), w.plan_register(&want, now_ms(), random_tag), dirty)
         };
@@ -718,7 +737,12 @@ impl NodeCtx {
         for (did, devices, issued) in owed {
             let msg = Msg::WakeTokens { device: me.device, token: issued.token.clone(), exp_ms: issued.exp_ms, kinds: issued.kinds.bits() };
             for d in &devices {
-                match self.deliver_wake_tokens(&ep, d, &msg).await {
+                // A sleeping phone is woken (with the token they gave us) from MSG_EARLY_WAKE_MS
+                // on, while the dial goes on, as for a chat message.
+                let early = self.early_wake(&did, vec![d.device], || true);
+                let delivered = self.deliver_wake_tokens(&ep, d, &msg).await;
+                drop(early);
+                match delivered {
                     Ok(true) => {
                         {
                             let mut s = self.shared.lock();
@@ -744,6 +768,12 @@ impl NodeCtx {
                     }
                     Err(e) => {
                         tracing::info!("wake token to a device of {} not delivered: {e}", crate::short(&did));
+                        // Their phone may be asleep: wake it with the token they gave us (from
+                        // their Welcome or hello), on the usual schedule, so the retry reaches
+                        // it (a no-op when the early wake above was just sent). Without this, a
+                        // setup whose handover failed leaves them unable to wake us until both
+                        // apps happen to be open at once.
+                        self.wake_unreached(&did, &[d.device]).await;
                         failed = true;
                     }
                 }
@@ -816,13 +846,18 @@ impl NodeCtx {
 
 mod code;
 mod ring;
-pub use code::{CODE_REGISTER_TIMEOUT, HANDOVER_WAIT, apply_code_token, handover_in, hold_handover, with_handover};
+pub use code::{
+    CODE_REGISTER_TIMEOUT, HANDOVER_HOLD_MS, HANDOVER_WAIT, HELLO_HANDOVER_WAIT, PEEK_HOLD, apply_code_token, handover_in, hold_handover,
+    with_handover,
+};
 #[cfg(test)]
 mod backoff_tests;
 #[cfg(test)]
 mod code_tests;
 #[cfg(test)]
 mod dial_tests;
+#[cfg(test)]
+mod handover_tests;
 #[cfg(test)]
 mod live_tests;
 #[cfg(test)]

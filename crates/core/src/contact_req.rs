@@ -155,6 +155,10 @@ impl Node {
             return CodePeek::Expired { name: proto::sanitize_name(&claim.name), did: claim.iss, expired_at: claim.exp };
         }
         let known = slot.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
+        if !known {
+            // While the user decides, our token for them is registered, so the hello has it.
+            slot.ctx.code_peeked(&claim.iss);
+        }
         CodePeek::Found { card: CardPeek { ticket, name: proto::sanitize_name(&claim.name), did: claim.iss, known } }
     }
 

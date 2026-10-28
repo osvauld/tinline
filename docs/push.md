@@ -226,9 +226,17 @@ learns who holds the code.
 
 - The joiner's `ContactHello` carries its wake token for the owner (`wake: {token, exp_ms,
   kinds}`; kinds per `policy_for`, so call too when the hello gives a call token). The joiner's
-  wake task registers that token as soon as the request exists (an open request counts as wanted
-  next to contacts); the hello waits up to `HANDOVER_WAIT` = 3 s (PROVISIONAL) for it and goes
-  without one otherwise.
+  wake task registers that token as soon as the joiner reads the code (`peek_code` →
+  `code_peeked`, the "Add Maya?" screen; taken back if the code is not used within `PEEK_HOLD` =
+  10 min) and keeps it while the request is open (an open request counts as wanted next to
+  contacts).
+- **A hello by code never leaves without that token while push is on (2026-10-28).** Each
+  delivery waits up to `HELLO_HANDOVER_WAIT` = 15 s for it; still none, the request stays queued
+  ("held: no wake token for them yet") and is retried, for at most `HANDOVER_HOLD_MS` = 10 min from
+  when it was made, then it goes without (a relay outage must not stop people adding each other).
+  Why: seen on device 2026-10-28, a hello that left after the old 3 s wait without the token left
+  the owner (the Pixel) with no way to wake the joiner (the moto): its first message stayed queued
+  while the moto slept. All three values PROVISIONAL.
 - The owner keeps it at Accept, for the joiner's attested device, in the same write as the
   contact. The Welcome outbox then wakes the joiner (`msg`) when its dial fails and redials on the
   fast schedule, so an Accept reaches a joiner whose phone has gone to sleep.
@@ -238,6 +246,16 @@ learns who holds the code.
 - Both then hold each other's token exactly as if `WakeTokens` had arrived; the normal
   `WakeTokens` round still runs later (idempotent: a newer copy of the same token replaces it).
   Without push on a side, its field is absent.
+- **A handover that failed is finished by waking them (2026-10-28).** The `WakeTokens` round wakes
+  the device it is handing a token to (with the token that device gave us, `msg`, on the usual
+  schedule) from `MSG_EARLY_WAKE_MS` into its dial, and again after a failed dial; the retry
+  then reaches it. Before, it only dialled, so it landed only when both apps were open at once.
+- Log lines (no tokens): joiner "contact request to X carries a wake token: yes/no" or "held";
+  owner "contact request from X carries a wake token: yes/no", "kept a wake token from the
+  request of X: yes/no", "welcome to X carries a wake token: yes/no"; joiner "kept a wake token
+  from the welcome of X: yes/no".
+- Group invitations (G3 letters) wake a sleeping invitee the same way when a delivery fails
+  (`invites_kick` → `wake_unreached`, then the fast redials).
 
 ## Relay
 
