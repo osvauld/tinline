@@ -56,14 +56,14 @@ object ChatNotifier {
         if (!AlertPrefs.messages(app)) return   // Settings › Notifications › Messages
         val text = previewOf(m).ifBlank { return }
         lines.getOrPut(m.peerDid) { mutableListOf() }.let { synchronized(it) { it.add(Line(text, m.at.toLong(), false)); while (it.size > KEEP) it.removeAt(0) } }
-        post(app, m.peerDid)
+        post(app, m.peerDid, alert = true)
     }
 
     private fun nameOf(app: P2pApp, peer: String): String =
         app.contacts.value.firstOrNull { it.did == peer }?.display()
             ?: ChatBackend.current(app).chats.value.firstOrNull { it.peerDid == peer }?.peerName?.ifBlank { null } ?: app.getString(R.string.chat_notif_message)
 
-    private fun post(c: Context, peer: String) {
+    private fun post(c: Context, peer: String, alert: Boolean) {
         val app = P2pApp.get(c)
         val name = nameOf(app, peer)
         val them = Person.Builder().setName(name).setKey(peer).build()
@@ -82,14 +82,16 @@ object ChatNotifier {
             .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel(c.getString(R.string.chat_notif_message)).build())
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).setShowsUserInterface(false).build()
         val n = NotificationCompat.Builder(c, Notifications.CH_MESSAGES)
-            .setSilent(AlertPrefs.quiet(c) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
+            .setSilent(!alert || AlertPrefs.quiet(c) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(open)
             .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
+            // New incoming messages re-alert the existing conversation notification;
+            // displaying our inline reply only updates its history.
+            .setOnlyAlertOnce(!alert)
             .addAction(action)
             .build()
         try { nm(c).notify(id(peer), n) } catch (_: SecurityException) { }
@@ -98,7 +100,7 @@ object ChatNotifier {
     /** After an inline reply: show it in the thread so the notification stops spinning. */
     fun replied(c: Context, peer: String, text: String) {
         lines.getOrPut(peer) { mutableListOf() }.let { synchronized(it) { it.add(Line(text, System.currentTimeMillis(), true)); while (it.size > KEEP) it.removeAt(0) } }
-        post(c, peer)
+        post(c, peer, alert = false)
     }
 
     fun cancel(c: Context, peer: String) {
@@ -159,7 +161,7 @@ object GroupNotifier {
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(open)
             .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
+            .setOnlyAlertOnce(false)   // each new post can alert an existing group notification
             .build()
         try { nm(app).notify(id(m.groupId), n) } catch (_: SecurityException) { }
     }
