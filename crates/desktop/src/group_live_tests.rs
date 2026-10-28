@@ -303,6 +303,17 @@ impl GroupApi for Fake {
         self.fetched.borrow_mut().push(format!("voice:{message_id}"));
         Ok(())
     }
+    fn group_post_voice(&self, id: String, path: String, waveform: Vec<u8>) -> Result<GroupMessage, Error> {
+        let mut m = self.group_post(id.clone(), String::new(), None)?;
+        let _ = path;
+        m.voice = Some(p2pcore::GroupVoice { duration_ms: 1_500, waveform, size: 4_000, state: p2pcore::GroupImageState::Ready });
+        self.with(&id, |g| {
+            if let Some(last) = g.msgs.last_mut() {
+                *last = m.clone();
+            }
+            Ok(m.clone())
+        })
+    }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         self.with(&id, |g| {
             Fake::check_admin(g)?;

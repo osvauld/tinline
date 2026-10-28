@@ -372,7 +372,9 @@ impl App {
     }
 
     /// Composer.svelte for a group: the reply chip, the picture button (public group §5; the text
-    /// goes with the picture as its caption), the field and the round send button.
+    /// goes with the picture as its caption), the field and the round send button, which is the
+    /// 1:1 mic while the field is empty. Recording (the app's one recorder) swaps the row for the
+    /// 1:1 record bar.
     fn live_composer(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
@@ -393,7 +395,13 @@ impl App {
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)));
         }
         let value = &self.live.input;
-        let can = !value.trim().is_empty() && !self.live.sending;
+        if let Some((r, _, crate::voice::RecTo::Group(_))) = &self.chat.rec {
+            let bar = crate::voice::record_bar(t, r.elapsed_ms(), Msg::Chat(crate::app::chat::Cm::RecSend), Msg::Chat(crate::app::chat::Cm::RecCancel));
+            c = c.push(bar);
+            return container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into();
+        }
+        let has_text = !value.trim().is_empty();
+        let can = has_text && !self.live.sending;
         let field = text_input(crate::i18n::tr_str("common_message"), value)
             .id(COMPOSER)
             .on_input(|v| l(Lm::Input(v)))
@@ -409,9 +417,14 @@ impl App {
                     icon: t.ink2, placeholder: t.ink2, value: t.ink, selection: ui::alpha(t.accent, 0.3),
                 }
             });
-        let send = button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
-            .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
-            .on_press_maybe(can.then_some(l(Lm::Send)));
+        let send: El = if has_text {
+            button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+                .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
+                .on_press_maybe(can.then_some(l(Lm::Send)))
+                .into()
+        } else {
+            crate::voice::mic_button(t, Msg::Chat(crate::app::chat::Cm::RecStart))
+        };
         let busy = self.live.sending;
         let attach = button(container(crate::pg_icons::pgi("image", 24.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
             .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))

@@ -100,6 +100,11 @@ pub trait GroupApi {
     fn group_fetch_voice(&self, _id: String, _message_id: String) -> Result<(), Error> {
         Ok(())
     }
+    /// Post the recording at `path` (Ogg Opus from the app's recorder). Blocking (the core reads
+    /// and seals the file): only from a job.
+    fn group_post_voice(&self, _id: String, _path: String, _waveform: Vec<u8>) -> Result<GroupMessage, Error> {
+        Err(Error::NotFound)
+    }
 }
 
 impl GroupApi for Node {
@@ -144,6 +149,9 @@ impl GroupApi for Node {
     }
     fn group_fetch_voice(&self, id: String, message_id: String) -> Result<(), Error> {
         Node::group_fetch_voice(self, id, message_id)
+    }
+    fn group_post_voice(&self, id: String, path: String, waveform: Vec<u8>) -> Result<GroupMessage, Error> {
+        Node::group_post_voice(self, id, path, waveform)
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         Node::group_flag(self, id, did)
@@ -345,6 +353,9 @@ pub(super) enum Job {
     FetchImage { gid: String, id: String },
     /// Load a voice post's recording now (tap to load, or try again).
     FetchVoice { gid: String, id: String },
+    /// Post the finished recording at `path` (the app's one recorder), then delete the file: the
+    /// core keeps its own sealed copy.
+    PostVoice { gid: String, path: String, waveform: Vec<u8> },
     /// Open the pictures of these posts into files (the first time decrypts them).
     ImagePaths { gid: String, ids: Vec<String> },
     Flag { gid: String, did: String },
@@ -391,6 +402,11 @@ impl Job {
             }
             Job::FetchImage { gid, id } => Lm::ImageAsked(api.group_fetch_image(gid, id).map_err(gerr)),
             Job::FetchVoice { gid, id } => Lm::ImageAsked(api.group_fetch_voice(gid, id).map_err(gerr)),
+            Job::PostVoice { gid, path, waveform } => {
+                let r = api.group_post_voice(gid, path.clone(), waveform).map_err(gerr);
+                let _ = std::fs::remove_file(path);
+                Lm::Posted(r, String::new())
+            }
             Job::ImagePaths { gid, ids } => {
                 let paths = ids.into_iter().map(|id| (id.clone(), api.group_image_path(gid.clone(), id))).collect();
                 Lm::ImagePaths(paths)
@@ -1663,6 +1679,15 @@ impl super::App {
         let out = self.live.step(&*node, m);
         let t = self.after_live(out);
         Task::batch([t, self.live_image_paths()])
+    }
+
+    /// A finished recording for group `gid` (from the shared recorder, `Cm::RecSend`): post it
+    /// off the UI thread. The reply the composer was set to goes with nothing (a voice post has
+    /// no quote), so it stays for the next text.
+    pub(super) fn live_post_voice(&mut self, gid: String, path: String, waveform: Vec<u8>) -> Task<super::Msg> {
+        let node = self.node.clone();
+        let job = Job::PostVoice { gid, path, waveform };
+        super::blocking(move || job.run(&*node), super::Msg::Live)
     }
 
     /// Play or pause a voice post: the one player the app has (a 1:1 voice message stops). The
