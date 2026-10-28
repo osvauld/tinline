@@ -112,7 +112,7 @@ impl Entry {
 
 /// Whether `rec` belongs in doc `id` (the rule of the module doc).
 fn fits(id: &DocId, rec: &Record) -> Result<(), Reject> {
-    let post = matches!(rec.body, Body::Post { .. });
+    let post = Body::is_post(&rec.body);
     match id {
         DocId::Meta if post => Err(Reject::WrongDoc),
         DocId::Meta => Ok(()),

@@ -2292,7 +2292,15 @@ text = "Créer un nouveau compte"
 text = "Associer un compte depuis un autre appareil"
 
 [unlock_one_online]
-text = "Un seul compte est en ligne à la fois. Les appels vers un compte verrouillé ne sonnent que sur vos autres appareils."
+text = "Le compte que vous ouvrez est en ligne. Vos autres comptes sonnent et vous préviennent aussi quand Tinline peut les réveiller ; d’ici là, leurs appels sonnent sur vos autres appareils."
+
+[shell_account_unread]
+one = "{count} non lu"
+many = "{count} non lus"
+other = "{count} non lus"
+
+[shell_notice_account_message_body]
+text = "Nouveau message"
 
 [unlock_finish_call]
 text = "Terminez d’abord votre appel"

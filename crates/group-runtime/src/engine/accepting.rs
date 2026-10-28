@@ -261,7 +261,7 @@ impl GroupRt {
                         .count()
                         < crate::state::REMOVAL_FLAGS;
                     if e.rec.author != did_owned
-                        || !matches!(e.rec.body, Body::Post { .. })
+                        || !e.rec.body.is_post()
                         || !before
                     {
                         return Err(

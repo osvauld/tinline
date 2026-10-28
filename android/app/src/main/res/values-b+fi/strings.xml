@@ -353,14 +353,17 @@
     <string name="accounts_online_here">Verkossa tällä puhelimella</string>
     <string name="accounts_on_this_phone">Tällä puhelimella</string>
     <string name="accounts_locked_not_ringing">Lukittu · ei soi täällä</string>
+    <string name="accounts_rings_here">Soi ja ilmoittaa täällä</string>
     <string name="accounts_current_desc">Nykyinen tili</string>
     <string name="accounts_create">Luo uusi tili</string>
     <string name="accounts_link">Linkitä tili toiselta laitteelta</string>
     <string name="accounts_restore">Palauta palautussanoilla</string>
     <string name="accounts_one_online_hint">Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi.</string>
+    <string name="accounts_others_ring_hint">Avoinna oleva tili pysyy verkossa. Muut tilisi soivat silti ja kertovat uusista viesteistä täällä.</string>
     <string name="accounts_finish_call_first">Lopeta ensin puhelusi</string>
     <string name="accounts_switch_to">Vaihdetaanko tiliin %1$s?</string>
     <string name="accounts_switch_lead">%1$s siirtyy pois verkosta tällä puhelimella. Puhelut tilille %1$s soivat vain muilla linkitetyillä laitteillasi, kunnes vaihdat takaisin.</string>
+    <string name="accounts_switch_lead_push">%1$s hiljenee tällä puhelimella. Puhelut tilille %1$s soivat silti täällä, ja saat tiedon sen uusista viesteistä.</string>
     <string name="accounts_passphrase_for">Salalause: %1$s</string>
     <string name="accounts_not_on_call">Et ole puhelussa. Jos olisit, vaihto lopettaisi sen.</string>
     <string name="accounts_switching">Vaihdetaan…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline palaa lepotilaan itsestään.</string>
     <string name="notif_wake_notice_title">Sinulle voi olla uusi viesti</string>
     <string name="notif_wake_notice_text">Avaa Tinline ja avaa lukitus, niin näet, mitä on tullut.</string>
+    <string name="notif_bg_message_text">Uusi viesti</string>
     <string name="notif_return_to_call">Palaa puheluun napauttamalla</string>
     <string name="notif_leave">Poistu</string>
     <string name="notif_end_call">Lopeta puhelu</string>

@@ -465,6 +465,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     val cantReadPicture = stringResource(R.string.groups_chat_cant_read_picture)
     val noPicker = stringResource(R.string.groups_chat_no_picker)
     val noCallHost = stringResource(R.string.groups_chat_no_call_host)
+    val voiceFailed = stringResource(R.string.conv_voice_send_failed)
     // The thread: posts and this group's call log (MessageRow `.callrec`) merged by time, oldest first.
     val rows = remember(o.messages, groupLog, id) {
         val calls = groupLog.filter { it.groupId == id }.map { ThreadRow.Call(it) }
@@ -576,6 +577,12 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             CoreRole.LEFT -> BlockedFooter(stringResource(R.string.groups_chat_left_footer))
             else -> if (GroupText.adminsOnlyLocked(d)) AdminsOnlyLine() else {
                 val r = replyTo?.let { rid -> o.messages.firstOrNull { it.id == rid } }
+                // Hold to record, as in a 1:1 chat; the core checks and seals the file, which then goes (it keeps its own copy).
+                val voice = rememberVoiceRecState { rec ->
+                    exec({ app.groups.postVoice(id, rec.path, rec.waveform).map { "" }.also { java.io.File(rec.path).delete() } }) { res ->
+                        res.onFailure { say(it.message ?: voiceFailed) }
+                    }
+                }
                 PgComposer(draft, { draft = it }, stringResource(R.string.groups_chat_composer_hint), r?.let {
                     ComposerCtx(if (it.outgoing) stringResource(R.string.groups_chat_replying_self) else stringResource(R.string.groups_chat_replying, firstName(nameOf(app, it.authorDid, it.authorName))), GroupText.postLine(it), stringResource(R.string.groups_chat_cancel_reply))
                 }, editing = false, onCancelCtx = { replyTo = null }, onSend = {
@@ -589,7 +596,8 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                 }, onAttach = {
                     if (!sending) try { picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                         catch (_: Exception) { say(noPicker) }
-                })
+                }, field = if (voice.recording) { modifier -> VoiceRecordingBar(voice, modifier) } else null,
+                    trailing = { VoiceMicButton(voice) })
             }
         }
     }
@@ -757,7 +765,14 @@ private fun ColumnScope.GroupItemLive(
             GroupPhotoBox(app, d.id, m, img, if (m.text.isEmpty()) pos else BubblePos.First, m.outgoing, say, onReply)
             if (m.text.isEmpty()) Text(msClock(m.at.toLong()), Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp), style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp), color = c.ink2)
         }
-        if (m.image == null || m.text.isNotEmpty()) Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
+        m.voice?.let { v ->
+            Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
+                GroupVoiceBubble(app, d.id, m, v, pos, meta, if (m.outgoing || p) null else senderName, if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid), quote, say,
+                    Modifier.combinedClickable(enabled = GroupText.active(d.myRole) || lines != null, onLongClickLabel = replyLabel, onLongClick = onReply,
+                        onClickLabel = if (lines != null) stringResource(R.string.groups_msg_who_has_it) else null, onClick = { if (lines != null) info = !info }))
+            }
+        }
+        if ((m.image == null && m.voice == null) || m.text.isNotEmpty()) Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
             PgTextBubble(androidx.compose.ui.text.AnnotatedString(m.text), pos, m.outgoing, meta,
                 Modifier.combinedClickable(enabled = GroupText.active(d.myRole) || lines != null, onLongClickLabel = replyLabel, onLongClick = onReply,
                     onClickLabel = if (lines != null) stringResource(R.string.groups_msg_who_has_it) else null, onClick = { if (lines != null) info = !info }),
@@ -821,6 +836,36 @@ private fun GroupPhotoBox(app: P2pApp, gid: String, m: GroupMessage, img: uniffi
             }
             uniffi.p2pcore.GroupImageState.FAILED -> Ring { Icon(PgIcons.Retry, stringResource(R.string.groups_photo_retry), tint = Color.White) }
             uniffi.p2pcore.GroupImageState.READY -> if (bmp == null && pv == null) Icon(PgIcons.Image, null, tint = c.ink2)
+        }
+    }
+}
+
+/**
+ * A voice post: the 1:1 voice bubble's inside (player, waveform, time) in a group bubble, with the sender's name and the
+ * quote above it. Before the recording is here: load it (auto-download said wait), wait while it comes, or try again.
+ */
+@Composable
+private fun GroupVoiceBubble(
+    app: P2pApp, gid: String, m: GroupMessage, v: uniffi.p2pcore.GroupVoice, pos: BubblePos, meta: BubbleMeta, sender: String?, senderColor: Color,
+    quote: (@Composable () -> Unit)?, say: (String) -> Unit, modifier: Modifier,
+) {
+    val scope = rememberCoroutineScope()
+    val ready = v.state == uniffi.p2pcore.GroupImageState.READY
+    val path by produceState<String?>(null, m.id, ready) {
+        value = if (!ready) null else withContext(Dispatchers.IO) { app.groups.voicePath(gid, m.id) }
+    }
+    val cantLoad = stringResource(R.string.common_try_again)
+    fun load() = scope.launch { withContext(Dispatchers.IO) { app.groups.fetchVoice(gid, m.id) }.onFailure { say(it.message ?: cantLoad) } }
+    PgBubble(pos, m.outgoing, modifier) {
+        Column {
+            sender?.let { Text(it, Modifier.padding(bottom = 1.dp), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
+                color = senderColor, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            quote?.invoke()
+            val p = path
+            if (p != null) VoiceBubbleContent(m.id, p, v.durationMs.toInt(), v.waveform, m.outgoing)
+            else VoicePendingContent(v.durationMs.toInt(), remote = v.state == uniffi.p2pcore.GroupImageState.REMOTE,
+                failed = v.state == uniffi.p2pcore.GroupImageState.FAILED, outgoing = m.outgoing, onDownload = { load() })
+            PgMeta(meta, bubbleMetaColor(m.outgoing), Modifier.align(Alignment.End))
         }
     }
 }

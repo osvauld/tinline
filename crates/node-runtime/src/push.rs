@@ -21,7 +21,8 @@
 //! Slice 3b, the sending side: [`NodeCtx::wake_device`] asks the relay to wake one device of a
 //! contact (the throttle and the 410/403 bookkeeping are `WakeState::wake_for` / `wake_result`).
 //! - Messages: `chat_runtime`'s dial loop calls [`NodeCtx::wake_unreached`] when a dial failed
-//!   with something to deliver, and [`NodeCtx::fast_redial`] for the pause before the next dial
+//!   with something to deliver (each device is woken on `wake::msg_wake_due`'s schedule, which
+//!   [`NodeCtx::wake_reached`] starts over), and [`NodeCtx::fast_redial`] for the pause before the next dial
 //!   (faster than the normal backoff for [`MSG_REDIAL_AT_MS`] after a wake was sent).
 //! - Calls: `call.rs`'s `Leg` wakes the callee device (kind `call`) after its first dial failed
 //!   and keeps redialling it every [`CALL_REDIAL_MS`] for [`CALL_WAKE_DIAL_MS`]; the call stays
@@ -29,6 +30,10 @@
 //!
 //! Slice 5, the receiving side (`ring.rs`): [`NodeCtx::on_wake`], the wake ring, `answer_wake_ring`
 //! and `decline_wake_ring`.
+//!
+//! Code wakes (`code.rs`, `docs/push.md` "Code wake tokens"): a `msg` token in our contact ticket,
+//! so a stranger who scanned it can wake us to deliver a contact request, and the tokens both ways
+//! in `ContactHello` / `ContactWelcome`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -39,7 +44,7 @@ use parking_lot::Mutex;
 use proto::Msg;
 use tokio::sync::Notify;
 use wake::{Issued, WakeState};
-pub use wake::WakeAction;
+pub use wake::{WakeAction, hint_opens};
 pub use wake_relay_core::Target;
 pub use ring::{Early, WAKE_RING_CAP_MS, WAKE_RING_WINDOW_MS, wake_call_id};
 use wake_relay_core::api::{RegisterRequest, RegisterResponse, RevokeRequest, WakeRequest};
@@ -246,6 +251,13 @@ struct Task {
 /// Cancels a pending [`NodeCtx::early_wake`] when dropped (a wake already being sent goes on).
 pub struct EarlyWake(tokio::task::JoinHandle<()>);
 
+impl EarlyWake {
+    /// Runs `task` until the guard is dropped.
+    pub(crate) fn spawn(handle: &tokio::runtime::Handle, task: impl std::future::Future<Output = ()> + Send + 'static) -> Self {
+        Self(handle.spawn(task))
+    }
+}
+
 impl Drop for EarlyWake {
     fn drop(&mut self) {
         self.0.abort();
@@ -275,22 +287,42 @@ fn live_contact(st: &State, did: &str) -> bool {
     st.contacts.iter().any(|c| c.did == did) && !st.blocked.contains(did) && !crate::block::blocked_me(st, did)
 }
 
-/// The kinds each live contact should hold from us: message always, call when allowed.
+/// Whether we owe `did` a wake token of ours: a live contact, or someone we sent a contact
+/// request to that is still open (our hello carries the token, so their Accept can wake us to
+/// deliver the Welcome; `docs/push.md` "Tokens at setup").
+fn token_wanted(st: &State, did: &str) -> bool {
+    live_contact(st, did) || requested(st, did)
+}
+
+/// An open contact request of ours to `did` (not yet their contact, not blocked either way).
+fn requested(st: &State, did: &str) -> bool {
+    let now = crate::now();
+    st.sent_requests.get(did).is_some_and(|r| r.exp + crate::contact_req::WELCOME_GRACE > now)
+        && !st.contacts.iter().any(|c| c.did == did)
+        && !st.blocked.contains(did)
+        && !crate::block::blocked_me(st, did)
+}
+
+/// The kinds each live contact should hold from us: message always, call when allowed. An open
+/// request of ours gets the kinds our hello gave (`SentRequest::calls_allowed`).
 fn wanted(st: &State) -> Vec<(String, Kinds)> {
+    let kinds = |call: bool| if call { Kinds::ALL } else { Kinds::MSG };
     st.contacts
         .iter()
         .filter(|c| live_contact(st, &c.did))
-        .map(|c| (c.did.clone(), if c.calls_allowed { Kinds::ALL } else { Kinds::MSG }))
+        .map(|c| (c.did.clone(), kinds(c.calls_allowed)))
+        .chain(st.sent_requests.iter().filter(|(d, _)| requested(st, d)).map(|(d, r)| (d.clone(), kinds(r.calls_allowed))))
         .collect()
 }
 
-/// Takes back and forgets the tokens of every DID that is no longer a live contact (a block, a
-/// contact deleted by their block notice). Whether anything changed.
+/// Takes back and forgets the tokens of every DID we no longer owe one (a block, a contact
+/// deleted by their block notice, a request that was refused or ran out). Whether anything
+/// changed.
 fn forget_gone(st: &mut State) -> bool {
     let gone: Vec<String> = {
         let Some(w) = &st.wake else { return false };
         let dids: BTreeSet<&String> = w.issued.iter().map(|e| &e.did).chain(w.held.iter().map(|e| &e.did)).collect();
-        dids.into_iter().filter(|d| !live_contact(st, d)).cloned().collect()
+        dids.into_iter().filter(|d| !token_wanted(st, d)).cloned().collect()
     };
     let mut changed = !gone.is_empty();
     for did in &gone {
@@ -421,9 +453,24 @@ impl NodeCtx {
         }
     }
 
-    /// The contact was reached: the fast redials are over.
-    pub fn wake_reached(&self, did: &str) {
+    /// `did` was reached (a dial connected, or they connected to us): the fast redials are over,
+    /// and the `msg` wake schedule of their devices and of a queued request to them starts over
+    /// (`wake::msg_wake_due`), so a later silence wakes promptly again. Saved when it changed.
+    pub fn wake_reached(self: &Arc<Self>, did: &str) {
         self.push.woken.lock().remove(did);
+        let epoch = {
+            let mut s = self.shared.lock();
+            let st = &mut s.state;
+            let mut changed = st.wake.as_mut().is_some_and(|w| w.reached(did));
+            if let Some(r) = st.sent_requests.get_mut(did).filter(|r| r.wakes != 0) {
+                r.wakes = 0;
+                changed = true;
+            }
+            changed.then_some(s.epoch)
+        };
+        if let Some(epoch) = epoch {
+            self.persist_in_background(epoch);
+        }
     }
 
     /// Our platform push token: `Some` registers contacts' tokens at the relay and hands them
@@ -563,7 +610,7 @@ impl NodeCtx {
             if st.wake.is_none() {
                 return Round::Done;
             }
-            let dirty = forget_gone(st);
+            let dirty = forget_gone(st) | code::retire_codes(st);
             let want = wanted(st);
             let Some(w) = st.wake.as_ref() else { return Round::Done };
             (w.take_revokes(), w.plan_register(&want, now_ms(), random_tag), dirty)
@@ -767,7 +814,13 @@ impl NodeCtx {
     }
 }
 
+mod code;
 mod ring;
+pub use code::{CODE_REGISTER_TIMEOUT, HANDOVER_WAIT, apply_code_token, handover_in, hold_handover, with_handover};
+#[cfg(test)]
+mod backoff_tests;
+#[cfg(test)]
+mod code_tests;
 #[cfg(test)]
 mod dial_tests;
 #[cfg(test)]

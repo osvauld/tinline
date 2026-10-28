@@ -62,6 +62,15 @@ pub struct CallInfo {
     /// Placed as a video call (the caller pressed Video and calls with its camera on). The callee
     /// learns it from `CallHello.camera`; either camera can still go on in any call.
     pub video: bool,
+    /// The account of this device the call is for, when it is not the open one (a call that
+    /// rings a background account, `docs/multi-online.md`). `None`: the open account.
+    pub account: Option<AccountRef>,
+}
+/// One account of this device, as a background event names it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountRef {
+    pub did: String,
+    pub name: String,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallState {

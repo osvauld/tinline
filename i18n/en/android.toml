@@ -1283,6 +1283,10 @@ note = "Line under the current account in the switcher while it is not connected
 text = "Locked · not ringing here"
 note = "Line under another account in the switcher: it is locked, so calls do not ring on this phone."
 
+[accounts_rings_here]
+text = "Rings and notifies here"
+note = "Line under another account in the switcher on a phone with wake-ups: it is not open, but its calls still ring and its messages still notify on this phone."
+
 [accounts_current_desc]
 text = "Current account"
 note = "Screen-reader description of the tick next to the current account."
@@ -1303,6 +1307,10 @@ note = "Row in the account sheet that restores an account from its 24 recovery w
 text = "One account is online at a time. Calls to a locked account ring only on your other devices."
 note = "Hint at the bottom of the account switcher."
 
+[accounts_others_ring_hint]
+text = "The account you have open stays online. Your other accounts still ring and tell you about new messages here."
+note = "Hint at the bottom of the account switcher on a phone with wake-ups (push): only the open account stays connected, the others wake for their calls and messages."
+
 [accounts_finish_call_first]
 text = "Finish your call first"
 note = "Message shown when switching account is refused because a call is going on."
@@ -1314,6 +1322,10 @@ note = "Heading of the switch-confirmation screen. {name} is the nickname of the
 [accounts_switch_lead]
 text = "{current} goes offline on this phone. Calls to {current} will ring only on your other linked devices until you switch back."
 note = "Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once)."
+
+[accounts_switch_lead_push]
+text = "{current} goes quiet on this phone. Calls to {current} still ring here, and you still hear about its new messages."
+note = "Explanation on the switch-confirmation screen on a phone with wake-ups (push), when the account being left has its key remembered here: it sleeps but still rings and notifies. {current} is the nickname of the account that is open now (it appears twice but is passed once)."
 
 [accounts_passphrase_for]
 text = "Passphrase for {name}"
@@ -3672,6 +3684,10 @@ note = "Title of a notification after a wake-up while Tinline is still locked. I
 [notif_wake_notice_text]
 text = "Open Tinline and unlock to catch up."
 note = "Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived."
+
+[notif_bg_message_text]
+text = "New message"
+note = "Text of a message notification for an account that is not the open one. The title is the sender and the account (\"Asha · Work\"); no message text is shown."
 
 [notif_return_to_call]
 text = "Tap to return to the call"

@@ -47,13 +47,13 @@ async fn endpoint(secret: SecretKey) -> Endpoint {
         .unwrap()
 }
 fn registry(node: &Node, remote: [u8; 32]) {
-    let me = node.inner.me().unwrap();
+    let me = node.open().me().unwrap();
     let attestation = proto::attest(&me.id, remote, crate::node::now());
     assert_eq!(
         proto::verify_attestation(&attestation).unwrap().did,
         me.id.did()
     );
-    node.inner
+    node.open()
         .shared
         .lock()
         .state
@@ -80,12 +80,12 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
         // Commit only this test's synthetic account files, not Git or user data.
         let _test_only_unlock_key = node.unlock_key().unwrap();
         node.commit_identity().unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (source, gid, day) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, true);
         let (target, _, _) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let server = endpoint(SecretKey::from_bytes(&me.profile.device_secret)).await;
         let client_secret = proto::new_device_secret();
         let client = endpoint(SecretKey::from_bytes(&client_secret)).await;
@@ -100,12 +100,12 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
             open: false,
         })
         .unwrap();
-        node.inner.group.group_own_apply(&[token], true);
+        node.open().group.group_own_apply(&[token], true);
         let (meta, _) = source
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner.group
+        node.open().group
             .group_own_content_apply(
                 me.epoch,
                 &remote,
@@ -122,7 +122,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
         target.store.fail_next_append_for_test();
         let run = async {
             let accepting = server.accept().await.unwrap().accept().unwrap();
-            node.inner.sync.clone().handle_self_incoming(accepting).await
+            node.open().sync.clone().handle_self_incoming(accepting).await
         };
         let drive = async {
             let conn = client
@@ -201,10 +201,10 @@ async fn produced(negotiated: bool) {
     let node = Node::new(directory.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.create_identity("synthetic producer".into(), String::new())
         .unwrap();
-    let me = node.inner.me().unwrap();
+    let me = node.open().me().unwrap();
     let (core, gid, day) =
         crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, true);
-    *node.inner.group.core.lock() = Some(core.clone());
+    *node.open().group.core.lock() = Some(core.clone());
     let server = endpoint(SecretKey::from_bytes(&me.profile.device_secret)).await;
     let client = endpoint(SecretKey::generate()).await;
     let remote = *client.id().as_bytes();
@@ -223,7 +223,7 @@ async fn produced(negotiated: bool) {
                 group_contents: negotiated,
                 ..Default::default()
             };
-            node.inner.sync
+            node.open().sync
                 .push_all_chat(&me, &remote, &mut peer, &mut writer)
                 .await
                 .unwrap();
@@ -322,13 +322,13 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
         let node = Node::new(directory.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
         node.create_identity("synthetic receiving replica".into(), String::new())
             .unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (source, gid, day) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, true);
         let (target, target_gid, _) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
         assert_eq!(gid, target_gid);
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let remote = cryptography::signature::public_key(&proto::new_device_secret());
         registry(&node, remote);
         let token = cryptography::codec::to_bytes(&InviteToken {
@@ -340,9 +340,9 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             open: false,
         })
         .unwrap();
-        node.inner.group.group_own_apply(std::slice::from_ref(&token), false);
+        node.open().group.group_own_apply(std::slice::from_ref(&token), false);
         assert!(!target.groups.lock().contains_key(&gid));
-        node.inner.group.group_own_apply(&[token], true);
+        node.open().group.group_own_apply(&[token], true);
         assert!(target.groups.lock().contains_key(&gid));
         assert!(!target.groups.lock()[&gid].state.is_member(me.id.did()));
         assert!(
@@ -354,7 +354,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner.group
+        node.open().group
             .group_own_content_apply(
                 me.epoch,
                 &remote,
@@ -375,12 +375,12 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
         let name = contents::doc_name(&gid, &DocId::Day(day.clone()));
         target.store.fail_next_append_for_test();
         assert!(matches!(
-            node.inner.group.group_own_content_apply(me.epoch, &remote, &name, &update),
+            node.open().group.group_own_content_apply(me.epoch, &remote, &name, &update),
             Err(node_runtime::Error::Io(_))
         ));
         assert!(!target.groups.lock()[&gid].meta.owed_days.contains(&day));
         let accepted = node
-            .inner.group
+            .open().group
             .group_own_content_apply(me.epoch, &remote, &name, &update)
             .unwrap();
         assert!(target.groups.lock()[&gid].meta.owed_days.contains(&day));
@@ -398,7 +398,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
         );
         // Acknowledging only the laptop's own writer (absent here) must NOT clear
         // the phone-origin obligation, including after retry of a failed append.
-        node.inner.group.group_ack_for_durability_test(
+        node.open().group.group_ack_for_durability_test(
             &target,
             &gid,
             "did:synthetic:host",
@@ -407,7 +407,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             &VersionVector::default().encode(),
         );
         assert!(target.groups.lock()[&gid].meta.owed_days.contains(&day));
-        node.inner.group.group_ack_for_durability_test(
+        node.open().group.group_ack_for_durability_test(
             &target,
             &gid,
             "did:synthetic:host",

@@ -182,7 +182,7 @@ class CallActivity : ComponentActivity() {
                 when {
                     // Their call arrived while ours was open (ours yielded): ring it here.
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
-                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() }, video = u.info.video,
+                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() }, video = u.info.video, account = u.info.account?.name,
                             onVideo = { answerWithVideo() })
                     u != null || holding -> {
                         val shown = u ?: last!!
@@ -246,11 +246,11 @@ class IncomingCallActivity : ComponentActivity() {
                     }
                 }
                 if (u == null && w != null) {
-                    if (w.answered) CallFocus(w.name, w.did, active = false, ringing = false, incoming = true) {
+                    if (w.answered) CallFocus(w.name, w.did, active = false, ringing = false, incoming = true, title = w.title) {
                         Text(stringResource(R.string.call_wake_connecting), style = TinType.bodyL, color = Tin.c.ink)
-                    } else IncomingContent(w.name, w.did, onDecline = { WakeRing.decline(app); finish() }, onAnswer = { answerWake() })
+                    } else IncomingContent(w.name, w.did, onDecline = { WakeRing.decline(app); finish() }, onAnswer = { answerWake() }, account = w.account)
                 }
-                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video,
+                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video, account = u.info.account?.name,
                     onVideo = { answerWithVideo() })
             }
         }
@@ -273,10 +273,11 @@ class IncomingCallActivity : ComponentActivity() {
 
 @Composable
 fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit, video: Boolean = false,
-    onVideo: (() -> Unit)? = null) {
+    onVideo: (() -> Unit)? = null, account: String? = null) {
     val c = Tin.c
     val who = name.ifBlank { stringResource(R.string.common_unknown) }
-    CallFocus(who, did, active = false, ringing = true, incoming = true, video = video) {
+    // [account]: the call rings another account of this phone; the title names it ("Asha → Work"), the avatar stays theirs.
+    CallFocus(who, did, active = false, ringing = true, incoming = true, video = video, title = AccountLabels.ringName(who, account)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally)) {
             LabeledRound(stringResource(R.string.common_decline)) { RoundBtn(CallGlyphs.End, stringResource(R.string.common_decline), c.callButtonEnd, Color.White, onDecline, size = 64.dp) }
             LabeledRound(stringResource(R.string.common_answer)) { RoundBtn(CallGlyphs.Phone, stringResource(R.string.common_answer), c.callButtonAnswer, Color.White, onAnswer, size = 64.dp) }

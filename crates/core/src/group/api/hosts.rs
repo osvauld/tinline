@@ -36,12 +36,13 @@ impl HostKind {
 impl Node {
     /// An admin permits (`active`) or withdraws the permit of device `device_id` of `did`.
     fn host_permit(&self, group_id: String, did: String, device_id: String, active: bool, kind: HostKind) -> Result<(), Error> {
+        let slot = self.open();
         let dev = parse_dev(&device_id)?;
-        let core = self.inner.group.admin_core(&group_id)?;
+        let core = slot.group.admin_core(&group_id)?;
         if active && !core.groups.lock().get(&group_id).is_some_and(|l| l.state.is_member(&did)) {
             return Err(Error::Rejected(kind.must_be_members().into()));
         }
-        Ok(self.inner.group.group_write(&core, &group_id, kind.permit(did, dev, active)).map(|_| ())?)
+        Ok(slot.group.group_write(&core, &group_id, kind.permit(did, dev, active)).map(|_| ())?)
     }
 
     /// This device agrees to host (or stops).

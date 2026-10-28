@@ -169,6 +169,76 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
 - Endpoint rotation (`docs/rotation.md`) does not change wake tokens: they are bound to the push
   token and the contact, not the iroh endpoint.
 
+## Code wake tokens (2026-10-26)
+
+**Problem.** A stranger who scans our contact code dials our device once; a phone asleep in push
+mode does not answer, and before this the joiner dropped the request. Wake tokens were only
+handed out after contact setup, so a stranger had no way to wake us.
+
+**Design** (`crates/wake` `WakeState::codes`, `crates/node-runtime/src/push/code.rs`,
+`request_out.rs`):
+
+- **The code carries a token.** When we mint a contact ticket and this device has a push target,
+  we first register one tag for it at the relay (the existing `/v1/register`; the relay stores
+  nothing per token, so it needed no change): `kinds = {msg}` only, never call; a fresh random
+  tag of its own; `exp` = the ticket's expiry. The sealed token goes into the signed ticket
+  (`Ticket::wake`, raw bytes, at most 400; `docs/protocol.md` "Contact ticket"). We keep
+  `{nonce, tag, token, exp}` in the sealed state (`WakeState::codes`). No push target (Liberum,
+  desktop, push off), no relay answer within 5 s (`CODE_REGISTER_TIMEOUT`, PROVISIONAL), or a
+  token too long for a code (a long UnifiedPush endpoint): the ticket has no token, as before.
+- **Size.** A 163-character FCM token seals to 250 bytes: a typical code grows from 262 to 666
+  characters, QR version 9 → 17 at level M (53 → 85 modules a side). Measured by
+  `wake_code_ticket_size_with_a_real_fcm_sized_token`.
+- **Which code is handed out.** A good code is replaced (the old one stays live until it expires,
+  as for a rename) when its token no longer matches: push turned on and the relay sealed a token,
+  push turned off (its token was revoked), or a new push token (the old token died with it).
+- **The joiner queues.** If the first dial to the code's device has not connected after
+  `MSG_EARLY_WAKE_MS` (3 s) and the code carries a token, the joiner sends a `msg` wake with it
+  while the dial goes on; a failed dial also wakes (on the backoff
+  below, `wake::msg_wake_due`; a 410 stops it). The request is kept (`SentRequest::ticket`), the
+  app gets `Requested`, and a background outbox redials on `MSG_REDIAL_AT_MS` after a wake, else
+  2, 5, 15, 30, 60, 300, then every 900 s (`QUEUE_RETRY_SECS`, PROVISIONAL), until the owner
+  answers or the code expires; it survives restarts. A code without a token is queued and
+  retried the same way, without wakes.
+- **The owner on a code wake.** The hint opens to a tag of `WakeState::codes`: a code wake.
+  `on_wake` returns `CodeWake` (core `WakeOutcome::CodeWake`): there is nobody to dial (not a
+  contact yet), so the app starts the node and keeps it up for the usual window (Android maps it
+  to the same `StartNode` as `DialedBack`; `CoreService` stops 90 s after the last activity).
+  The joiner's redial lands and the normal `ContactHello` path raises "X wants to add you"
+  (`on_contact_request`). A code wake that leads to no hello shows nothing. A `call` hint on a
+  code tag, or one for an expired code, is ignored. Blocked senders are unknown at wake time
+  (the block check happens on the hello, as today).
+- **Device throttle.** At most `CODE_WAKE_CAP` = 4 code wakes per tag are acted on within
+  `CODE_WAKE_WINDOW_MS` = 10 min (PROVISIONAL); more are ignored. The tag is shared by everyone
+  who holds that code, so the cap is for all of them together.
+- **Revoke.** A code that stops adding contacts (`reset_ticket`, a block, which clear all live
+  codes) has its token put in the revoke outbox by the next wake round; turning push off revokes
+  them too. An expired code's token is only forgotten: the relay refuses it by itself.
+
+**Abuse trade-off (accepted with this design).** Anyone holding a public code can wake the phone
+until the code expires or is reset. A wake carries no content and shows no notification; the cost
+is battery (a node start and ~90 s of service). It is bounded by the relay's per-tag rate limit
+(`msg` 2 per minute), the device throttle above, the 7-day code expiry and "New code"
+(`reset_ticket`), which revokes the token. The relay learns that the same tag was woken; it never
+learns who holds the code.
+
+## Tokens at setup (2026-10-26; closes Open 8, option a)
+
+- The joiner's `ContactHello` carries its wake token for the owner (`wake: {token, exp_ms,
+  kinds}`; kinds per `policy_for`, so call too when the hello gives a call token). The joiner's
+  wake task registers that token as soon as the request exists (an open request counts as wanted
+  next to contacts); the hello waits up to `HANDOVER_WAIT` = 3 s (PROVISIONAL) for it and goes
+  without one otherwise.
+- The owner keeps it at Accept, for the joiner's attested device, in the same write as the
+  contact. The Welcome outbox then wakes the joiner (`msg`) when its dial fails and redials on the
+  fast schedule, so an Accept reaches a joiner whose phone has gone to sleep.
+- The owner's `ContactWelcome` carries the owner's normal per-contact token for the joiner
+  (filled in when it is sent; the first delivery waits up to `HANDOVER_WAIT` for the token). The
+  joiner keeps it when it takes the Welcome.
+- Both then hold each other's token exactly as if `WakeTokens` had arrived; the normal
+  `WakeTokens` round still runs later (idempotent: a newer copy of the same token replaces it).
+  Without push on a side, its field is absent.
+
 ## Relay
 
 `POST /v1/register`, `POST /v1/wake {wake_token, kind}` → 202, `POST /v1/revoke {wake_token}`.
@@ -178,8 +248,14 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
   (Cloudflare's limiter counts over 10 or 60 s windows only, so no daily cap for now.)
   **Measured 2026-10-24:** the limiter is approximate and per Cloudflare location: a burst of 12
   `msg` wakes on one token got 8 through before 429s. So the relay limit is a coarse abuse cap;
-  the exact limit is the sender's own: the core sends at most one `msg` wake per device per 30 s
-  and only after a failed dial.
+  the exact limit is the sender's own: the core sends a `msg` wake only after a failed dial, and
+  per target (a contact's device, a queued request) on a backoff: 0, 30 s, 2, 10, 30 min after
+  the first, then hourly, about 24 a day and about 170 in a week (`wake::MSG_WAKE_GAPS_MS`,
+  PROVISIONAL). Reaching the target (a dial connects, or a chat session with them is admitted)
+  starts it over (`WakeState::reached`, `NodeCtx::wake_reached`); the count is kept in the
+  sealed state (`Held::msg_wakes`, `SentRequest::wakes`), so a restart does not restart it.
+  Messages and the Welcome go through the same per-device schedule; call wakes are not part of
+  it (`CALL_WAKE_EVERY_MS`, per call).
 - **User-Agent:** `osvauld.com`'s Cloudflare bot protection answers `403 error code: 1010` to
   generic client agents (e.g. `Python-urllib`). The apps send `Tinline/<version>`.
 - Answers: 202 sent; 410 drop the token (expired, revoked, push token gone, relay key retired);
@@ -306,7 +382,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      Tests: `dial_tests.rs` (W1, W2, W4/4b/4c, W8, W9, 410).
    - Slice 5 done (2026-10-24): `NodeCtx::on_wake` and the wake ring (`crates/node-runtime/src/push/ring.rs`;
      tests `ring_tests.rs`), the app API `crates/core/src/node/api_push.rs` (`PushTarget`, `set_push_target`,
-     `push_target`, `on_wake -> WakeOutcome { Ignore, EndCall, DialedBack, Ring { did, name } }`,
+     `push_target`, `on_wake -> WakeOutcome { Ignore, EndCall, DialedBack, Ring { did, name } }` (+ `CodeWake`, 2026-10-26),
      `answer_wake_ring`, `decline_wake_ring`). The callback trait is unchanged. With no open account
      `on_wake` returns `Locked` / `NoIdentity`: the app shows a generic notice (iOS call: report to
      CallKit and end at once). Android `play` calls `set_push_target(Fcm)` from `onNewToken` (and at
@@ -354,6 +430,13 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W13b | Liberum contact of a Play user | Reaches the Liberum phone directly when it is always-on, or by a UnifiedPush wake when it has a distributor |
 | W13c | Liberum with ntfy installed, app asleep | UnifiedPush wake; same as W2/W3; ntfy uninstalled → back to always-on |
 | W14 | Endpoint rotation on B | Wake tokens keep working |
+| W15 | A (push mode, asleep) shares a code; stranger B adds by code | B gets "Requested"; B sends one `msg` wake with the code's token; A's node starts (`CodeWake`), B's redial lands, A shows "B wants to add you" (`wake_code_i_…`) |
+| W15b | Code without a token (A always-on or Liberum) and A offline | B's request is queued, delivered when A is back; no wake (`wake_code_ii_…`) |
+| W15c | A accepts while B's phone sleeps | The Welcome wakes B with the token from B's hello and is delivered (`wake_code_iii_…`) |
+| W15d | Contact set up by code with push on both sides | Each holds the other's token before any `WakeTokens` round (`wake_code_iv_…`) |
+| W15e | A resets its code ("New code") or blocks someone | The code's token is revoked at the relay; the next code carries a new one (`wake_code_v_…`) |
+| W15f | Many code wakes on one tag | At most 4 per 10 min start the node; a `call` hint on a code tag is ignored (`wake_code_on_wake_outcomes`, `wake` `code_tests`) |
+| W15g | Code size | FCM: 262 → 666 characters, QR v9 → v17 (M); scans on the Pixel 3a / moto g52 from a phone screen (device check, not done) |
 
 ## Open
 
@@ -381,18 +464,19 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
    still-running dial (`NodeCtx::early_wake`, called by `chat_kick`; only for devices we hold a live
    `msg` token for; the wake throttle still decides, and the post-failure `wake_unreached` stays as
    the fallback, throttled away when the early wake went out). A dial that connects sooner sends
-   nothing. Call timing is unchanged.
+   nothing. Call timing is unchanged. Code wakes (2026-10-26, `wake` crate and
+   `node-runtime/src/push/code.rs`, `request_out.rs`): `CODE_WAKE_CAP` 4 code wakes per tag per
+   `CODE_WAKE_WINDOW_MS` 10 min on the device; `CODE_REGISTER_TIMEOUT` 5 s for the relay to seal a
+   code's token; `HANDOVER_WAIT` 3 s for our token before a hello / first Welcome goes without one;
+   queued request redials `QUEUE_RETRY_SECS` 2, 5, 15, 30, 60, 300, 900 s (fast schedule after a
+   wake); `proto::MAX_TICKET_WAKE` 400 bytes.
 7. **iOS banner from a blocked contact before the revoke lands.** Accepted for now (about a minute,
    no name, no text). Later: ask Apple for the notification-filtering entitlement
    (`com.apple.developer.usernotifications.filtering`), so a Notification Service Extension can
    open the hint and hide wakes from blocked contacts.
-8. **Token handover at contact setup.** A new contact cannot wake us until our first wake round has
-   run while the app is up (register at the relay, then `WakeTokens` to each device of the contact).
-   If the app is closed right after adding the contact, the token never reaches them and they cannot
-   wake us. Options (not implemented; the user decides):
-   - (a) carry the wake token in `ContactWelcome` / the contact request, so it arrives with the contact;
-   - (b) Android keeps the service up while `wake_outbox` is non-empty, bounded (for example 60 s);
-   - (c) both.
+8. ~~**Token handover at contact setup.**~~ Decided 2026-10-26 (user): option (a), plus code wake
+   tokens. See "Tokens at setup" and "Code wake tokens". Option (b) (Android keeps the service up
+   while `wake_outbox` is non-empty) is not built.
 9. **After a wake the process lingers.** Seen on device (2026-10-24): after `CoreService` stops, the
    process and its node keep running. Check that the node is stopped with the service in push mode.
 10. **Call audio after a push wake needs a device check.** When a call wake started `CoreService`,

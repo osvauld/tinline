@@ -13,7 +13,7 @@ use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message
 use crate::app::Target;
 use crate::media::{self, Class, Pixels};
 
-use crate::voice::{Player, Recorder};
+use crate::voice::{Player, RecTo, Recorder};
 use super::{blocking, notify, s, App, Msg, Screen};
 use crate::ChatEv;
 #[path = "compose_state.rs"]
@@ -152,8 +152,9 @@ pub(super) struct ChatState {
     pub confirm_delete: Option<String>,
     /// The message a reply quote jumped to, ringed for a moment.
     pub flash: Option<(String, std::time::Instant)>,
-    /// A voice message being recorded, and the file it goes to.
-    pub rec: Option<(Recorder, PathBuf)>,
+    /// A voice message being recorded, the file it goes to and the 1:1 chat or group it is for
+    /// (one recorder for both).
+    pub rec: Option<(Recorder, PathBuf, RecTo)>,
     /// The voice message playing (or paused), by message id.
     pub player: Option<(String, Player)>,
     /// Decrypted voice files by message id, for playing again; removed when the app quits.
@@ -990,30 +991,42 @@ impl App {
                 }
                 return self.find_scroll();
             }
+            // One recorder for the open 1:1 chat or group (the group composer uses these too).
             Cm::RecStart => {
-                if self.chat.peer.is_none() || self.chat.rec.is_some() {
+                if self.chat.rec.is_some() {
                     return Task::none();
+                }
+                let Some(to) = RecTo::of(self.chat.peer.as_deref(), self.live.open.as_deref()) else { return Task::none() };
+                if let RecTo::Group(_) = to {
+                    // As for text: a member of an admins-only group (or one who left) cannot post.
+                    if !self.live.can_post() || self.live.admins_only_locked() {
+                        return Task::none();
+                    }
                 }
                 self.chat.player = None;
                 let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
                 let path = voice_dir().join(format!("rec-{stamp}.ogg"));
                 match Recorder::start(&path) {
-                    Ok(r) => self.chat.rec = Some((r, path)),
+                    Ok(r) => self.chat.rec = Some((r, path, to)),
                     Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_record", &[("error", &(e).to_string())])),
                 }
             }
             Cm::RecCancel => {
-                if let Some((r, _)) = self.chat.rec.take() {
+                if let Some((r, _, _)) = self.chat.rec.take() {
                     r.cancel();
                 }
             }
             Cm::RecSend => {
-                let (Some((rec, path)), Some(peer)) = (self.chat.rec.take(), self.chat.peer.clone()) else {
+                let Some((rec, path, to)) = self.chat.rec.take() else {
                     return Task::none();
                 };
                 match rec.finish() {
                     Ok(Some(info)) => {
                         let p = path.to_string_lossy().into_owned();
+                        let peer = match to {
+                            RecTo::Peer(peer) => peer,
+                            RecTo::Group(gid) => return self.live_post_voice(gid, p, info.waveform),
+                        };
                         return self.send_task(peer, move |src, peer| {
                             let r = src.send_voice(peer, p.clone(), info.duration_ms, info.waveform);
                             let _ = std::fs::remove_file(p);
@@ -1159,7 +1172,11 @@ impl App {
                 if self.chat.player.as_ref().is_some_and(|(_, p)| p.finished()) {
                     self.chat.player = None;
                 }
-                if self.chat.rec.as_ref().is_some_and(|(r, _)| r.elapsed_ms() >= crate::voice::MAX_MS) {
+                // Leaving the conversation drops its recording (it never goes to another chat).
+                if self.chat.rec.as_ref().is_some_and(|(_, _, to)| !to.is_open(self.chat.peer.as_deref(), self.live.open.as_deref())) {
+                    return self.update_chat(Cm::RecCancel);
+                }
+                if self.chat.rec.as_ref().is_some_and(|(r, _, _)| r.elapsed_ms() >= crate::voice::MAX_MS) {
                     return self.update_chat(Cm::RecSend);
                 }
             }

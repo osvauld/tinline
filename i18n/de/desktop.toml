@@ -2351,9 +2351,6 @@ text = "Über WLAN und mobile Daten"
 [profile_online_now]
 text = "Gerade online"
 
-[profile_only_the_selected_account]
-text = "Nur das ausgewählte Konto ist auf diesem Computer online. Ein Wechsel pausiert das andere: Es bekommt keine Anrufe, bis du es wieder auswählst."
-
 [profile_only_this_device_has]
 text = "Nur dieses Gerät hat dein Konto. Verknüpfe ein weiteres, um eine zweite Kopie deiner Chats zu haben. Deine Wiederherstellungswörter holen dein Konto zurück, nicht deine Nachrichten."
 
@@ -2368,9 +2365,6 @@ text = "Open-Source-Lizenzen"
 
 [profile_open_this_link]
 text = "Diesen Link öffnen?"
-
-[profile_paused_tap_to_switch]
-text = "Pausiert · zum Wechseln tippen"
 
 [profile_people_see_when_youve]
 text = "Andere sehen, wenn du ihre Nachrichten gelesen hast"

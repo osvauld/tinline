@@ -32,6 +32,16 @@ pub fn kind_of(k: &ItemKind) -> GroupItemKind {
     }
 }
 
+fn blob_state(core: &GroupCore, gid: &str, blob: &ImageRef) -> GroupImageState {
+    use super::engine::images::ImgState;
+    match core.image_state(gid, blob) {
+        ImgState::Ready => GroupImageState::Ready,
+        ImgState::Loading => GroupImageState::Loading,
+        ImgState::Remote => GroupImageState::Remote,
+        ImgState::Failed => GroupImageState::Failed,
+    }
+}
+
 pub fn parse_dev(hexs: &str) -> Result<[u8; 32], Error> {
     hex::decode(hexs).ok().and_then(|b| b.try_into().ok()).ok_or_else(|| Error::Protocol("bad device id".into()))
 }
@@ -104,12 +114,13 @@ impl GroupRt {
                 size: img.size,
                 mime: img.mime.clone(),
                 preview: img.preview.clone(),
-                state: match core.image_state(gid, img) {
-                    super::engine::images::ImgState::Ready => GroupImageState::Ready,
-                    super::engine::images::ImgState::Loading => GroupImageState::Loading,
-                    super::engine::images::ImgState::Remote => GroupImageState::Remote,
-                    super::engine::images::ImgState::Failed => GroupImageState::Failed,
-                },
+                state: blob_state(core, gid, img),
+            }),
+            voice: i.voice.as_ref().map(|v| GroupVoice {
+                duration_ms: v.duration_ms,
+                waveform: v.waveform.clone(),
+                size: v.size,
+                state: blob_state(core, gid, &v.as_blob()),
             }),
         })
     }
@@ -237,6 +248,7 @@ impl GroupRt {
             text: String::new(),
             reply_to: None,
             image: None,
+            voice: None,
             before_removal: false,
             peer: entry.peer,
             counter: entry.counter,

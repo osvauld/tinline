@@ -91,7 +91,7 @@ impl Node {
     /// `next` of the previous page. Names come with the first page only. Fails `Locked` while
     /// locked.
     pub fn search(&self, query: String, limit: u32, cursor: Option<String>) -> Result<SearchResults, Error> {
-        self.inner.search(&query, limit, cursor.as_deref(), SCAN_BUDGET)
+        self.open().search(&query, limit, cursor.as_deref(), SCAN_BUDGET)
     }
 
     /// Find in chat: the same search inside one conversation (`conv` is the contact's DID, our
@@ -99,7 +99,7 @@ impl Node {
     /// `search`; `names` is empty. A conversation the chat list does not show, or a group this
     /// device does not hold, has no hits.
     pub fn search_in(&self, kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>) -> Result<SearchResults, Error> {
-        self.inner.search_in(kind, &conv, &query, limit, cursor.as_deref(), SCAN_BUDGET, find::DROP_BUDGET, &mut FindStats::default())
+        self.open().search_in(kind, &conv, &query, limit, cursor.as_deref(), SCAN_BUDGET, find::DROP_BUDGET, &mut FindStats::default())
     }
 }
 
@@ -116,7 +116,7 @@ impl Node {
     /// `search` with another per-call posting budget.
     #[doc(hidden)]
     pub fn search_with_budget_for_test(&self, query: String, limit: u32, cursor: Option<String>, budget: u32) -> Result<SearchResults, Error> {
-        self.inner.search(&query, limit, cursor.as_deref(), budget as usize)
+        self.open().search(&query, limit, cursor.as_deref(), budget as usize)
     }
 
     /// `search_in` with other budgets (this conversation's postings, other conversations'
@@ -125,7 +125,7 @@ impl Node {
     #[allow(clippy::too_many_arguments)]
     pub fn search_in_with_budget_for_test(&self, kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>, budget: u32, drop_budget: u32) -> Result<(SearchResults, u32, u32), Error> {
         let mut st = FindStats::default();
-        let r = self.inner.search_in(kind, &conv, &query, limit, cursor.as_deref(), budget as usize, drop_budget as usize, &mut st)?;
+        let r = self.open().search_in(kind, &conv, &query, limit, cursor.as_deref(), budget as usize, drop_budget as usize, &mut st)?;
         Ok((r, st.segs_opened as u32, st.dropped as u32))
     }
 
@@ -133,7 +133,7 @@ impl Node {
     /// between the store commit and the index write.
     #[doc(hidden)]
     pub fn search_skip_next_writes_for_test(&self, n: u32) {
-        self.inner.search.skip_next_writes(n);
+        self.open().search.skip_next_writes(n);
     }
 
     /// Puts a stale post row (as an older version of the post, or a post no longer shown) into
@@ -141,8 +141,9 @@ impl Node {
     /// reconcile has to fix it.
     #[doc(hidden)]
     pub fn search_plant_group_post_for_test(&self, group_id: String, post_id: String, text: String) -> Result<(), Error> {
-        let me = self.inner.me()?;
-        let ix = self.inner.search_ix().ok_or(Error::Locked)?;
+        let slot = self.open();
+        let me = slot.me()?;
+        let ix = slot.search_ix().ok_or(Error::Locked)?;
         let day = crate::chat::doc::day_of(crate::node::now_ms() as i64);
         let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: day.clone(), id: post_id, at: 1, author: me.id.did().to_string(), text };
         Ok(ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day, prev: None, vv: Vec::new() }])?)
@@ -151,14 +152,14 @@ impl Node {
     /// Pretends today is `day` (`YYYY-MM-DD`) for the search index (`None`: the real clock).
     #[doc(hidden)]
     pub fn search_set_today_for_test(&self, day: Option<String>) -> Result<(), Error> {
-        self.inner.search_ix().ok_or(Error::Locked)?.set_today(day.as_deref());
+        self.open().search_ix().ok_or(Error::Locked)?.set_today(day.as_deref());
         Ok(())
     }
 
     /// Shrinks the hot-tier and segment caps of the search index.
     #[doc(hidden)]
     pub fn search_set_caps_for_test(&self, hot_max_docs: u32, seg_max_docs: u32) -> Result<(), Error> {
-        self.inner.search_ix().ok_or(Error::Locked)?.set_limits(|l| {
+        self.open().search_ix().ok_or(Error::Locked)?.set_limits(|l| {
             l.hot_max_docs = hot_max_docs as usize;
             l.seg_max_docs = seg_max_docs as usize;
         });
@@ -169,7 +170,7 @@ impl Node {
     /// segments).
     #[doc(hidden)]
     pub fn search_maintain_for_test(&self) -> Result<(u32, u32, u32), Error> {
-        let ix = self.inner.search_ix().ok_or(Error::Locked)?;
+        let ix = self.open().search_ix().ok_or(Error::Locked)?;
         ix.maintain(Mode::Force)?;
         let s = ix.stats();
         Ok((s.hot_docs as u32, s.segs as u32, s.seg_docs as u32))

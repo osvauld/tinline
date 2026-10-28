@@ -197,6 +197,16 @@ func callOr(_ s: String, _ fallback: String) -> String {
     s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? fallback : s
 }
 
+extension CallInfo {
+    /// Who is calling, as the ring shows it: "Asha → Work" when the call is for another account of this device
+    /// (`account`, docs/multi-online.md; answering switches to it), else the caller's name. `fallback` when they have none.
+    func ringName(_ fallback: String) -> String {
+        let who = callOr(peerName, fallback)
+        guard let account else { return who }
+        return tr("call_for_account", who, callOr(account.name, "?"))
+    }
+}
+
 // MARK: - signal (SignalBars.kt, Support.kt)
 
 /**

@@ -76,6 +76,7 @@ mod lifecycle;
 mod outgoing;
 mod ownsync;
 mod persist;
+mod request_out;
 mod rotation;
 mod run;
 mod signal;
@@ -96,6 +97,7 @@ pub use self::hooks::BoxFuture;
 pub use self::lifecycle::*;
 pub use self::ownsync::*;
 pub use self::persist::*;
+pub use self::request_out::{Attempt, QUEUE_RETRY_SECS, SendErr};
 pub use self::rotation::*;
 pub use self::signal::*;
 pub use self::sink::*;
@@ -248,8 +250,75 @@ pub struct NodeCtx {
     /// Private endpoint rotation (`rotation.rs`).
     pub rotation: RotationRt,
     pub video: call_video::NodeVideo,
+    /// Tells this account's slot apart from the other accounts' on the same device (the call
+    /// floor's holder). Unique in the process.
+    pub slot_id: u64,
+    /// One 1:1 call at a time across every account slot of the device (`docs/multi-online.md`);
+    /// a node of its own unless the slots share one (`with_floor`).
+    pub floor: Arc<CallFloor>,
+    /// How many times `start` bound an endpoint (tests: a switch must not restart one).
+    pub binds: AtomicU32,
     hooks: OnceLock<Weak<dyn NodeHooks>>,
 }
+
+/// Who holds the device's one 1:1 call: the slot whose `Live` has a call (or a ringing one).
+/// Taken under that slot's `live` lock, released when its call and waiting call are both gone.
+/// It also knows every slot on it (`join_floor`), for what keeps the others' calls out besides
+/// a 1:1 call: a group call, and a wake ring (one ring at a time across the accounts).
+#[derive(Default)]
+pub struct CallFloor {
+    holder: Mutex<Option<u64>>,
+    members: Mutex<Vec<Weak<NodeCtx>>>,
+}
+
+impl CallFloor {
+    /// Takes the floor for `slot`; false while another slot holds it.
+    pub fn take(&self, slot: u64) -> bool {
+        let mut h = self.holder.lock();
+        match *h {
+            Some(other) if other != slot => false,
+            _ => {
+                *h = Some(slot);
+                true
+            }
+        }
+    }
+
+    pub fn release(&self, slot: u64) {
+        let mut h = self.holder.lock();
+        if *h == Some(slot) {
+            *h = None;
+        }
+    }
+
+    pub fn held_by_other(&self, slot: u64) -> bool {
+        self.holder.lock().is_some_and(|h| h != slot)
+    }
+
+    fn join(&self, ctx: &Arc<NodeCtx>) {
+        let mut m = self.members.lock();
+        m.retain(|w| w.strong_count() > 0);
+        m.push(Arc::downgrade(ctx));
+    }
+
+    /// The other slots on this floor (the list is not held while they are asked).
+    fn others(&self, slot: u64) -> Vec<Arc<NodeCtx>> {
+        self.members.lock().iter().filter_map(Weak::upgrade).filter(|c| c.slot_id != slot).collect()
+    }
+
+    /// The user is in a group call on another slot's account. May be asked with the asking
+    /// slot's `live` held (lock order `live -> group-call session`, as `in_group_call`).
+    pub fn group_call_elsewhere(&self, slot: u64) -> bool {
+        self.others(slot).iter().any(|c| c.hooks().is_some_and(|h| h.in_group_call()))
+    }
+
+    /// Another slot rings for a wake (a ring the user has not declined).
+    pub fn wake_ring_elsewhere(&self, slot: u64) -> bool {
+        self.others(slot).iter().any(|c| c.wake_ringing_any())
+    }
+}
+
+static NEXT_SLOT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 impl NodeCtx {
     pub fn new(handle: tokio::runtime::Handle, accounts: AccountDirs, shared: Shared, sink: Arc<dyn NodeSink>) -> Self {
@@ -274,8 +343,23 @@ impl NodeCtx {
             devlist: Default::default(),
             rotation: Default::default(),
             video: Default::default(),
+            slot_id: NEXT_SLOT.fetch_add(1, Ordering::Relaxed),
+            floor: Default::default(),
+            binds: AtomicU32::new(0),
             hooks: OnceLock::new(),
         }
+    }
+
+    /// Shares `floor` with the other account slots of this device (before the `Arc`; then
+    /// `join_floor`).
+    pub fn with_floor(mut self, floor: Arc<CallFloor>) -> Self {
+        self.floor = floor;
+        self
+    }
+
+    /// Makes this slot one the others on its floor ask about group calls and wake rings.
+    pub fn join_floor(self: &Arc<Self>) {
+        self.floor.join(self);
     }
 
     /// Installs the engines' side of the seam (p2pcore does it right after building its `Arc`).

@@ -105,7 +105,7 @@ impl Node {
     /// The mark for every conversation whose last message is ours (the chat list).
     /// Blocking. Re-read after `on_chat_changed` / `on_delivery_changed` / `on_message_changed`.
     pub fn chat_list_receipts(&self) -> Result<Vec<ChatReceiptRow>, Error> {
-        Ok(self.inner.chat.chat_list_receipts()?)
+        Ok(self.open().chat.chat_list_receipts()?)
     }
 
     /// `chat_message_receipts` for every message of one UTC day page, oldest first (as

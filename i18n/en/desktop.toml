@@ -482,8 +482,36 @@ note = "Shared label, used in several places (profile, view)."
 text = "You’re in the call"
 note = "Shared label, used in several places (gcall, group_live)."
 
-
 # ---- App-level notices and notifications
+
+[accounts_ring_name]
+text = "{name} → {account}"
+note = "Desktop, several accounts on one computer: who is calling or wrote, and which of your accounts on this computer it is for (not the one open now). Title of the incoming call screen and of a message notification. {name} is the caller's or sender's name; {account} is the name of your account. Keep the arrow."
+
+[accounts_is_calling_you_on]
+text = "{name} is calling you on {account}"
+note = "Desktop, incoming call notification for one of your other accounts on this computer (not the one open now). {name} is the caller's name; {account} is the name of your account."
+
+[accounts_someone_is_calling_you_on]
+text = "Someone is calling you on {account}"
+note = "Desktop, incoming call notification for one of your other accounts when the caller has no name. {account} is the name of your account."
+
+[accounts_new_message]
+text = "New message"
+note = "Desktop, body of a notification for a message to one of your other accounts on this computer (not the one open now). Its title names the sender and the account."
+
+[accounts_tap_to_switch]
+text = "Tap to switch"
+note = "Desktop, settings account list: small line under another account of this computer. Clicking the row switches to it."
+
+[accounts_new_tap_to_switch]
+one = "{count} new message · tap to switch"
+other = "{count} new messages · tap to switch"
+note = "Desktop, settings account list: small line under another account of this computer that has unread messages. Clicking the row switches to it."
+
+[accounts_every_account_stays_online]
+text = "Every account here stays online on this computer, so calls and messages reach each of them. An account with a passphrase joins once you’ve unlocked it."
+note = "Desktop, settings: explanation under the account list. Accounts other than the open one keep running in the background."
 
 [app_a_group]
 text = "A group"
@@ -629,7 +657,6 @@ note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
 text = "You’re on a call. Hang up before switching accounts."
 note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
 
-
 # ---- Audio devices
 
 [audio_disconnected_switching_to_the]
@@ -647,7 +674,6 @@ note = "Desktop, audio devices (in audio.rs, maintain). {label} is a value fille
 [audio_unavailable]
 text = "{label} unavailable: {error}"
 note = "Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated."
-
 
 # ---- Calls (voice and video)
 
@@ -866,7 +892,6 @@ note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
 [call_your_voice_is_encrypted]
 text = " Your voice is encrypted on this device and only decrypted on {name}’s."
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
-
 
 # ---- Chats
 
@@ -1167,7 +1192,6 @@ note = "Desktop, chats (in chat_view.rs, chat_list)."
 text = "You’re offline. Messages send when you’re back online."
 note = "Desktop, chats (in chat_view.rs, strip_text)."
 
-
 # ---- Contact detail
 
 [contact_added]
@@ -1229,7 +1253,6 @@ note = "Desktop, contact detail (in view.rs, detail_view)."
 [contact_when]
 text = "When"
 note = "Desktop, contact detail (in view.rs, detail_view)."
-
 
 # ---- Sign-in and gate screens
 
@@ -1317,7 +1340,6 @@ note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 text = "You’re offline"
 note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 
-
 # ---- Group calls
 
 [gcall_a_call_host_is]
@@ -1384,7 +1406,6 @@ note = "Desktop, group calls (in gcall.rs, gcall_update)."
 [gcall_youre_the_call_host]
 text = "You’re the call host"
 note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
-
 
 # ---- Groups
 
@@ -2342,7 +2363,6 @@ note = "Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a valu
 text = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
 
-
 # ---- Home, sidebar and call list
 
 [home_add]
@@ -2384,7 +2404,6 @@ note = "Desktop, home, sidebar and call list (in view.rs, calls_list). {what} is
 [home_their_card_is_on]
 text = "Their card is on your clipboard."
 note = "Desktop, home, sidebar and call list (in view.rs, offer_bar)."
-
 
 # ---- Linking devices
 
@@ -2695,7 +2714,6 @@ note = "Desktop, linking devices (in link_view.rs, link_screen)."
 [link_your_passphrase]
 text = "Your passphrase"
 note = "Desktop, linking devices (in link_view.rs, link_screen)."
-
 
 # ---- Profile and settings
 
@@ -3169,10 +3187,6 @@ note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
 text = "Online now"
 note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
 
-[profile_only_the_selected_account]
-text = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
-note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
-
 [profile_only_this_device_has]
 text = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
@@ -3192,10 +3206,6 @@ note = "Desktop, profile and settings (in profile_view.rs, about_page)."
 [profile_open_this_link]
 text = "Open this link?"
 note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
-
-[profile_paused_tap_to_switch]
-text = "Paused · tap to switch"
-note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
 
 [profile_people_see_when_youve]
 text = "People see when you’ve read their messages"
@@ -3621,7 +3631,6 @@ note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
 text = "Your settings for {name}"
 note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
 
-
 # ---- Settings (older page)
 
 [settings_account]
@@ -3728,7 +3737,6 @@ note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
 text = "Your camera stays off until you turn it on in the call"
 note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
 
-
 # ---- Shell: sidebar, search, contacts
 
 [shell_accepting_lets_you_message]
@@ -3831,7 +3839,6 @@ note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_li
 [shell_wants_to_add_you]
 text = "Wants to add you as a contact"
 note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
-
 
 # ---- Sign-up, restore and add contact
 
@@ -4380,7 +4387,6 @@ note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero
 text = "You’re offline. Once you’re connected, try again."
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
 
-
 # ---- Status line
 
 [status_calling]
@@ -4399,7 +4405,6 @@ note = "Desktop, status line (in mark.rs, status_look)."
 text = "No connection"
 note = "Desktop, status line (in mark.rs, status_look)."
 
-
 # ---- System tray
 
 [tray_quit]
@@ -4409,7 +4414,6 @@ note = "Desktop, system tray (in tray.rs, build)."
 [tray_tinline]
 text = "Tinline - {status}"
 note = "Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app."
-
 
 # ---- Video
 

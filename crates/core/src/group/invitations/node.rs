@@ -11,7 +11,7 @@ use crate::node::{Node, now_ms};
 #[uniffi::export]
 impl Node {
     pub fn set_group_invitation_events(&self, events: Arc<dyn GroupInvitationEvents>) {
-        *self.inner.group.inv_events.lock() = Some(Arc::new(GroupInvitationEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.group_invitation = Some(Arc::new(GroupInvitationEventsAdapter(events))));
     }
 
     /// Admins: invites contacts `dids` to `group_id` over the private channel (one fresh signed
@@ -19,7 +19,7 @@ impl Node {
     /// blocked by us or blocks us, or is already a member. Asking again while an invitation to the
     /// same person is pending returns it (and retries its delivery).
     pub fn group_invite_contacts(&self, group_id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.admin_core(&group_id)?;
             let mut dids = dids;
@@ -87,19 +87,20 @@ impl Node {
 
     /// Invitations to groups we got (from DIDs we do not block), newest first.
     pub fn group_invitations_incoming(&self) -> Result<Vec<GroupInvitation>, Error> {
-        let blocked = self.inner.shared.lock().state.blocked.clone();
-        Ok(self.inner.group.inv_list(move |r| !r.outgoing && !blocked.contains(&r.inviter))?)
+        let slot = self.open();
+        let blocked = slot.shared.lock().state.blocked.clone();
+        Ok(slot.group.inv_list(move |r| !r.outgoing && !blocked.contains(&r.inviter))?)
     }
 
     /// Invitations we sent for `group_id`, newest first.
     pub fn group_invitations_outgoing(&self, group_id: String) -> Result<Vec<GroupInvitation>, Error> {
-        Ok(self.inner.group.inv_list(move |r| r.outgoing && r.group == group_id)?)
+        Ok(self.open().group.inv_list(move |r| r.outgoing && r.group == group_id)?)
     }
 
     /// Joins the group of an incoming invitation (blocks until joined, like `group_join`; the same
     /// checks). `Rejected` if it was answered already or ran out.
     pub fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.group_core()?;
             let r = core.store.inv(&id)?.ok_or(Error::NotFound)?;
@@ -125,9 +126,10 @@ impl Node {
     /// Declines an incoming invitation; the inviter sees Declined (delivered when it is next
     /// reachable).
     pub fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
-        let core = self.inner.group.group_core()?;
+        let slot = self.open();
+        let core = slot.group.group_core()?;
         let r = core.store.inv(&id)?.ok_or(Error::NotFound)?;
-        let mut r = self.inner.group.inv_current(&core, r);
+        let mut r = slot.group.inv_current(&core, r);
         if r.outgoing {
             return Err(Error::Rejected("that is our own invitation".into()));
         }
@@ -136,9 +138,9 @@ impl Node {
         }
         r.state = GroupInvitationState::Declined;
         r.owe = true;
-        self.inner.group.inv_save(&core, &r);
-        self.inner.group.invites_kick(r.inviter.clone());
-        Ok(self.inner.group.inv_view(&r))
+        slot.group.inv_save(&core, &r);
+        slot.group.invites_kick(r.inviter.clone());
+        Ok(slot.group.inv_view(&r))
     }
 }
 
@@ -147,7 +149,8 @@ impl Node {
 impl Node {
     /// The group endpoint ids of the hosts the token of invitation `id` names.
     pub fn group_invitation_hosts_for_test(&self, id: String) -> Vec<String> {
-        let Ok(core) = self.inner.group.group_core() else {
+        let slot = self.open();
+        let Ok(core) = slot.group.group_core() else {
             return vec![];
         };
         let row = core

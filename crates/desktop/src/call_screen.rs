@@ -56,7 +56,8 @@ impl App {
             let who: El = column![
                 self.profile_avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
                 Space::new().height(22),
-                container(semi(c.info.peer_name.clone(), 28.0, t.ink).wrapping(iced::widget::text::Wrapping::None))
+                // Ringing for another account of this computer: "Asha → Work" (answering switches to it).
+                container(semi(if incoming { crate::accounts_bg::ring_name(&c.info.peer_name, c.info.account.as_ref()) } else { c.info.peer_name.clone() }, 28.0, t.ink).wrapping(iced::widget::text::Wrapping::None))
                     .height(34).width(Fill).center_x(Fill).clip(true),
                 Space::new().height(6),
                 container(if active && !reconnecting { mono(status, 20.0, t.ink) } else { semi(status, 17.0, t.ink) })

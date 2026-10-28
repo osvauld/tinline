@@ -2368,9 +2368,6 @@ text = "En Wi-Fi et en données mobiles"
 [profile_online_now]
 text = "En ligne"
 
-[profile_only_the_selected_account]
-text = "Seul le compte sélectionné est en ligne sur cet ordinateur. Changer met l’autre en pause : il ne reçoit aucun appel jusqu’à ce que vous le sélectionniez à nouveau."
-
 [profile_only_this_device_has]
 text = "Seul cet appareil a votre compte. Associez-en un autre pour garder une deuxième copie de vos discussions. Vos mots de récupération ramènent votre compte, pas vos messages."
 
@@ -2385,9 +2382,6 @@ text = "Licences open source"
 
 [profile_open_this_link]
 text = "Ouvrir ce lien ?"
-
-[profile_paused_tap_to_switch]
-text = "En pause · touchez pour changer"
 
 [profile_people_see_when_youve]
 text = "Les autres voient quand vous avez lu leurs messages"

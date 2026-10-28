@@ -82,7 +82,7 @@ impl NodeCtx {
             let _ = tokio::time::timeout(LINGER, conn.closed()).await;
             return Ok(());
         }
-        let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true, video: video_call };
+        let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true, video: video_call, account: None };
         self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false, me.epoch) {
             Ok(c) => c,

@@ -194,7 +194,8 @@ object Notifications {
 
     fun incoming(c: Context, call: CallInfo) {
         if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
-        ring(c, call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.video,
+        // A call to a background account names it ("Asha → Work"); answering switches to it (the core does).
+        ring(c, AccountLabels.ringName(call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.account?.name), call.video,
             answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
             decline = service(c, CoreService.ACTION_DECLINE, 22))
     }

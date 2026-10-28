@@ -18,7 +18,7 @@ impl Node {
     /// until it expires.
     pub fn group_revoke_invite(&self, link: String) -> Result<(), Error> {
         let sc = ShortCode::parse(&link).ok_or_else(|| Error::Protocol("not a group invite link".into()))?;
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.group_core()?;
             if let Some(row) = core.store.code(&sc.code)? {
@@ -60,7 +60,7 @@ impl Node {
     /// The token a link's host hands out (`codec` bytes), without joining.
     pub fn group_fetch_token_for_test(&self, link: String) -> Option<Vec<u8>> {
         let sc = ShortCode::parse(&link)?;
-        let inner = self.inner.clone();
+        let inner = self.open();
         let t = self.block_on(async move { inner.group.group_fetch(&sc).await }).ok()?.ok()?;
         cryptography::codec::to_bytes(&t).ok()
     }
@@ -82,7 +82,7 @@ impl Node {
     /// (refusal reasons) until it closes.
     pub fn group_guess_codes_for_test(&self, link: String, n: u32) -> Vec<String> {
         let Some(sc) = ShortCode::parse(&link) else { return vec![] };
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let mut out = Vec::new();
             let Ok(core) = inner.group.group_core() else { return out };

@@ -162,7 +162,7 @@ impl NodeCtx {
     /// Runs `f` while no 1:1 call is active and none can begin (a group call starting).
     pub fn with_no_call<R>(&self, f: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
         let live = self.live.lock();
-        if live.call.is_some() || live.waiting.is_some() {
+        if live.call.is_some() || live.waiting.is_some() || self.floor.held_by_other(self.slot_id) {
             return Err(Error::InCall);
         }
         let r = f();

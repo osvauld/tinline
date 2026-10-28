@@ -36,19 +36,19 @@ pub struct VideoChoice {
 impl Node {
     /// The current call's live overrides (`None` without a call with video).
     pub fn video_live(&self) -> Option<VideoLive> {
-        self.inner.current_video_call()?.video.live()
+        self.open().current_video_call()?.video.live()
     }
 
     /// The send codecs for this call: Auto (what the call negotiated) and each encoder this device
     /// has, with whether the peer takes it now. Empty without a call with video.
     pub fn video_live_codecs(&self) -> Vec<VideoChoice> {
-        self.inner.current_video_call().map(|c| c.video.live_codecs()).unwrap_or_default()
+        self.open().current_video_call().map(|c| c.video.live_codecs()).unwrap_or_default()
     }
 
     /// The decoder choices for the codec arriving now (see `VideoLive::recv_decoder`). Empty
     /// without a call with video.
     pub fn video_live_decoders(&self) -> Vec<VideoChoice> {
-        self.inner.current_video_call().map(|c| c.video.live_decoders()).unwrap_or_default()
+        self.open().current_video_call().map(|c| c.video.live_decoders()).unwrap_or_default()
     }
 
     /// Applies `live` to the current call at once: the size and cap to the running sender, a new
@@ -56,7 +56,7 @@ impl Node {
     /// call as it was. `NotFound` without a call, `Protocol` without video or for a choice the
     /// call can't take (the message says why).
     pub fn set_video_live(&self, live: VideoLive) -> Result<(), Error> {
-        let call = self.inner.current_video_call().ok_or(Error::NotFound)?;
+        let call = self.open().current_video_call().ok_or(Error::NotFound)?;
         Ok(call.video.set_live(live)?)
     }
 }

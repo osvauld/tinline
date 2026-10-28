@@ -169,13 +169,13 @@ sink_adapter!(
 
 /// Nodes reachable by the platform's direct frame calls (Android: `video_jni`), by handle: the
 /// platform never holds a pointer into Rust, so a stale or bogus handle is just "no node".
-static FRAME_PORTS: Mutex<Vec<(u64, std::sync::Weak<Inner>)>> = Mutex::new(Vec::new());
+static FRAME_PORTS: Mutex<Vec<(u64, std::sync::Weak<crate::node::Hub>)>> = Mutex::new(Vec::new());
 static NEXT_FRAME_PORT: AtomicU64 = AtomicU64::new(1);
 
-/// The node behind a `Node::video_frame_handle`, while it lives.
+/// The open account of the node behind a `Node::video_frame_handle`, while it lives.
 #[cfg_attr(not(target_os = "android"), allow(dead_code))]
 pub(crate) fn frame_port(handle: u64) -> Option<Arc<Inner>> {
-    FRAME_PORTS.lock().iter().find(|(h, _)| *h == handle).and_then(|(_, w)| w.upgrade())
+    FRAME_PORTS.lock().iter().find(|(h, _)| *h == handle).and_then(|(_, w)| w.upgrade()).map(|hub| hub.open())
 }
 
 #[cfg(test)]

@@ -8,15 +8,16 @@ use crate::group::rotation::RotationPolicy;
 impl Node {
     /// This device's group endpoint rotation policy (the defaults until one is set).
     pub fn group_rotation_policy(&self) -> Result<RotationPolicy, Error> {
-        let core = self.inner.group.group_core()?;
-        Ok(self.inner.group.group_rotation_policy(&core)?)
+        let slot = self.open();
+        let core = slot.group.group_core()?;
+        Ok(slot.group.group_rotation_policy(&core)?)
     }
 
     /// Stores this device's rotation policy. `Rejected` below `RotationPolicy::MIN_INTERVAL_MS`,
     /// with a jitter longer than the interval, or with an empty announce window. The next
     /// rotation still counts from the last one, so saving the setting never postpones it.
     pub fn set_group_rotation_policy(&self, policy: RotationPolicy) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
+        let core = self.open().group.group_core()?;
         core.store.set_rotation_policy(&policy)?;
         core.kick_pub();
         Ok(())
@@ -25,8 +26,9 @@ impl Node {
     /// On a host: when this device's group endpoint will rotate next (unix ms; periodic). `None`
     /// while it hosts no chat and no calls.
     pub fn group_endpoint_rotation_due(&self) -> Option<u64> {
-        let core = self.inner.group.group_core().ok()?;
-        self.inner.group.group_rotation_due(&core).ok().flatten()
+        let slot = self.open();
+        let core = slot.group.group_core().ok()?;
+        slot.group.group_rotation_due(&core).ok().flatten()
     }
 
     /// Rotates this device's group endpoint now (a Settings "change it now"): the next periodic

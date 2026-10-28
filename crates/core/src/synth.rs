@@ -45,7 +45,7 @@ impl Node {
     pub fn synth_contact_for_test(&self, did: String, name: String) -> Result<(), Error> {
         let (pid, pdev) = peer(&did).ok_or(Error::NotFound)?;
         let pubdev = cryptography::signature::public_key(&pdev);
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let me = inner.me()?;
             let now = crate::node::now();
@@ -63,7 +63,7 @@ impl Node {
     /// of an attachment whose metadata is recorded. Returns the message id.
     #[doc(hidden)]
     pub fn synth_dm_for_test(&self, with: String, author: String, text: String, at: i64, file: Option<(String, u64)>) -> Result<String, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         let file = file.map(|(name, size)| FileRef {
             hash: hex::encode(cryptography::rng::bytes::<32>()),
             key: hex::encode(cryptography::rng::bytes::<32>()),
@@ -82,40 +82,40 @@ impl Node {
 
     #[doc(hidden)]
     pub fn synth_group_new_for_test(&self, name: String) -> Result<SynthGroup, Error> {
-        Ok(self.inner.group.synth_group_new(&name)?)
+        Ok(self.open().group.synth_group_new(&name)?)
     }
 
     #[doc(hidden)]
     pub fn synth_group_add_for_test(&self, g: &mut SynthGroup, did: String, name: String, at: i64) -> Result<usize, Error> {
-        Ok(self.inner.group.synth_group_add(g, &did, peer(&did).ok_or(Error::NotFound)?, &name, at)?)
+        Ok(self.open().group.synth_group_add(g, &did, peer(&did).ok_or(Error::NotFound)?, &name, at)?)
     }
 
     /// Buffers a post by member `idx`.
     #[doc(hidden)]
     pub fn synth_group_post_for_test(&self, g: &mut SynthGroup, idx: usize, at: i64, text: String) -> Result<(), Error> {
-        Ok(self.inner.group.synth_group_write(g, idx, at, Body::Post { text, reply_to: None, image: None })?)
+        Ok(self.open().group.synth_group_write(g, idx, at, Body::Post { text, reply_to: None, image: None })?)
     }
 
     #[doc(hidden)]
     pub fn synth_group_flush_for_test(&self, g: &mut SynthGroup) -> Result<(), Error> {
-        Ok(self.inner.group.synth_group_flush(g)?)
+        Ok(self.open().group.synth_group_flush(g)?)
     }
 
     /// Only the meta doc's and/or only the day docs' buffered records go through `apply`.
     #[doc(hidden)]
     pub fn synth_group_flush_part_for_test(&self, g: &mut SynthGroup, meta: bool, days: bool) -> Result<(), Error> {
-        Ok(self.inner.group.synth_group_flush_part(g, meta, days)?)
+        Ok(self.open().group.synth_group_flush_part(g, meta, days)?)
     }
 
     #[doc(hidden)]
     pub fn synth_remote_open_for_test(&self, gid: String, did: String) -> Result<SynthRemote, Error> {
-        Ok(self.inner.group.synth_remote_open(&gid, &did, peer(&did).ok_or(Error::NotFound)?)?)
+        Ok(self.open().group.synth_remote_open(&gid, &did, peer(&did).ok_or(Error::NotFound)?)?)
     }
 
     /// A remote member's post arrives; returns (apply, after) times.
     #[doc(hidden)]
     pub fn synth_remote_post_for_test(&self, r: &mut SynthRemote, text: String, at: i64) -> Result<(Duration, Duration), Error> {
-        Ok(self.inner.group.synth_remote_post(r, &text, at)?)
+        Ok(self.open().group.synth_remote_post(r, &text, at)?)
     }
 
     /// Switch for the background search reconcile (on open); off = the test calls
@@ -128,7 +128,7 @@ impl Node {
     /// Runs the search reconcile now and waits; returns (1:1 part, groups part).
     #[doc(hidden)]
     pub fn search_reconcile_now_for_test(&self) -> Result<(Duration, Duration), Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move { inner.search_reconcile_now().await })?
     }
 }

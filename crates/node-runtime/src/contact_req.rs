@@ -70,6 +70,10 @@ pub struct ReqRt {
     pub delivering: Mutex<HashSet<String>>,
     /// Tests: welcome every good hello at once, as before requests.
     pub auto_accept: AtomicBool,
+    /// DIDs with a queued request being retried (`request_out.rs`).
+    pub sending: Mutex<HashSet<String>>,
+    /// Tests: the setup dial timeout in ms (0: `DIAL_TIMEOUT`).
+    pub dial_ms: std::sync::atomic::AtomicU64,
 }
 
 pub fn request_view(did: &str, r: &HeldRequest) -> ContactRequest {
@@ -112,6 +116,11 @@ impl NodeCtx {
         let stored = stored_contact(&new, req.relay.clone(), calls_allowed);
         let contact = Contact::from(&stored);
         let out = WelcomeOut { welcome, device: req.device, relay: req.relay.clone(), from: Some(on), until: now + WELCOME_GRACE };
+        // Their hello carried their wake token for us: kept with the contact, so the Welcome
+        // can wake their phone (`welcome_kick`).
+        let handover = crate::push::handover_in(&req.hello).cloned();
+        // Drawn once, so the durable copy and the one in memory agree if this creates the state.
+        let fresh = wake::WakeState::new(proto::new_device_secret());
         let apply = |st: &mut crate::store::State| {
             st.redeemed.insert(proto::redeemed_key(&new.did, &new.redeemed_nonce));
             st.contact_requests.remove(did);
@@ -120,7 +129,12 @@ impl NodeCtx {
                 // They hold our previous key from the ticket: they are owed the new one.
                 st.list_outbox.insert(did.to_string());
             }
-            apply_contact(st, stored.clone(), new.device, false)
+            apply_contact(st, stored.clone(), new.device, false)?;
+            if let Some(h) = &handover {
+                st.wake.get_or_insert_with(|| fresh.clone());
+                crate::push::hold_handover(st, &new.did, new.device, h);
+            }
+            Ok::<(), Error>(())
         };
         apply(&mut next)?;
         if let Some(b) = &backing {
@@ -149,6 +163,7 @@ impl NodeCtx {
         let taken = match found {
             Some((did, req)) if self.refusal_for(&did).is_none() => match proto::accept_contact_welcome(&me.id, &req.pending, &msg, remote, now * 1000) {
                 Ok(new) => {
+                    let handover = crate::push::handover_in(&msg).cloned();
                     let stored = stored_contact(&new, req.relay.clone(), req.calls_allowed);
                     let contact = Contact::from(&stored);
                     let applied = {
@@ -158,7 +173,12 @@ impl NodeCtx {
                         }
                         s.state.sent_requests.remove(&did);
                         // Not a way past a block made since (refused above; checked again here).
-                        apply_contact(&mut s.state, stored, new.device, false)
+                        let applied = apply_contact(&mut s.state, stored, new.device, false);
+                        // Their wake token for us came with the Welcome.
+                        if applied.is_ok() && let Some(h) = &handover {
+                            crate::push::hold_handover(&mut s.state, &did, new.device, h);
+                        }
+                        applied
                     };
                     match applied {
                         Ok(()) => {
@@ -216,7 +236,14 @@ impl NodeCtx {
                     this.welcome_done(&did, &out, me.epoch, "gave up delivering the welcome: the address it was asked at has closed").await;
                     break;
                 };
-                match this.deliver_welcome(&ep, &did, &out).await {
+                // Our wake token for them goes with it (`docs/push.md` "Tokens at setup").
+                // (`out` itself stays as queued: `welcome_done` matches it.)
+                let h = match round {
+                    0 => this.await_wake_handover(&did, crate::push::HANDOVER_WAIT).await,
+                    _ => this.wake_handover(&did),
+                };
+                let send = WelcomeOut { welcome: crate::push::with_handover(out.welcome.clone(), h), ..out.clone() };
+                match this.deliver_welcome(&ep, &did, &send).await {
                     Ok(true) => {
                         this.welcome_done(&did, &out, me.epoch, "welcome delivered").await;
                         // A list owed to them waited for this (`lists_kick`).
@@ -227,9 +254,14 @@ impl NodeCtx {
                         this.welcome_done(&did, &out, me.epoch, "welcome refused (no request of theirs)").await;
                         break;
                     }
-                    Err(e) => tracing::debug!("welcome to {}: {e}", crate::short(&did)),
+                    Err(e) => {
+                        tracing::debug!("welcome to {}: {e}", crate::short(&did));
+                        // Their phone may be asleep: wake it with the token from their hello.
+                        this.wake_unreached(&did, &[out.device]).await;
+                    }
                 }
-                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
+                let pause = this.fast_redial(&did).unwrap_or_else(|| crate::wire::retry_pause(&RETRY_SECS, round));
+                tokio::time::sleep(pause).await;
                 round += 1;
             }
             this.requests.delivering.lock().remove(&did);
@@ -249,7 +281,11 @@ impl NodeCtx {
 
     /// `Ok(true)` taken, `Ok(false)` refused for good; `Err` try again later.
     async fn deliver_welcome(self: &Arc<Self>, ep: &iroh::Endpoint, did: &str, out: &WelcomeOut) -> Result<bool, Error> {
-        let conn = crate::wire::dial_call(ep, addr_for(&out.device, out.relay.as_deref())?).await?;
+        let addr = addr_for(&out.device, out.relay.as_deref())?;
+        let conn = tokio::time::timeout(self.setup_dial_timeout(), crate::version::connect(ep, addr, &crate::version::CALL))
+            .await
+            .map_err(|_| Error::Timeout)??;
+        self.wake_reached(did);
         let reply = crate::wire::exchange(conn, &out.welcome).await?;
         match reply {
             Some(Msg::WelcomeTaken) => Ok(true),

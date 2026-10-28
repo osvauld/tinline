@@ -75,6 +75,18 @@ pub enum Body {
     /// Owner or admin: only the owner and admins may post (a channel), or everyone again.
     /// Judged per post as of its frontier, like membership (U11).
     AdminsOnly { active: bool },
+    /// A voice message post: the recording as one sealed blob, like a post's image, with the
+    /// duration and waveform 1:1 voice messages carry. Shown, judged and stored exactly like a
+    /// `Post` (day docs, U11 visibility, admins-only); see [`Body::is_post`]. A new variant at
+    /// the end, so records written before it still decode.
+    Voice { reply_to: Option<String>, voice: VoiceRef },
+}
+
+impl Body {
+    /// A conversation post (`Post` or `Voice`): lives in a day doc and is judged per post.
+    pub fn is_post(&self) -> bool {
+        matches!(self, Body::Post { .. } | Body::Voice { .. })
+    }
 }
 
 /// Largest image blob a post may name, plaintext bytes (public group §5: senders stay under
@@ -113,6 +125,45 @@ impl ImageRef {
             && (1..=MAX_IMAGE_SIDE).contains(&self.h)
             && IMAGE_MIMES.contains(&self.mime.as_str())
             && self.preview.len() <= MAX_IMAGE_PREVIEW
+    }
+}
+
+/// The type of a voice message blob: Ogg Opus, 16 kHz mono, as 1:1 voice messages.
+pub const VOICE_MIME: &str = "audio/ogg";
+/// Largest voice blob a post may name, plaintext bytes: the cap every device's voice decoder
+/// applies to a file (1:1 voice messages have the same).
+pub const MAX_VOICE_BYTES: u64 = 16 * 1024 * 1024;
+/// Longest voice message a post may declare: what the voice decoder plays (30 minutes); the
+/// apps stop recording at 15.
+pub const MAX_VOICE_MS: u32 = 30 * 60 * 1000;
+/// Bars of a voice message's waveform (the 1:1 format: exactly 64; fewer is tolerated).
+pub const MAX_VOICE_BARS: usize = 64;
+
+/// The recording of a voice post. Sealed and fetched as an image is ([`ImageRef`]): `hash` is the
+/// ciphertext's BLAKE3, `key` the fresh per-blob key, `size` the plaintext length.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VoiceRef {
+    pub hash: [u8; 32],
+    pub key: [u8; 32],
+    pub size: u64,
+    pub duration_ms: u32,
+    /// Peaks 0..=255 for the bubble.
+    pub waveform: Vec<u8>,
+}
+
+impl VoiceRef {
+    /// Within the bounds every device checks (`Record::check_shape`).
+    pub fn well_formed(&self) -> bool {
+        self.size > 0
+            && self.size <= MAX_VOICE_BYTES
+            && (1..=MAX_VOICE_MS).contains(&self.duration_ms)
+            && self.waveform.len() <= MAX_VOICE_BARS
+    }
+
+    /// The blob as the image runtime keeps it (local rows only, never on the wire): the same
+    /// hash, key and size, `mime` = [`VOICE_MIME`], no picture shape.
+    pub fn as_blob(&self) -> ImageRef {
+        ImageRef { hash: self.hash, key: self.key, size: self.size, w: 0, h: 0, mime: VOICE_MIME.to_string(), preview: Vec::new() }
     }
 }
 
@@ -176,6 +227,7 @@ impl Record {
             {
                 bad
             }
+            Body::Voice { reply_to, voice } if reply_to.as_ref().is_some_and(|r| r.len() > 64) || !voice.well_formed() => bad,
             Body::Admin { member, .. } | Body::Flag { member } if member.len() > 200 => bad,
             Body::HostPermit { host, .. } | Body::CallHostPermit { host, .. } if host.len() > 200 => bad,
             _ => Ok(()),
