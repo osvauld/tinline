@@ -61,6 +61,8 @@ protocol GroupApi {
     // (blocking the first time).
     func fetchVoice(_ id: String, messageId: String) throws
     func voicePath(_ id: String, messageId: String) -> String?
+    /// Posts the recording at `path` (Ogg Opus from the 1:1 recorder); the core reads, checks and seals it.
+    func postVoice(_ id: String, path: String, waveform: Data) throws -> GroupMessage
 }
 
 extension GroupApi {
@@ -71,6 +73,7 @@ extension GroupApi {
     func acceptCallHost(_ id: String, accept: Bool) throws { throw GroupsUnsupported() }
     func fetchVoice(_ id: String, messageId: String) throws {}
     func voicePath(_ id: String, messageId: String) -> String? { nil }
+    func postVoice(_ id: String, path: String, waveform: Data) throws -> GroupMessage { throw GroupsUnsupported() }
 }
 
 struct GroupsUnsupported: Swift.Error {}
@@ -111,6 +114,7 @@ struct NodeGroupApi: GroupApi {
     func acceptCallHost(_ id: String, accept: Bool) throws { try node().groupAcceptCallHost(groupId: id, accept: accept) }
     func fetchVoice(_ id: String, messageId: String) throws { try node().groupFetchVoice(groupId: id, messageId: messageId) }
     func voicePath(_ id: String, messageId: String) -> String? { node().groupVoicePath(groupId: id, messageId: messageId) }
+    func postVoice(_ id: String, path: String, waveform: Data) throws -> GroupMessage { try node().groupPostVoice(groupId: id, path: path, waveform: waveform) }
 }
 
 /// A contact as the "Add members" picker sees it.
@@ -626,6 +630,19 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
         if t.isEmpty { return .failure(GroupFailure(tr("group_err_type_message"))) }
         do {
             let m = try api.post(id, text: t, replyTo: replyTo)
+            monitor.lock(); defer { monitor.unlock() }
+            write { if let o = _open, o.id == id { var n = o; n.messages = upsertGroupMessage(o.messages, m); _open = n } }
+            groupsOrKeep()
+            return .success(m)
+        } catch { return failed(error) }
+    }
+
+    /// Posts a finished recording (the 1:1 recorder's file), then deletes the file: the core keeps its own sealed copy.
+    /// Off the main thread (the core reads and seals it).
+    func postVoice(_ id: String, voice: RecordedVoice) -> GroupResult<GroupMessage> {
+        defer { try? FileManager.default.removeItem(atPath: voice.path) }
+        do {
+            let m = try api.postVoice(id, path: voice.path, waveform: voice.waveform)
             monitor.lock(); defer { monitor.unlock() }
             write { if let o = _open, o.id == id { var n = o; n.messages = upsertGroupMessage(o.messages, m); _open = n } }
             groupsOrKeep()

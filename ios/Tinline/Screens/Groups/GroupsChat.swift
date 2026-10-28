@@ -46,6 +46,8 @@ private struct GroupChatScreen: View {
     @State private var draft = ""
     @State private var replyTo: String?
     @State private var sending = false
+    /// The 1:1 hold-to-record mic and its bar, for voice posts (the file goes to `postVoice`).
+    @StateObject private var voice = VoiceRecState(canRecord: { !ChatHooks.callActive() })
     /// Unread posts when the group opened: where "n new messages" goes (the count is cleared as it opens).
     @State private var unreadAtOpen: Int
 
@@ -64,9 +66,17 @@ private struct GroupChatScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .groupsToasts(session)
         .task { calls.use(launcher) }
+        .task(id: id) {
+            let gid = id
+            voice.onSend = { [session] v in
+                session.exec({ session.ctl.postVoice(gid, voice: v) }) { res in
+                    if case .failure(let e) = res { session.say(e.message.groupsIfBlank(tr("chat_err_send_voice"))) }
+                }
+            }
+        }
         .task(id: id) { session.background { session.ctl.openGroup(id) } }
         .onAppear { GroupsOpenChat.current = id; GroupsOpenChat.onShown?(id) }
-        .onDisappear { session.ctl.close(id); if GroupsOpenChat.current == id { GroupsOpenChat.current = nil } }
+        .onDisappear { voice.cancel(); session.ctl.close(id); if GroupsOpenChat.current == id { GroupsOpenChat.current = nil } }
         .onChange(of: scenePhase) { _, phase in
             // In front of the user: its posts don't notify, and what was shown for it goes away.
             if phase == .active { GroupsOpenChat.current = id; GroupsOpenChat.onShown?(id) }
@@ -193,8 +203,10 @@ private struct GroupChatScreen: View {
             GroupsBlockedFooter(hint: tr("group_left_footer")) { EmptyView() }
         default:
             let r = replyTo.flatMap { rid in o.messages.first(where: { $0.id == rid }) }
+            // A member of an admins-only group gets no mic (the core would refuse the post after the recording).
+            let mayRecord = !d.adminsOnly || GroupText.isAdmin(d.myRole)
             GroupsComposer(
-                draft: $draft, placeholder: tr("group_message_placeholder"),
+                draft: $draft, placeholder: tr("group_message_placeholder"), voice: mayRecord ? voice : nil,
                 ctxTitle: r.map { $0.outgoing ? tr("group_replying_to_self") : tr("group_replying_to", groupsFirstName(session.name($0.authorDid, $0.authorName))) },
                 ctxText: r?.text ?? "", onCancelCtx: { replyTo = nil }
             ) {
@@ -616,6 +628,9 @@ private struct GroupsComposer: View {
     @FocusState private var focused: Bool
     @Binding var draft: String
     let placeholder: String
+    /// The 1:1 voice recorder: its mic takes the send button's slot while the field is empty, its bar the field's place
+    /// while recording. Nil: no mic.
+    var voice: VoiceRecState?
     let ctxTitle: String?
     let ctxText: String
     let onCancelCtx: () -> Void
@@ -639,22 +654,26 @@ private struct GroupsComposer: View {
                 .padding(.bottom, 6).padding(.trailing, 50)
             }
             HStack(alignment: .bottom, spacing: 6) {
-                TextField(placeholder, text: $draft, axis: .vertical).lineLimit(1...6)
-                    .font(.custom("Figtree", size: 15, relativeTo: .body)).foregroundStyle(tin.ink).tint(tin.grpAccentInk).focused($focused)
-                    .padding(.horizontal, 16).padding(.vertical, 11).frame(minHeight: 44)
-                    .background(tin.sf, in: shape)
-                    .overlay { shape.stroke(focused ? tin.grpAccent : tin.grpHairline, lineWidth: 1) }
-                    .background { if focused { shape.stroke(tin.grpAccentInk.opacity(0.14), lineWidth: 3) } }
-                    .animation(reduced ? nil : GroupsMotion.easeOut(GroupsMotion.switchT), value: focused)
-                // The same 48 pt slot whatever the state, so the composer row keeps its height on the first letter.
-                Button(action: onSend) {
-                    ZStack {
-                        Circle().fill(tin.grpAccent).frame(width: 44, height: 44)
-                        GroupsIconView(icon: GroupsIcons.send, size: 20, color: tin.grpOnAccent).padding(.trailing, 2)
-                    }
-                    .frame(width: 48, height: 48).opacity(empty ? 0.38 : 1).contentShape(Circle())
+                if let voice, voice.recording { VoiceRecordingBar(state: voice).frame(maxWidth: .infinity) } else {
+                    TextField(placeholder, text: $draft, axis: .vertical).lineLimit(1...6)
+                        .font(.custom("Figtree", size: 15, relativeTo: .body)).foregroundStyle(tin.ink).tint(tin.grpAccentInk).focused($focused)
+                        .padding(.horizontal, 16).padding(.vertical, 11).frame(minHeight: 44)
+                        .background(tin.sf, in: shape)
+                        .overlay { shape.stroke(focused ? tin.grpAccent : tin.grpHairline, lineWidth: 1) }
+                        .background { if focused { shape.stroke(tin.grpAccentInk.opacity(0.14), lineWidth: 3) } }
+                        .animation(reduced ? nil : GroupsMotion.easeOut(GroupsMotion.switchT), value: focused)
                 }
-                .buttonStyle(GroupsPressStyle()).disabled(empty).accessibilityLabel(tr("group_send"))
+                // The same 48 pt slot whatever the state, so the composer row keeps its height on the first letter.
+                if let voice, empty { VoiceMicButton(state: voice) } else {
+                    Button(action: onSend) {
+                        ZStack {
+                            Circle().fill(tin.grpAccent).frame(width: 44, height: 44)
+                            GroupsIconView(icon: GroupsIcons.send, size: 20, color: tin.grpOnAccent).padding(.trailing, 2)
+                        }
+                        .frame(width: 48, height: 48).opacity(empty ? 0.38 : 1).contentShape(Circle())
+                    }
+                    .buttonStyle(GroupsPressStyle()).disabled(empty).accessibilityLabel(tr("group_send"))
+                }
             }
         }
         .padding(.init(top: 8, leading: 10, bottom: 10, trailing: 10)).background(tin.bg)

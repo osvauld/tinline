@@ -214,8 +214,9 @@ final class VoiceCapture: @unchecked Sendable {
     func cancel() { halt(); core.cancel() }
 }
 
-/// Hold-to-record state for one composer. `onSend` gets the finished file. Drive it with `VoiceMicButton` and show
-/// `VoiceRecordingBar` in place of the text field while `recording`.
+/// Hold-to-record state for one composer (a 1:1 chat or a group). `onSend` gets the finished file. Drive it with
+/// `VoiceMicButton` and show `VoiceRecordingBar` in place of the text field while `recording`. One records at a time in
+/// the app, and starting stops the voice message playing.
 @MainActor
 final class VoiceRecState: ObservableObject {
     @Published private(set) var recording = false
@@ -229,6 +230,8 @@ final class VoiceRecState: ObservableObject {
     var onSend: (RecordedVoice) -> Void
     private let canRecord: () -> Bool
     private let makeCapture: () -> VoiceCapture?
+    /// The composer recording now, if any: a second one does not start.
+    private static weak var active: VoiceRecState?
 
     init(canRecord: @escaping () -> Bool = { true }, makeCapture: @escaping () -> VoiceCapture? = { VoiceCapture.start() }, onSend: @escaping (RecordedVoice) -> Void = { _ in }) {
         self.canRecord = canRecord; self.makeCapture = makeCapture; self.onSend = onSend
@@ -237,7 +240,10 @@ final class VoiceRecState: ObservableObject {
     /// False if the mic is busy (in a call) or could not be opened.
     func begin() -> Bool {
         if recording || !canRecord() { return false }
+        if let a = Self.active, a !== self, a.recording { return false }
         guard let c = makeCapture() else { return false }
+        Self.active = self
+        VoicePlayer.shared.stop()
         c.onLimit = { [weak self] in Task { @MainActor in self?.send() } }
         capture = c; recording = true; locked = false; cancelPull = 0; elapsedMs = 0
         ticker = Task { [weak self] in
