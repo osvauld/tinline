@@ -26,6 +26,15 @@ class WakeRingTest {
         assertEquals(WakeRingUi(a, "Maya", answered = true), repeat)
     }
 
+    /** 2026-10-28 moto: a repeat wake after Answer brought the ring back over "Connecting…". */
+    @Test fun onlyANewRingAlerts() {
+        assertTrue(WakeRingLogic.alerts(null, a))
+        val ring = WakeRingLogic.ring(null, a, "Maya")
+        assertFalse(WakeRingLogic.alerts(ring, a))
+        assertFalse(WakeRingLogic.alerts(WakeRingLogic.answered(ring), a))
+        assertTrue(WakeRingLogic.alerts(ring, b))
+    }
+
     @Test fun theEndOfTheRingClearsOnlyItsOwnContact() {
         val ring = WakeRingLogic.ring(null, a, "Maya")
         assertEquals(ring, WakeRingLogic.ended(ring, WakeRingLogic.callId(b)))
