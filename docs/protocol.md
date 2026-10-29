@@ -360,7 +360,8 @@ net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob 
 
 ### Own-device sync (ALPN `tinline/self/5`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, `/4` since postcard, see "Protocol versions")
 
-Frames: u32 BE length + postcard (`cryptography::codec`) of `SelfMsg` (16 MiB cap).
+Frames: u32 BE length + postcard (`cryptography::codec`) of `SelfMsg` (16 MiB cap; the first
+frame, the peer's `Auth`, is capped at 64 KiB, `node_runtime::frames::FIRST_FRAME`).
 
 - `Auth { attestation, relay, unlink }`: dialer first, acceptor answers. The acceptor runs
   `accept_self_hello` against its registry's tombstones. An unknown device with a valid attestation
@@ -759,9 +760,16 @@ messages (an older app fails to decode them, U18).
 - A contact keeps up to 8 devices (`proto::MAX_LIST_DEVICES`), each with its own relay hint
   (`ContactDevice { device, relay }`; the old single `relay` of a stored contact becomes the first
   device's hint when it loads). A call dials all of them at once, see "Calls to several devices".
-- An unauthenticated connection holds one of 24 slots (plus 8 reserved for contacts' devices)
+- An unauthenticated connection holds one of 24 slots (plus 8 reserved for devices of contacts
+  we do not block; a blocked contact's device is treated as a stranger's, `reserved_slot_for`)
   from accept until it becomes a call or a contact, refusals and their short linger included,
   and has 15 s in total to deliver a hello.
+- Before the peer is authenticated, no wire reads a frame over 64 KiB: the control stream's
+  `proto::MAX_FRAME`, the first frame of chat and own-device sessions (`FIRST_FRAME`), and on
+  the group endpoint a `Hello` / `Fetch` / `Moved` over 1 MiB (`group::wire::HELLO_FRAME`, room
+  for the version vectors of many writers). The header alone ends the connection; the body is
+  never waited for. The group endpoint also bounds connections that have not shown who they are
+  to 32 (`group::engine::MAX_PENDING_HELLOS`), refusing more at accept.
 - An active call that receives no media for 30 s ends with reason `connection_lost`. After
   1.5 s without media `CallStats.reconnecting` is true (the call is not over yet).
 - Calls are logged to `calls.json` (last 500, newest first; `recent_calls`, `calls_with`).

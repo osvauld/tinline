@@ -462,7 +462,7 @@ impl ChatRt {
             };
             let grant = grant.ok_or(Error::NotFound)?;
             writer.send(&self.auth_msg(me, grant)).await?;
-            let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+            let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::eof("peer closed"))?;
@@ -484,7 +484,7 @@ impl ChatRt {
             self.chat_admit(&did, &grant)?;
             (did, hint)
         } else {
-            let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+            let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::eof("peer closed before auth"))?;

@@ -136,10 +136,10 @@ impl Drop for TestDir {
 }
 
 /// One in-process node: a context over a loopback endpoint that serves the call ALPN.
-pub(super) struct T {
-    pub(super) ctx: Arc<NodeCtx>,
-    pub(super) me: Arc<Me>,
-    pub(super) ep: Endpoint,
+pub(crate) struct T {
+    pub(crate) ctx: Arc<NodeCtx>,
+    pub(crate) me: Arc<Me>,
+    pub(crate) ep: Endpoint,
     pub(super) relay: Arc<FakeRelay>,
     pub(super) rec: Arc<Rec>,
     pub(super) secret: [u8; 32],
@@ -148,7 +148,7 @@ pub(super) struct T {
 }
 
 impl T {
-    pub(super) fn did(&self) -> String {
+    pub(crate) fn did(&self) -> String {
         self.me.id.did().to_string()
     }
 
@@ -156,7 +156,7 @@ impl T {
         f(&self.ctx.shared.lock().state)
     }
 
-    pub(super) fn edit<R>(&self, f: impl FnOnce(&mut State) -> R) -> R {
+    pub(crate) fn edit<R>(&self, f: impl FnOnce(&mut State) -> R) -> R {
         f(&mut self.ctx.shared.lock().state)
     }
 
@@ -169,7 +169,7 @@ impl T {
     }
 }
 
-pub(super) async fn node(lookup: &MemoryLookup) -> T {
+pub(crate) async fn node(lookup: &MemoryLookup) -> T {
     node_with(lookup, State::default()).await
 }
 
@@ -252,7 +252,7 @@ pub(super) fn contact_of(other: &T, mine: &Identity, calls_allowed: bool) -> Sto
 use identity::Identity;
 
 /// `a` and `b` are contacts of each other (calls allowed both ways).
-pub(super) fn befriend(a: &T, b: &T) {
+pub(crate) fn befriend(a: &T, b: &T) {
     let ca = contact_of(b, &a.me.id, true);
     a.edit(|st| st.contacts.push(ca));
     let cb = contact_of(a, &b.me.id, true);

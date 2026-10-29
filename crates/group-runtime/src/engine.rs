@@ -80,6 +80,10 @@ pub fn own_content_core_for_test(
 }
 
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
+/// Incoming connections on the group endpoint that have not yet shown who they are (the
+/// handshake, then a `Hello` whose endpoint proof verifies, or a blob peer we know): more are
+/// refused at accept, as the private endpoint does with `node_runtime::MAX_PENDING_HELLOS`.
+pub const MAX_PENDING_HELLOS: usize = 32;
 /// How long a host waits for a removed member's pre-removal upload (U11).
 const REMOVED_UPLOAD_WAIT: Duration = Duration::from_secs(10);
 /// D12: a removed member may upload its pre-removal posts for this long after this host first
@@ -136,6 +140,8 @@ pub struct GroupRt {
     pub backfill_paused: AtomicBool,
     /// Pause between two day updates of the background sync, ms (0 = the default). Test knob.
     pub backfill_pause_ms: AtomicU64,
+    /// `MAX_PENDING_HELLOS` slots for connections on the group endpoint up to their hello.
+    pub hello_slots: Arc<tokio::sync::Semaphore>,
 }
 
 impl GroupRt {
@@ -165,6 +171,7 @@ impl GroupRt {
             fail_dials: Default::default(),
             backfill_paused: Default::default(),
             backfill_pause_ms: Default::default(),
+            hello_slots: Arc::new(tokio::sync::Semaphore::new(MAX_PENDING_HELLOS)),
         }
     }
 
