@@ -154,8 +154,24 @@ impl ChatRt {
         }
         let hub = self.chat_hub().await?;
         let hash = p.hash.parse::<Hash>().map_err(bad)?;
-        let _claim = hub.claim_owned(did, &hash).await;
+        let claim = hub.claim_owned(did, &hash).await;
         if hub.complete_size(&hash).await != Some(p.size) {
+            // Marked ready but the bytes are gone (the store's GC took them): mark it pending
+            // again and fetch it, rather than showing initials for good.
+            {
+                let s = self.shared.lock();
+                if s.epoch != epoch {
+                    return Err(Error::Locked);
+                }
+                let db = sealed(&s)?;
+                let marker = picture_marker(did, &p.hash);
+                if db.get(&marker).map_err(bad)?.as_deref() == Some(b"ready") {
+                    db.put(&marker, b"pending").map_err(bad)?;
+                }
+            }
+            drop(claim);
+            tracing::info!("profile picture of {did} was missing here; fetching it again");
+            self.profile_download(did.to_string());
             return Ok(None);
         }
         let cipher = hub.read_cipher(&hash).await?;
