@@ -50,6 +50,7 @@ pub fn msg_name(m: &Msg) -> &'static str {
         Msg::VideoCodec { .. } => "VideoCodec",
         Msg::WakeTokens { .. } => "WakeTokens",
         Msg::WakeTokensTaken => "WakeTokensTaken",
+        Msg::CallReady { .. } => "CallReady",
     }
 }
 

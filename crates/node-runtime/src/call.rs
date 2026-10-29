@@ -52,6 +52,9 @@ pub struct Call {
     /// An outgoing call still `Dialing` whose callee phone the relay took a wake for: the UI
     /// says "Waking their phone…" (`CallStats::waking`).
     pub waking: AtomicBool,
+    /// Legs still dialling, by callee device: a `CallReady` from that device hands its connection
+    /// and stream to the leg (`push/call_back.rs`), which sends the `CallHello` there.
+    pub dial_backs: Mutex<std::collections::HashMap<[u8; 32], oneshot::Sender<(Connection, Ctrl)>>>,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -133,7 +136,11 @@ impl Leg {
             Err(e) => return fail(&self.events, e.to_string()),
         };
         tracing::debug!("dialing {}", crate::short(&addr.id.to_string()));
-        let conn = match connect_leg(&self.ctx, &self.call, &self.ep, addr.clone(), &self.did, self.device.device, &mut self.cmds).await {
+        let (back_tx, mut back) = oneshot::channel();
+        self.call.dial_backs.lock().insert(self.device.device, back_tx);
+        let reached = connect_leg(&self.ctx, &self.call, &self.ep, addr.clone(), &self.did, self.device.device, &mut self.cmds, &mut back).await;
+        self.call.dial_backs.lock().remove(&self.device.device);
+        let (conn, back) = match reached {
             Ok(c) => c,
             Err(NotConnected::Failed(why)) => return fail(&self.events, why),
             // Told to stop before we even connected: nothing was sent, nothing to say.
@@ -141,11 +148,14 @@ impl Leg {
             // ...but the device was woken and rings from the wake alone: tell it.
             Err(NotConnected::Told(Some(msg))) => return self.deliver_late(addr, msg).await,
         };
-        let (send, recv) = match conn.open_bi().await {
-            Ok(s) => s,
-            Err(e) => return fail(&self.events, e.to_string()),
+        // The callee's dial-back brought its own stream; else we open one.
+        let mut ctrl = match back {
+            Some(ctrl) => ctrl,
+            None => match conn.open_bi().await {
+                Ok((send, recv)) => Ctrl::new(send, recv),
+                Err(e) => return fail(&self.events, e.to_string()),
+            },
         };
-        let mut ctrl = Ctrl::new(send, recv);
         if let Err(e) = ctrl.send(&self.hello).await {
             conn.close(0u32.into(), b"bye");
             return fail(&self.events, e.to_string());
@@ -257,7 +267,8 @@ async fn connect_leg(
     did: &str,
     device: [u8; 32],
     cmds: &mut mpsc::UnboundedReceiver<Msg>,
-) -> Result<Connection, NotConnected> {
+    back: &mut oneshot::Receiver<(Connection, Ctrl)>,
+) -> Result<(Connection, Option<Ctrl>), NotConnected> {
     use crate::push::{CALL_ATTEMPT_MS, CALL_EARLY_WAKE_MS, CALL_FIRST_DIAL_MS, CALL_REDIAL_MS, CALL_WAKE_DIAL_MS};
     let wakeable = ctx.can_wake(did, &device, wake::Kind::Call);
     let first = if wakeable { Duration::from_millis(CALL_FIRST_DIAL_MS) } else { DIAL_TIMEOUT };
@@ -275,9 +286,15 @@ async fn connect_leg(
     let early = tokio::time::sleep(Duration::from_millis(CALL_EARLY_WAKE_MS));
     tokio::pin!(early);
     let mut early_sent = !wakeable;
+    // A dropped sender (never, while the leg is registered) only disables the branch.
+    let mut back_open = true;
     let first_try = loop {
         tokio::select! {
             c = &mut first_dial => break c,
+            b = &mut *back, if back_open => match b {
+                Ok((conn, ctrl)) => return Ok((conn, Some(ctrl))),
+                Err(_) => back_open = false,
+            },
             // In its own task: the dial keeps going while the relay answers.
             _ = &mut early, if !early_sent => {
                 early_sent = true;
@@ -287,7 +304,7 @@ async fn connect_leg(
         }
     };
     let mut why = match first_try {
-        Ok(Ok(c)) => return Ok(c),
+        Ok(Ok(c)) => return Ok((c, None)),
         Ok(Err(e)) => e,
         Err(_) => Error::Timeout,
     };
@@ -300,6 +317,10 @@ async fn connect_leg(
         tokio::select! {
             _ = wake(ctx.clone(), call.clone(), did.to_string()) => {}
             m = cmds.recv() => return Err(NotConnected::Told(m)),
+            b = &mut *back, if back_open => match b {
+                Ok((conn, ctrl)) => return Ok((conn, Some(ctrl))),
+                Err(_) => back_open = false,
+            },
         }
         let attempt = tokio::time::Instant::now();
         if attempt >= until {
@@ -309,15 +330,23 @@ async fn connect_leg(
         let tried = tokio::select! {
             c = dial(limit, addr.clone()) => c,
             m = cmds.recv() => return Err(NotConnected::Told(m)),
+            b = &mut *back, if back_open => match b {
+                Ok((conn, ctrl)) => return Ok((conn, Some(ctrl))),
+                Err(_) => { back_open = false; continue; }
+            },
         };
         match tried {
-            Ok(Ok(c)) => return Ok(c),
+            Ok(Ok(c)) => return Ok((c, None)),
             Ok(Err(e)) => why = e,
             Err(_) => why = Error::Timeout,
         }
         tokio::select! {
             _ = tokio::time::sleep_until(attempt + Duration::from_millis(CALL_REDIAL_MS)) => {}
             m = cmds.recv() => return Err(NotConnected::Told(m)),
+            b = &mut *back, if back_open => match b {
+                Ok((conn, ctrl)) => return Ok((conn, Some(ctrl))),
+                Err(_) => back_open = false,
+            },
         }
     }
 }

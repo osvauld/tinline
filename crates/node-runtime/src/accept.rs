@@ -236,6 +236,10 @@ impl NodeCtx {
                 Ok(())
             }
             hello @ Msg::CallHello { .. } => self.incoming_call(conn, ctrl, hello, remote, &me, permit).await,
+            Msg::CallReady { attestation } => {
+                drop(permit);
+                self.call_ready_incoming(conn, ctrl, remote, attestation).await
+            }
             welcome @ Msg::ContactWelcome { .. } => {
                 // Their user accepted our request and they dialled back with the Welcome.
                 drop(permit);

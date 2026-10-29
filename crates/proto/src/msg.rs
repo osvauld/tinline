@@ -153,6 +153,14 @@ pub enum Msg {
         kinds: u8,
     },
     WakeTokensTaken,
+    /// The callee's dial-back after a `call` wake (`docs/push.md` "Calls"), the first message of
+    /// a connection it opens to the caller on the calls ALPN: "I am reachable here". The caller
+    /// answers on the same stream with its `CallHello` when it is dialling this device, else
+    /// `Reject`. Authenticated by the attestation (= the connection's device); carries no token,
+    /// since the caller is the one who wants this connection.
+    CallReady {
+        attestation: SignedAttestation,
+    },
 }
 
 /// A wake token handed over inside the contact setup (`ContactHello` / `ContactWelcome`): the

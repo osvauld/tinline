@@ -433,3 +433,45 @@ async fn wake_w14_a_device_key_rotation_keeps_the_token_working() {
     assert_eq!(b.ctx.on_wake(&fresh(&b, &a, Kind::Msg)).unwrap(), WakeAction::DialBack { did: a.did() });
     assert_eq!(kicks.0.lock().len(), 1);
 }
+
+/// 2026-10-28 (moto): chat worked, but the caller's call dials never reached the phone, which rang
+/// from the wake with nothing following. The woken phone dials back and the call runs on its
+/// connection (`call_back.rs`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_woken_callee_dials_back_a_caller_that_cannot_reach_it() {
+    let lookup = MemoryLookup::new();
+    let (a, b, _kicks) = pair(&lookup).await;
+    // B moves to a new port and nobody can look it up: A's dials go nowhere, B can still reach A.
+    b.ep.close().await;
+    bring_up(&b.ctx, b.secret, &lookup).await;
+    lookup.remove_endpoint_info(iroh::PublicKey::from_bytes(&b.me.device).unwrap());
+    let h = fresh(&b, &a, Kind::Call);
+    let (bctx, caller, woke) = (b.ctx.clone(), a.did(), Arc::new(AtomicBool::new(false)));
+    let woke2 = woke.clone();
+    *a.relay.on_wake.lock() = Some(Arc::new(move |_, k| {
+        if k == Kind::Call && !woke2.swap(true, Ordering::SeqCst) {
+            assert_eq!(bctx.on_wake(&h).unwrap(), WakeAction::Ring { did: caller.clone() });
+        }
+    }));
+
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("the call wake is sent", || woke.load(Ordering::SeqCst)).await;
+    eventually("the call reaches B over B's own connection", || b.rec.incoming.lock().len() == 1).await;
+    assert_eq!(b.rec.incoming.lock()[0].call_id, info.call_id);
+    assert!(!b.ctx.wake_ringing(&a.did()), "the call took the wake ring over");
+    eventually("the caller hears Ringing", || states(&a).contains(&CallState::Ringing)).await;
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+    eventually("the call ends on B", || matches!(b.rec.states.lock().last(), Some(CallState::Ended { .. }))).await;
+}
+
+/// A dial-back to a caller that is not calling us is refused, and the ring goes on as before.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_dial_back_to_a_caller_that_is_not_calling_changes_nothing() {
+    let lookup = MemoryLookup::new();
+    let (a, b, _kicks) = pair(&lookup).await;
+    assert!(matches!(b.ctx.on_wake(&fresh(&b, &a, Kind::Call)).unwrap(), WakeAction::Ring { .. }));
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    assert!(b.ctx.wake_ringing(&a.did()), "still ringing from the wake");
+    assert!(b.rec.incoming.lock().is_empty());
+    assert!(a.rec.incoming.lock().is_empty(), "a CallReady is no call for the caller");
+}
