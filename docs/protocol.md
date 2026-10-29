@@ -471,6 +471,19 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
   two ticks on our messages only once the contact holds them (each message of ours is ticked against
   the writer ID it was created under, recorded when written or when it arrives: `mo/` in
   docs/chat.md).
+- `DmReceiptHello { days: [(doc, vv)] }`, `DmReceipts { doc, vv, update }`, `DmReceiptAck { doc, vv }`
+  (appended `SelfMsg` variants, unsigned frames; only after both `Hello`s carried the marker
+  `cap/dm-receipts/v1` with an empty vector, so an older own device never receives one). `doc` =
+  `dm/{pair}/{day}`; the payload is the original signed receipt-ledger ops of that day (the
+  `tinline/chat/6` ledger), never re-signed. Hello: held days with receipts, newest first, at most
+  1024 (more: `too many receipt days`); vectors at most 64 KiB / 4096 writers. The receiver admits
+  exactly as from the contact's own session (issuer DID signature under its writer ID, issuer = that
+  contact or our DID, Delivered/Read, a day we hold) plus: the conversation's contact is in good
+  standing (no block either way). A refused `DmReceipts` is logged and dropped, the ack says what
+  the receiver holds, the session continues. Pushed when a ledger grows (`!receipts/{doc}` dirty
+  mark). docs/chat.md section 8. The Hello catalog now reserves four marker slots (content,
+  history, group receipts, dm receipts), so `Hello.docs` stays within an older peer's
+  `MAX_OWN_DOCS + 4`.
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.

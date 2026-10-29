@@ -1,8 +1,8 @@
 # 1:1 message receipts: runtime issuance (M3) and chat/6 exchange (M4)
 
 Status: **implemented in `feature/receipt-runtime`, core only, not merged**. 1:1 (DM)
-conversations only. Group message receipts, own-device receipt replication and the
-desktop/Android displays are NOT done (see "Not done" and the UI handoff below).
+conversations only. Group message receipts are NOT done (see "Not done" and the UI handoff
+below). Own-device receipt replication landed later (`fix/own-device-receipts`, step 6).
 The chat wire bump to `tinline/chat/6` needs the user's OK before it reaches `dev`.
 
 ## What now happens in the real core runtime
@@ -43,6 +43,16 @@ The chat wire bump to `tinline/chat/6` needs the user's OK before it reaches `de
    own statements. "You" has no recipients. After an import commits statements covering
    our shown outgoing version, the engine raises `ChatEvents::on_message_changed`.
 
+6. **Own devices (`cap/dm-receipts/v1` on `tinline/self/5`).** The ledgers replicate across
+   our own devices as the original ops: `DmReceiptHello` at session start (held days with
+   receipts, <= 1024), `DmReceipts { doc, vv, update }` with what the peer lacks (same
+   bounded exporter), `DmReceiptAck`; pushed live via the `!receipts/{doc}` dirty mark when
+   a contact frame, our pump or another own device adds statements. Admission is
+   `import_direct` with the conversation's contact (so the same DID/writer/kind/day rules)
+   plus a contact in good standing; a refused frame is logged and dropped. Our own
+   statements replicate too (another device relays them to the contact; the pump sees them
+   as account coverage). Then the same `on_message_changed` events. docs/chat.md section 8.
+
 ## Exact version identity
 
 `receipts::store::messages::dm_version(doc, rec)` = BLAKE3 (receipt message domain) over
@@ -81,8 +91,9 @@ evidence. `ReceiptLevel` never reads them. Apps must not merge the two; see hand
   therefore met on desktop only; Android needs a device/emulator demonstration.
 - Group message receipts: no issuance, exchange or visibility yet (needs group store
   transaction seam, member admission at first acceptance, group/2 frames via hosts).
-- Own-device replication of receipt ledgers (a laptop does not see receipts its phone
-  received; each install issues/collects its own).
+- Own-device replication only lists the newest 1024 held days with receipts at session start;
+  an older day that gains a statement while no session is up waits until it changes again
+  with a session up (statements still arrive from the contact itself).
 - Closed days (older than 8 days, snapshot blob only) are skipped by read intents.
 - No per-session aggregate scheduler/quota; ledgers and outbox have no retention quota
   (by decision: keep all copies until M7 shard signing).

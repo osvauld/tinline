@@ -79,4 +79,13 @@ pub enum SelfMsg {
     /// The sender's wake token for the receiver (`docs/push.md` "Own devices"): `None` when it has
     /// none (no push target), so the receiver drops an old one. Never logged.
     OwnWake { token: Option<String>, exp_ms: u64 },
+    // Appended; only after cap/dm-receipts/v1 (`engine::dm_receipts`). `doc` = `dm/{pair}/{day}`.
+    /// Our signed DM receipt-ledger frontier per held day, `(doc, VersionVector::encode)`.
+    DmReceiptHello { days: Vec<(String, Vec<u8>)> },
+    /// Original native receipt-ledger ops the peer lacks (the contact's and our account's
+    /// DID-signed statements, never re-signed); `vv` = the sender's whole frontier of that day.
+    DmReceipts { doc: String, vv: Vec<u8>, update: Vec<u8> },
+    /// What the receiver holds of that day's ledger now (authoritative; a refused frame is resent
+    /// on the next trigger).
+    DmReceiptAck { doc: String, vv: Vec<u8> },
 }

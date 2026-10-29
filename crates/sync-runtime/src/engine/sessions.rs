@@ -273,6 +273,10 @@ impl SyncRt {
             VersionVector::default().encode(),
         ));
         docs.push((own_wake::CAPABILITY.into(), VersionVector::default().encode()));
+        docs.push((
+            dm_receipts::CAPABILITY.into(),
+            VersionVector::default().encode(),
+        ));
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
@@ -330,6 +334,11 @@ impl SyncRt {
                             }
                             peer.receipts.enabled = receipts;
                             peer.own_wake.enabled = own_wake::supported(&docs);
+                            let dm = dm_receipts::supported(&docs);
+                            if peer.hello && dm != peer.dm_receipts.enabled {
+                                return Err(Error::Protocol("own dm receipts renegotiation".into()));
+                            }
+                            peer.dm_receipts.enabled = dm;
                             for (name, vv) in docs {
                                 let Some(vv) = Self::peer_vv_of(&vv) else { continue };
                                 if name == DOC_NAME {
@@ -468,6 +477,9 @@ impl SyncRt {
                         message @ (SelfMsg::GroupReceiptGet { .. } | SelfMsg::GroupReceiptPage { .. }) => {
                             group_receipts::handle(&self, me, &remote, &mut peer, message, writer).await?;
                         }
+                        message @ (SelfMsg::DmReceiptHello { .. } | SelfMsg::DmReceipts { .. } | SelfMsg::DmReceiptAck { .. }) => {
+                            dm_receipts::handle(&self, &mut peer, message, writer).await?;
+                        }
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
                     self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
@@ -476,6 +488,8 @@ impl SyncRt {
                     if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     if full {
                         self.push_all_chat(me, &remote, &mut peer, writer).await?;
+                        // After the shards: receipts attach only to days the peer holds.
+                        peer.dm_receipts.start(&self, writer).await?;
                         self.chat.chat_resume_all();
                     }
                     if peer.hello {
@@ -509,6 +523,8 @@ impl SyncRt {
                                 self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
+                            } else if let Some(doc) = dm_receipts::marked(&name) {
+                                peer.dm_receipts.push(&self, doc, writer).await?;
                             } else if let Some((gid, _)) = group_documents::parse_doc(&name) {
                                 peer.receipts.refresh(&gid);
                                 if peer.group_contents {

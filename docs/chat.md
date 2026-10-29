@@ -435,6 +435,35 @@ ack covers it (exactly as before). Another of our devices shows a message writte
 `Delivered` once it holds it, which means "held by your devices"; it has no counter for it and does
 not know whether the contact has it. "You" items are always `Delivered`.
 
+The drawn mark (`ReceiptTick`, section 9) comes from the contact's **signed** statements, and those
+now reach every device of ours: the signed receipt ledgers cross the own-device link too
+(`SelfMsg::DmReceipt*`, below and `docs/protocol.md`). So when the laptop relayed a message and got
+the contact's signed read, the phone that wrote it shows read as well.
+
+### Signed receipts across our own devices (`cap/dm-receipts/v1`)
+- Negotiated by a marker in `Hello.docs`; a device without it gets none of these frames. After
+  both `Hello`s and after the shards, each side sends `DmReceiptHello{days:[(dm/{pair}/{day},
+  receipt-ledger vv)]}` for held days with receipts (newest shard days first, at most 1024), and
+  answers the other's hello with `DmReceipts{doc, vv, update}`: the original native ledger ops the
+  peer lacks (the contact's and our account's statements, **never re-signed**; 256 KiB / 64 ops per
+  frame, 16 frames per pass). The receiver replies `DmReceiptAck{doc, vv}` (authoritative).
+- Live: a statement the contact sends us (`tinline/chat/6`), one we sign, or one an own device
+  relays marks `!receipts/{doc}` dirty, and every own-device session pushes what its peer lacks;
+  an unconnected device is owed a sync and dialled, as for shards.
+- Admission is the contact session's (`MessageReceipts::import_direct`): each statement proven by
+  its issuer's DID signature under the issuer's writer ID, issuer = that conversation's contact or
+  our own account, kinds Delivered/Read only, scope = that pair and day, a day we hold. On top, the
+  conversation must be ours with a contact in good standing (a contact, neither side blocking);
+  "You" has no receipts. A relaying own device adds no authority: it cannot forge the contact's
+  statement, and one it signs itself is ours (shared account key), which never counts as the
+  contact's. A refused frame is logged (`rejected own-device receipts of ...`), nothing is stored,
+  and the session goes on.
+- Our own statements replicate too, on purpose: another device then relays them to the contact
+  (`chat/6` admits our account's statements from any of our sessions) while the signing device
+  sleeps, and its pump counts them as account coverage instead of signing the same versions again.
+- After a committed import the same events fire as for the contact's frames
+  (`on_message_changed` for our covered messages, which also re-reads the chat-list mark).
+
 ### Files and voice
 The blob is ciphertext addressed by hash, so any holder can serve it. A device serves a blob to
 a contact only for a conversation with that contact (unchanged); **to our own devices it serves
@@ -493,6 +522,8 @@ Full design, limits and validation: [message receipt runtime slice](design/messa
   never upgraded by receipts. Both apps draw the mark from the core's `ReceiptTick`
   (clock, check = signed delivered, double check = signed read) and show signer/device
   provenance in the message menu ([UI](design/message-receipt-ui-handoff.md)).
-- Not yet: receipts across our own devices, group message receipts, a user setting to
-  disable read receipts (open product question).
+- Our own devices exchange the signed ledgers too (section 8, "Signed receipts across our own
+  devices"), so every device of the sender shows the contact's signed ticks.
+- Not yet: group message receipts, a user setting to disable read receipts (open product
+  question).
 
