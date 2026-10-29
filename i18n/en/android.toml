@@ -96,10 +96,6 @@ note = "Gold status: no group host is online, so my posts are saved and sent lat
 text = "{name} asked this phone to host {group}"
 note = "Card title in a group chat. {name} is the first name of the admin who asked, {group} the group name."
 
-[groups_host_ask_body]
-text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin."
-note = "Explanation under the host request card in a group chat."
-
 [groups_host_here]
 text = "Host here"
 note = "Button on the host request card: this phone agrees to host the group."
@@ -274,10 +270,6 @@ note = "Accessibility label of the call button while a group call runs."
 [groups_chat_call_start]
 text = "Start group call"
 note = "Accessibility label of the call button when no call runs."
-
-[groups_chat_no_call_host]
-text = "No call host yet: an admin can appoint one in Group info"
-note = "Snackbar when I tap the dimmed call button of a group without a call host."
 
 [groups_chat_info]
 text = "Group info"
@@ -521,7 +513,7 @@ text = "Create invite link"
 note = "Row on Group info (admins) that opens the group invite link page."
 
 [groupsb_create_link_nohost]
-text = "Appoint a host first. A link names one host."
+text = "Set up a host first. A link names one host."
 note = "Second line of the Create invite link row while the group has no host."
 
 [groupsb_create_link_valid]
@@ -596,10 +588,6 @@ note = "Role pill in a member's sheet."
 [groupsb_host]
 text = "Host"
 note = "Pill or icon label for a member who hosts the group (stores it and passes posts on)."
-
-[groupsb_call_host]
-text = "Call host"
-note = "Pill, icon label and section name for a member or device that carries the group's calls."
 
 [groupsb_leave_group]
 text = "Leave group"
@@ -719,98 +707,10 @@ note = "Name of my own device in a list of hosts."
 text = "This group has no host. Posts wait until a host is appointed."
 note = "Status line of the Hosts section when no device hosts the group."
 
-[groupsb_hosts_online]
-one = "{count} host online. Posts go through right away."
-other = "{count} hosts online. Posts go through right away."
-note = "Status line of the Hosts section when a host is reachable. {count} is the number of hosts online."
-
-[groupsb_hosts_offline]
-text = "No host is online. Your posts are saved and send when one is."
-note = "Status line of the Hosts section when hosts exist but none is online."
-
-[groupsb_also_hosts_calls]
-text = "also hosts calls"
-note = "Added after Online or Offline on a host row (joined with a middle dot) when that device also hosts calls."
-
-[groupsb_remove_host_desc]
-text = "Remove {device} as host"
-note = "Screen-reader label of the Remove button on a host row. {device} is the device's name."
-
-[groupsb_cancel_host_desc]
-text = "Cancel host request to {device}"
-note = "Screen-reader label of the Cancel button on a pending host request. {device} is the device's name."
-
-[groupsb_waiting_accept]
-text = "Waiting to accept"
-note = "Second line of a row for a device that has been asked to host and has not yet accepted."
-
-[groupsb_offered_host]
-text = "Offered to host · needs an admin"
-note = "Second line of a row for a device that offered to host and waits for an admin to appoint it."
-
-[groupsb_appoint]
-text = "Appoint"
-note = "Button on a host offer row for an admin to appoint the device as host."
-
-[groupsb_hosts_note]
-text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group."
-note = "Explanation under the Hosts section."
-
-[groupsb_hosts_note_admin]
-text = "Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
-note = "Extra sentence added after the Hosts explanation for admins (a space is put before it)."
-
-# ---- call hosts
-[groupsb_callhosts_sec]
-text = "Call hosts"
-note = "Section heading on Group info for the devices that carry the group's calls."
-
-[groupsb_callhosts_none]
-text = "This group has no call host. Nobody can start a call until an admin appoints one."
-note = "Status line of the Call hosts section when there is none."
-
-[groupsb_callhosts_ready]
-one = "{count} call host ready. Calls start through it."
-other = "{count} call hosts ready. Calls start through them."
-note = "Status line of the Call hosts section. {count} is the number of call hosts that are ready."
-
-[groupsb_callhosts_offline]
-text = "No call host is available right now. A call can’t start until one is back."
-note = "Status line of the Call hosts section when none is available."
-
-[groupsb_callhosts_me]
-text = "This phone carries the calls you start."
-note = "Status line of the Call hosts section when this phone is the only call host."
-
-[groupsb_remove_callhost_desc]
-text = "Remove {device} as call host"
-note = "Screen-reader label of the Remove button on a call host row. {device} is the device's name."
-
-[groupsb_cancel_callhost_desc]
-text = "Cancel call host request to {device}"
-note = "Screen-reader label of the Cancel button on a pending call host request. {device} is the device's name."
-
-[groupsb_stop_calls_phone]
-text = "Stop hosting calls on this phone"
-note = "Row on Group info to stop carrying calls on this phone."
-
-[groupsb_host_calls_phone]
-text = "Host calls on this phone"
-note = "Row on Group info (admins) to carry calls on this phone."
-
 [groupsb_host_calls_phone_sub]
 text = "Carries the calls you start here. A computer that stays on can carry everyone’s."
 note = "Second line of the Host calls on this phone row."
 
-[groupsb_callhosts_note]
-text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept."
-note = "Explanation under the Call hosts section."
-
-[groupsb_callhosts_note_admin]
-text = "Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
-note = "Extra sentences added after the Call hosts explanation for admins (a space is put before them)."
-
-# ---- flags and removal
 [groupsb_flags_on_you]
 text = "Flags on you"
 note = "Section heading on Group info when admins have flagged me for removal."
@@ -948,62 +848,6 @@ note = "Menu item that makes the member an admin."
 text = "Remove admin"
 note = "Menu item that removes the member's admin role."
 
-[groupsb_make_device_host]
-text = "Make device {device} a host"
-note = "Menu item for a member with several devices. {device} is a short device id."
-
-[groupsb_make_host]
-text = "Make host"
-note = "Menu item that asks the member to host the group."
-
-[groupsb_asks_host]
-text = "Asks {name} to host. They have to accept."
-note = "Second line under Make host. {name} is their first name."
-
-[groupsb_stop_device_host]
-text = "Stop device {device} hosting"
-note = "Menu item for a member with several devices. {device} is a short device id."
-
-[groupsb_remove_as_host]
-text = "Remove as host"
-note = "Menu item that stops the member's device hosting."
-
-[groupsb_cancel_callhost_request]
-text = "Cancel call host request"
-note = "Menu item that cancels a pending call host request. For members with several devices a short device id is added after it."
-
-[groupsb_waiting_device]
-text = "Waiting for {name}’s device to accept"
-note = "Second line under Cancel call host request. {name} is their first name."
-
-[groupsb_remove_as_callhost]
-text = "Remove as call host"
-note = "Menu item that stops the member's device hosting calls. A short device id may follow it."
-
-[groupsb_make_callhost]
-text = "Make call host"
-note = "Menu item that asks the member's device to carry calls. A short device id may follow it."
-
-[groupsb_asks_callhost]
-text = "Asks {name} to carry group calls. They have to accept."
-note = "Second line under Make call host. {name} is their first name."
-
-[groupsb_stop_hosting_device]
-text = "Stop hosting on this device"
-note = "Menu item in my own sheet to stop hosting the group on this device."
-
-[groupsb_host_device]
-text = "Host on this device"
-note = "Menu item in my own sheet to offer this device as host."
-
-[groupsb_host_device_sub]
-text = "An admin has to appoint it too. A computer that stays on is a better host."
-note = "Second line under Host on this device."
-
-[groupsb_stop_calls_device]
-text = "Stop hosting calls on this device"
-note = "Menu item in my own sheet to stop carrying calls on this device."
-
 [groupsb_flag_removal]
 text = "Flag for removal"
 note = "Menu item that starts flagging a member for removal."
@@ -1059,7 +903,7 @@ text = "Group name"
 note = "Label of the group name field."
 
 [groupsb_new_group_host_note]
-text = "This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined."
+text = "This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host. Set one up under Hosting permissions in Group info once it has joined."
 note = "Notice on the new group page."
 
 [groupsb_new_group_own]
@@ -2047,11 +1891,11 @@ text = "Link another device when you can, so losing one never locks you out."
 note = "Tip text about linking a second device."
 
 [onboarding_tip_groups_title]
-text = "Groups are hosted on a computer"
+text = "A computer makes a good host"
 note = "Tip title on the final onboarding screen."
 
 [onboarding_tip_groups_body]
-text = "To start a group, add Tinline on a computer that can stay on."
+text = "You can start a group on this phone. A computer that stays on keeps it reachable when your phone sleeps."
 note = "Tip text about hosting groups on a computer."
 
 # ---- onboarding: name, passphrase
@@ -2203,8 +2047,12 @@ text = "Added {name} to this phone"
 note = "Heading after another account was added. {name} is the account's nickname."
 
 [onboarding_restored_lead_adding]
-text = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
-note = "Lead after another account was added. {name} is the account's nickname."
+text = "Only the account you select is online on this phone, so {name} is online now and your other account is paused. You can switch in Settings."
+note = "Lead after another account was added, on a phone that stays connected all the time (Liberum, or Stay connected on). {name} is the account's nickname."
+
+[onboarding_restored_lead_adding_push]
+text = "{name} is open on this phone now. Your other account still rings and tells you about new messages here. You can switch in Settings."
+note = "Lead after another account was added, on a phone with wake-ups (push). {name} is the account's nickname."
 
 [onboarding_restored_lead]
 text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
@@ -2239,7 +2087,7 @@ text = "Nothing yet. The other device may be offline: it picks up where it left 
 note = "Note on the linked screen after 45 seconds without data."
 
 [onboarding_sync_keep_online]
-text = "Keep both devices online. Sync keeps going in the background."
+text = "Keep both devices open and online until this finishes."
 note = "Note on the linked screen while data is arriving."
 
 # ---- onboarding: save failed
@@ -2437,7 +2285,11 @@ note = "Small line under the account that is currently selected, in the account 
 
 [settings_account_paused]
 text = "Paused · tap to switch"
-note = "Small line under an account that is not the selected one, in the account list on the Settings landing. Tapping the row switches to it."
+note = "Small line under an account that is not the selected one and is not woken here (no wake-ups, or its key is not remembered). Tapping the row switches to it."
+
+[settings_account_rings]
+text = "Rings here · tap to switch"
+note = "Small line under an account that is not the selected one, on a phone with wake-ups: its calls still ring and its messages still notify here. Tapping the row switches to it."
 
 [settings_add_account]
 text = "Add another account"
@@ -2445,7 +2297,7 @@ note = "Row in the Settings account list, and the title of the sheet that opens 
 
 [settings_accounts_note]
 text = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
-note = "Explanation under the account list on the Settings landing."
+note = "Explanation under the account list on the Settings landing, on a phone that stays connected all the time (Liberum, or Stay connected on). With wake-ups the switcher's hint is shown instead."
 
 [settings_appearance]
 text = "Appearance"
@@ -2607,11 +2459,15 @@ note = "Permission row on the Notifications page for the Android battery setting
 
 [notif_perm_unrestricted]
 text = "Unrestricted"
-note = "Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name."
+note = "Status of the battery setting when Tinline is exempt from battery optimisation. Matches the Android setting name."
 
 [notif_perm_restricted]
 text = "Restricted"
-note = "Status of the battery setting when Android may pause Tinline. Matches the Android setting name."
+note = "Status of the battery setting when the person set Tinline's battery use to Restricted. Matches the Android setting name."
+
+[notif_perm_optimized]
+text = "Optimized"
+note = "Status of the battery setting when Android manages Tinline's battery use (the default). Matches the Android setting name."
 
 [notif_fix]
 text = "Fix"
@@ -2908,6 +2764,10 @@ note = "Title of the page that checks the settings that keep calls ringing in th
 [settings_battery_keep]
 text = "Keep my line open"
 note = "Heading on the background and battery page."
+
+[settings_battery_keep_push]
+text = "How Tinline reaches me"
+note = "Heading on the background and battery page when Tinline rests and a wake-up push starts it (Stay connected off)."
 
 [settings_battery_hint]
 text = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
@@ -3758,7 +3618,6 @@ text = "Missed call"
 note = "Title of the missed call notification."
 # ---- chat
 
-
 # ---- chat list, composer parts, notifications, receipts
 
 [chat_edited]
@@ -3873,7 +3732,6 @@ note = "Text of a group invitation notification. {name} is the inviter's first n
 one = "{count} new message"
 other = "{count} new messages"
 note = "Divider label above the unread messages in a chat. {count} is how many."
-
 
 # ---- conversation screen
 
@@ -4281,7 +4139,6 @@ note = "Button in the footer of a chat with someone you blocked."
 text = "Add"
 note = "Button in the footer of a chat with someone who is no longer a contact."
 
-
 # ---- voice messages
 
 [voice_send]
@@ -4315,7 +4172,6 @@ note = "Screen-reader label of the play button of a voice message."
 [voice_waveform]
 text = "Voice message waveform, tap to seek"
 note = "Screen-reader label of the waveform of a voice message."
-
 
 # ---- document viewer
 
@@ -4359,7 +4215,6 @@ note = "Message in the document viewer for a text file that is too large."
 text = "This doesn’t look like a text file. Save it to open it in another app."
 note = "Message in the document viewer for a file that is not text."
 
-
 # ---- find in chat
 
 [find_in_chat]
@@ -4385,7 +4240,6 @@ note = "Screen-reader label of the button that jumps to the next (newer) match."
 [find_close]
 text = "Close find"
 note = "Screen-reader label of the button that closes the find bar."
-
 
 # ---- global search
 
@@ -4449,7 +4303,6 @@ note = "Screen-reader description of a search result tile. {name} is the result,
 text = "{name}:"
 note = "Start of a message result's snippet, naming who wrote it. {name} is 'You' or a first name. A space follows."
 
-
 # ---- contact card sharing
 
 [card_copy]
@@ -4473,7 +4326,7 @@ text = "Preparing your code…"
 note = "Shown in the QR box while the code is being made."
 
 [card_works_once]
-text = "Works once. Making a new code cancels this one."
+text = "Works for 7 days, for anyone you give it to. Each one asks you first. Making a new code cancels this one."
 note = "Hint under your QR code."
 
 [card_new_code]
@@ -4634,42 +4487,6 @@ note = "Confirmation after the owner takes a member's admin role away."
 [groupsc_left_group]
 text = "You left the group. Its messages stay here."
 note = "Confirmation after you leave a group."
-
-[groupsc_appointed]
-text = "Appointed. The device hosts once it agrees."
-note = "Confirmation after an admin appoints a member's device as a chat host."
-
-[groupsc_host_revoked]
-text = "That device no longer hosts the group."
-note = "Confirmation after an admin removes a device as chat host."
-
-[groupsc_host_agreed]
-text = "This phone agreed to host. It hosts as soon as an admin has appointed it."
-note = "Confirmation after this phone accepts a request to host a group's chat."
-
-[groupsc_host_stopped]
-text = "This phone stopped hosting the group."
-note = "Confirmation after this phone stops hosting a group's chat."
-
-[groupsc_call_host_asked]
-text = "Asked. The device carries calls once it accepts."
-note = "Confirmation after an admin asks a device to host the group's calls."
-
-[groupsc_call_host_revoked]
-text = "That device no longer hosts calls for the group."
-note = "Confirmation after an admin removes a device as the group's call host."
-
-[groupsc_call_host_agreed]
-text = "This device now hosts the group’s calls."
-note = "Confirmation after this device accepts to host the group's calls."
-
-[groupsc_call_host_declined]
-text = "This device won’t host the group’s calls."
-note = "Confirmation after this device declines to host the group's calls."
-
-[groupsc_calls_here]
-text = "This phone carries the calls it starts in this group now."
-note = "Confirmation after an admin lets this phone carry group calls."
 
 [groupsc_admins_only_on]
 text = "Only admins post now. Everyone can still read."
@@ -5006,7 +4823,7 @@ text = "Request sent. Your line opens when {name} accepts."
 note = "Reason line after the request reached them."
 
 [addcontact_why_slow]
-text = "Still trying. {name}’s Tinline needs to be open and online for this."
+text = "Still trying. If {name}’s phone is asleep, Tinline is waking it."
 note = "Reason line when reaching them takes longer than a few seconds."
 
 [addcontact_why_reaching]
@@ -5014,7 +4831,7 @@ text = "Reaching {name}’s Tinline…"
 note = "Reason line while the app is dialling them."
 
 [addcontact_why_timeout]
-text = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
+text = "Couldn’t reach {name}’s Tinline. Try again in a little while, or when {name}’s around."
 note = "Reason line when they could not be reached."
 
 [addcontact_why_refused]
@@ -5705,7 +5522,6 @@ note = "Lowercase day word in 'Last call today'."
 text = "yesterday"
 note = "Lowercase day word in 'Last call yesterday'."
 
-
 # ---- empty states (EmptyLine.kt)
 [empty_hero_ready]
 text = "Your line is ready"
@@ -5763,7 +5579,6 @@ note = "Quiet line when the Calls list is empty."
 text = "The people you add show up here."
 note = "Quiet line when the Contacts list is empty."
 
-
 # ---- shared components (Components.kt)
 [components_hide_passphrase]
 text = "Hide passphrase"
@@ -5772,7 +5587,6 @@ note = "Accessibility label of the eye button that hides the typed passphrase."
 [components_show_passphrase]
 text = "Show passphrase"
 note = "Accessibility label of the eye button that shows the typed passphrase."
-
 
 # ---- shell: app bar, ringing header, tabs (Shell.kt)
 [shell_incoming_call]
@@ -5833,7 +5647,6 @@ one = "{count} unread"
 other = "{count} unread"
 note = "Accessibility state of a tab: number of unread chats or messages."
 
-
 # ---- mark descriptions (Mark.kt)
 [mark_incoming_call]
 text = "Incoming call"
@@ -5870,7 +5683,6 @@ note = "Spoken description of the mark when the phone is offline."
 [mark_connected]
 text = "Connected to the network"
 note = "Spoken description of the mark when the app is online."
-
 
 # ---- home (Home.kt)
 [home_offline_title]
@@ -5974,13 +5786,12 @@ text = "Scan their code"
 note = "Button on the first-run add-contact screen."
 
 [home_first_paste]
-text = "Paste their card"
+text = "Paste their code"
 note = "Button on the first-run add-contact screen."
 
 [home_first_waiting]
 text = "Waiting for them to scan — keep this open."
 note = "Status on the first-run add-contact screen while my code is shown."
-
 
 # ---- home lists (HomeLists.kt)
 [chats_filter_all]
@@ -6099,7 +5910,6 @@ note = "Accessibility description of the receipt mark on a group chat row: read 
 [list_tick_bad]
 text = "Not delivered"
 note = "Accessibility description of the receipt mark on a group chat row: not delivered."
-
 
 # ---- main activity and app (MainActivity.kt, P2pApp.kt, Support.kt, DebugLog.kt)
 [main_call_start_failed]
@@ -6504,8 +6314,12 @@ text = "Added your account to this phone"
 note = "Heading after another account was added, when its nickname is empty."
 
 [onboarding_restored_lead_adding_unnamed]
-text = "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
-note = "Lead after another account was added, when its nickname is empty."
+text = "Only the account you select is online on this phone, so this account is online now and your other account is paused. You can switch in Settings."
+note = "Lead after another account was added, when its nickname is empty, on a phone that stays connected all the time."
+
+[onboarding_restored_lead_adding_push_unnamed]
+text = "This account is open on this phone now. Your other account still rings and tells you about new messages here. You can switch in Settings."
+note = "Lead after another account was added, when its nickname is empty, on a phone with wake-ups (push)."
 
 [devices_syncing_unnamed]
 text = "Syncing with the device…"
@@ -6665,9 +6479,6 @@ note = "Screen-reader description of a member row. {list} is the member's name, 
 text = "host"
 note = "Spoken in a member row description when they host the group, for example 'Maya, owner, host'. Lowercase, one item of a list."
 
-[groupsb_role_callhost_lc]
-text = "call host"
-note = "Spoken in a member row description when they host calls, for example 'Maya, owner, call host'. Lowercase, one item of a list."
 [avail_note_unnamed]
 text = "While you’re away, people who call see that they couldn’t reach you. Nothing is queued and nobody is told why."
 note = "Hint at the bottom of the availability sheet when my name is empty."
@@ -6739,14 +6550,7 @@ note = "Unified group hosting permissions."
 text = "No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin."
 note = "Unified group hosting permissions."
 
-[group_hosting_stop_note]
-text = "This device stops hosting messages and calls for this group. You remain a member."
-note = "Unified hosting stop confirmation."
-
 [group_hosting_edit]
 text = "Permissions"
 note = "Open one device hosting permissions."
 
-[group_hosting_calls_title]
-text = "No host has Calls enabled"
-note = "Call action explanation when no device has call permission and consent."

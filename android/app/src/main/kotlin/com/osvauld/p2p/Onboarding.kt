@@ -581,10 +581,14 @@ private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean,
 @Composable
 private fun RestoredStep(name: String, adding: Boolean, onStart: () -> Unit) {
     val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+    // With wake pushes the other account still rings here (docs/multi-online.md); always-on and Liberum pause it.
+    val ctx = LocalContext.current
+    val wakes = remember { PushMode.pushOn(ctx) }
     GateStep(
         title = if (adding) (if (name.isBlank()) stringResource(R.string.onboarding_restored_title_adding_unnamed) else stringResource(R.string.onboarding_restored_title_adding, name.trim()))
             else if (first.isNotBlank()) stringResource(R.string.unlock_welcome_back_named, first) else stringResource(R.string.unlock_welcome_back),
-        lead = if (adding) (if (name.isBlank()) stringResource(R.string.onboarding_restored_lead_adding_unnamed) else stringResource(R.string.onboarding_restored_lead_adding, name.trim()))
+        lead = if (adding) (if (wakes) (if (name.isBlank()) stringResource(R.string.onboarding_restored_lead_adding_push_unnamed) else stringResource(R.string.onboarding_restored_lead_adding_push, name.trim()))
+            else if (name.isBlank()) stringResource(R.string.onboarding_restored_lead_adding_unnamed) else stringResource(R.string.onboarding_restored_lead_adding, name.trim()))
         else stringResource(R.string.onboarding_restored_lead),
         center = true, bigTitle = true,
         hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = stringResource(R.string.app_name)) } },

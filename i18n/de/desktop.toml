@@ -693,9 +693,6 @@ text = "Senden ging nicht: {error}"
 [chat_could_not_show_this]
 text = "Anzeigen ging nicht: {error}"
 
-[chat_couldnt_download_tap_to]
-text = "{value} · Download hat nicht geklappt – zum Wiederholen tippen"
-
 [chat_delete]
 text = "Löschen"
 
@@ -758,9 +755,6 @@ text = "Frühere Nachrichten laden"
 
 [chat_message_deleted]
 text = "Nachricht gelöscht"
-
-[chat_messages_go_straight_to]
-text = "Nachrichten gehen direkt an ihre Geräte."
 
 [chat_new_messages]
 one = "{count} neue Nachricht"
@@ -825,9 +819,6 @@ text = "Signiert von {name} · {value}"
 
 [chat_signed_by_2]
 text = "Signiert von {value}"
-
-[chat_tap_to_retry]
-text = "Zum Wiederholen tippen"
 
 [chat_that_is_everything_has]
 text = "Das ist alles, was {name} hat."
@@ -943,9 +934,6 @@ text = "Nochmal versuchen"
 [gate_the_system_keyring_did]
 text = "Der Schlüsselbund des Systems hat den Schlüssel nicht angenommen."
 
-[gate_these_24_words_are]
-text = "Diese {words} Wörter sind der einzige Weg, deine Identität auf einem anderen Gerät wiederherzustellen."
-
 [gate_this_computer_no_longer]
 text = "Dieser Computer hat den Schlüssel nicht mehr, der dein Konto öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
 
@@ -958,9 +946,6 @@ text = "Neuer Versuch..."
 [gate_turn_on]
 text = "Einschalten"
 
-[gate_you_didnt_set_a]
-text = "Du hast keine Passphrase festgelegt, also sind die {words} Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
-
 [gate_your_calls_come_through]
 text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
 
@@ -972,9 +957,6 @@ text = "Du bist nicht erreichbar"
 
 [gate_youre_offline]
 text = "Du bist offline"
-
-[gcall_a_call_host_is]
-text = "Ein Anruf-Host ist ein Gerät, das ein Admin der Gruppe ausgewählt hat und das zugestimmt hat. Das ist getrennt vom Chat-Hosten. Admins können Anruf-Hosts in der Gruppeninfo ändern."
 
 [gcall_battery_is_low_or]
 text = "Der Akku ist schwach oder der Computer heiß. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten."
@@ -1022,33 +1004,12 @@ text = "Du bist schon in einem Anruf."
 [gcall_youre_the_call_host]
 text = "Du bist der Anruf-Host"
 
-[group_a_call_host_carries]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt."
-
-[group_a_call_host_is]
-text = "Ein Anruf-Host ist ein Computer oder Handy eines Mitglieds und trägt den Anruf. Ein Admin kann ihn in der Gruppeninfo festlegen."
-
-[group_a_call_host_is_a]
-text = "Ein Anruf-Host ist ein Computer oder Handy eines Mitglieds und trägt den Anruf. Du kannst Anrufe auf diesem Computer hosten oder in der Gruppeninfo ein Mitglied festlegen."
-
-[group_a_call_needs_a]
-text = "Ein Anruf braucht einen Anruf-Host"
-
 [group_a_flag_is_signed]
 text = "Eine Markierung ist von dir signiert und lässt sich nicht zurücknehmen. {name} kann sehen, wer markiert hat und wann. Nachrichten, die {name} vor der Entfernung geschrieben hat, bleiben sichtbar, mit Kennzeichnung."
-
-[group_a_host_keeps_a]
-text = "Ein Host hält eine vollständige Kopie einer Gruppe und gibt Nachrichten weiter, während die Handys der Mitglieder schlafen. Mitglieder verbinden sich mit Hosts, nicht miteinander; nur Hosts kennen die Gruppenadressen der Mitglieder. Tinline hostet weiter, wenn das Fenster geschlossen ist (es bleibt im Infobereich)."
-
-[group_a_host_keeps_a_full]
-text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss laufen bleiben. Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
 
 [group_a_host_lists_up]
 one = "Ein Host listet bis zu {count} Person auf einmal, es können also mehr sein."
 other = "Ein Host listet bis zu {count} Personen auf einmal, es können also mehr sein."
-
-[group_a_host_stays_on]
-text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
 
 [group_a_link_that_doesnt]
 text = "Ein Link, der nicht abläuft"
@@ -1080,12 +1041,6 @@ text = "Schon Mitglied"
 [group_also_confirmed]
 text = "Auch bestätigt: {value}"
 
-[group_also_hosts_calls]
-text = "Hostet auch Anrufe"
-
-[group_an_admin_asked_this]
-text = "Ein Admin hat diesen Computer gebeten, die Anrufe der Gruppe zu tragen"
-
 [group_anyone_holding_the_link]
 text = "Wer den Link hat, kann beitreten, ohne Einladung und ohne Ablaufdatum. Teile ihn dort, wo Leute die Gruppe finden sollen."
 
@@ -1095,29 +1050,14 @@ text = "Alle mit dem Link können beitreten"
 [group_anyone_with_this_link]
 text = "Alle mit diesem Link oder QR-Code können 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
 
-[group_appoint]
-text = "Festlegen"
-
-[group_appoint_a_host_first]
-text = "Lege zuerst einen Host fest. Ein Link nennt einen Host."
-
-[group_appointed_the_device_hosts]
-text = "Festgelegt. Das Gerät hostet, sobald es zustimmt (Auf diesem Gerät hosten)."
-
 [group_as_a_host_this]
 text = "Als Host wird dieser Computer:"
 
 [group_ask_for_a_private]
 text = "{name} um einen privaten Chat bitten"
 
-[group_asked_the_device_carries]
-text = "Gefragt. Das Gerät trägt Anrufe, sobald es zustimmt."
-
 [group_asked_this_computer_to]
 text = "{name} bittet diesen Computer, {group} zu hosten"
-
-[group_asks_to_carry_group]
-text = "Bittet {name}, auf diesem Gerät Gruppenanrufe zu tragen; die Person muss zustimmen"
 
 [group_block]
 text = "{name} blockieren"
@@ -1131,21 +1071,8 @@ text = "Blockiert {value}"
 [group_blocked_you]
 text = "Hat dich blockiert"
 
-[group_call_hosts]
-text = "Anruf-Hosts"
-
-[group_call_hosts_ready]
-one = "{count} Anruf-Host bereit. Anrufe starten über ihn."
-other = "{count} Anruf-Hosts bereit. Anrufe starten über sie."
-
-[group_calls_go_through_the]
-text = "Anrufe laufen über die anderen Anruf-Hosts"
-
 [group_can_invite_flag_members]
 text = "Kann einladen, Mitglieder markieren und Hosts festlegen"
-
-[group_carries_the_groups_calls]
-text = "Trägt die Anrufe der Gruppe; am besten ein Computer, der an bleibt"
 
 [group_checking_with_the_groups]
 text = "Frage beim Host der Gruppe nach…"
@@ -1223,17 +1150,11 @@ text = "Hier erscheinen Gruppen, die du startest oder denen du beitrittst."
 [group_has_no_other_host]
 text = "{gname} hat keinen anderen Host: Nachrichten warten auf den Geräten der Leute, bis ein anderer sie hostet."
 
-[group_host_calls_on_this]
-text = "Anrufe auf diesem Computer hosten"
-
 [group_host_here]
 text = "Hier hosten"
 
 [group_host_on_this_computer]
 text = "{gname} auf diesem Computer hosten?"
-
-[group_host_this_group_on]
-text = "Diese Gruppe auf diesem Computer hosten"
 
 [group_hosts]
 text = "Hosts"
@@ -1241,16 +1162,6 @@ text = "Hosts"
 [group_hosts_count]
 one = "{count} Host"
 other = "{count} Hosts"
-
-[group_hosts_once_agrees_on]
-text = "Hostet, sobald {name} auf dem Gerät zustimmt; am besten ein Computer, der an bleibt"
-
-[group_hosts_online]
-one = "{count} Host online. Beiträge gehen sofort raus."
-other = "{count} Hosts online. Beiträge gehen sofort raus."
-
-[group_hosts_store_the_group]
-text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird."
 
 [group_if_accepts_you_can]
 text = "Wenn {name} annimmt, könnt ihr euch direkt schreiben. Anrufe bleiben aus, bis einer von euch sie erlaubt."
@@ -1292,9 +1203,6 @@ text = "Eingeladen · wartet auf Antwort"
 [group_invites]
 text = "Einladungen"
 
-[group_it_starts_hosting_once]
-text = "Es beginnt zu hosten, sobald ein Admin es festlegt (wenn das schon passiert ist, sofort). Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
-
 [group_join_a_group]
 text = "Einer Gruppe beitreten"
 
@@ -1334,18 +1242,6 @@ text = "Zum Admin machen"
 [group_make_an_admin]
 text = "{name} zum Admin machen?"
 
-[group_make_call_host]
-text = "Zum Anruf-Host machen"
-
-[group_make_device_a_call]
-text = "Gerät {value} zum Anruf-Host machen"
-
-[group_make_device_a_host]
-text = "Gerät {value} zum Host machen"
-
-[group_make_host]
-text = "Zum Host machen"
-
 [group_making_it]
 text = "Wird erstellt…"
 
@@ -1377,9 +1273,6 @@ other = "{count} Mitglieder"
 [group_members_see_that_you]
 text = "Mitglieder sehen, dass du gegangen bist. Die Nachrichten bleiben auf diesem Computer, nur zum Lesen. Um zurückzukommen, muss dich ein Admin neu einladen."
 
-[group_members_stop_going_through]
-text = "Mitglieder gehen nicht mehr darüber"
-
 [group_message_from_whom_you]
 text = "Nachricht von {name} (von dir blockiert)"
 
@@ -1395,9 +1288,6 @@ text = "Keine passende Gruppe."
 [group_no_host_answered_in]
 text = "Kein Host hat rechtzeitig geantwortet. Versuch es nochmal, wenn ein Host online ist."
 
-[group_no_host_is_online]
-text = "Kein Host ist online. Deine Beiträge sind gespeichert und gehen raus, sobald einer da ist."
-
 [group_no_longer_an_admin]
 text = "Nicht mehr Admin."
 
@@ -1409,9 +1299,6 @@ text = "Niemand ist blockiert. Um jemanden zu blockieren, öffne die Person unte
 
 [group_not_yet]
 text = "Noch nicht"
-
-[group_offered_to_host]
-text = "Bietet Hosten an"
 
 [group_on_their_device]
 text = "Auf ihrem Gerät"
@@ -1525,35 +1412,14 @@ text = "{name} bleibt Mitglied"
 [group_stays_in_the_group]
 text = "{name} bleibt als Mitglied in der Gruppe. Markierungen, die die Person schon gesetzt hat, zählen weiter."
 
-[group_stop_device_carrying_calls]
-text = "Anruf-Hosten auf Gerät {value} beenden"
-
-[group_stop_device_hosting]
-text = "Hosten auf Gerät {value} beenden"
-
 [group_stop_hosting]
 text = "Hosten beenden"
-
-[group_stop_hosting_calls]
-text = "Anruf-Hosten beenden"
-
-[group_stop_hosting_calls_on]
-text = "Anruf-Hosten auf diesem Computer beenden"
 
 [group_stop_hosting_here]
 text = "{gname} hier nicht mehr hosten?"
 
-[group_stop_hosting_on_this]
-text = "Hosten auf diesem Computer beenden"
-
 [group_text]
 text = "{label}: {value}"
-
-[group_that_device_no_longer]
-text = "Dieses Gerät trägt die Anrufe dieser Gruppe nicht mehr."
-
-[group_that_device_no_longer_hosts]
-text = "Dieses Gerät hostet die Gruppe nicht mehr."
 
 [group_that_group_isnt_on]
 text = "Diese Gruppe ist nicht auf diesem Computer."
@@ -1582,35 +1448,8 @@ text = "Lade dann Leute über den Mitgliederbereich ein."
 [group_they_blocked_you_so]
 text = "Die Person hat dich blockiert, deshalb kannst du sie nicht nach einem Chat fragen."
 
-[group_this_computer_carries_the]
-text = "Dieser Computer trägt die Anrufe."
-
-[group_this_computer_carries_this]
-text = "Dieser Computer trägt jetzt die Anrufe dieser Gruppe."
-
 [group_this_computer_doesnt_host]
 text = "Dieser Computer hostet keine Gruppen. Um eine zu hosten, öffne sie und wähle im Mitgliederbereich „Auf diesem Computer hosten“."
-
-[group_this_computer_hosts_the]
-text = "Dieser Computer hostet die Gruppe. Beiträge gehen sofort raus."
-
-[group_this_computer_stopped_carrying]
-text = "Dieser Computer trägt die Anrufe dieser Gruppe nicht mehr."
-
-[group_this_computer_stops_passing]
-text = "Dieser Computer gibt die Nachrichten der Gruppe nicht mehr weiter. Du bleibst Mitglied."
-
-[group_this_device_agreed_to]
-text = "Dieses Gerät hat dem Hosten zugestimmt. Es hostet, sobald ein Admin es festgelegt hat."
-
-[group_this_device_stopped_hosting]
-text = "Dieses Gerät hostet die Gruppe nicht mehr."
-
-[group_this_group_has_no]
-text = "Diese Gruppe hat keinen Anruf-Host. Anrufe starten erst, wenn ein Admin einen festlegt."
-
-[group_this_group_has_no_host]
-text = "Diese Gruppe hat keinen Host. Beiträge warten, bis ein Host festgelegt ist."
 
 [group_turn_on_open_link]
 text = "Schalte „Öffentlicher Link“ ein, um ihn zu teilen"
@@ -1630,9 +1469,6 @@ text = "Wartet auf einen Host"
 [group_waiting_for_a_host_no]
 text = "Wartet auf einen Host. Gerade ist kein Gruppen-Host online; deine Beiträge sind gespeichert und gehen raus, sobald einer da ist."
 
-[group_waiting_to_accept]
-text = "Wartet auf Zusage"
-
 [group_while_its_open_no]
 text = "Solange sie offen ist, werden in dieser Gruppe keine Lesebestätigungen gesendet, und Mitglieder sehen, wer online ist. Jede Person kann sich in ihren Einstellungen verbergen."
 
@@ -1651,9 +1487,6 @@ text = "Warum du entfernt wurdest"
 [group_will_be_able_to]
 one = "{name} kann dann Leute einladen, Mitglieder markieren ({count} Markierung entfernt jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
 other = "{name} kann dann Leute einladen, Mitglieder markieren ({count} Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
-
-[group_withdraw_the_offer_to]
-text = "Angebot zum Hosten zurückziehen"
 
 [group_working]
 text = "Moment…"
@@ -2345,9 +2178,6 @@ text = "Aus heißt nur Nachrichten"
 [profile_on_this_computer]
 text = "Auf diesem Computer"
 
-[profile_on_wi_fi_and]
-text = "Über WLAN und mobile Daten"
-
 [profile_online_now]
 text = "Gerade online"
 
@@ -2910,9 +2740,6 @@ text = "Meine Wörter kopieren"
 [signup_couldnt_make_a_new]
 text = "Gerade ließ sich kein neuer Code erstellen. Versuch es gleich nochmal."
 
-[signup_couldnt_reach_s_tinline]
-text = "Tinline bei {name} war nicht erreichbar. Es muss offen und online sein, versuch es also nochmal, wenn {name} da ist."
-
 [signup_couldnt_read_the_clipboard]
 text = "Die Zwischenablage ließ sich nicht lesen. Füg stattdessen ins erste Feld ein."
 
@@ -3099,9 +2926,6 @@ text = "Erst mal überspringen"
 [signup_start_a_chat]
 text = "Chat starten"
 
-[signup_still_trying_s_tinline]
-text = "Wird noch versucht. Tinline muss dafür bei {name} offen und online sein."
-
 [signup_strong]
 text = "Stark"
 
@@ -3116,9 +2940,6 @@ text = "Nutzungsbedingungen"
 
 [signup_that_code_from_has]
 text = "Dieser Code von {value} ist abgelaufen. Codes gelten 7 Tage, also frag nach einem neuen."
-
-[signup_that_doesnt_look_like]
-text = "Das sieht nicht nach einem Tinline-Code aus. Kann die Person ihn nochmal für dich kopieren?"
 
 [signup_that_key_has_a]
 text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. Füg ihn nochmal aus deiner gespeicherten Kopie ein."
@@ -3552,16 +3373,6 @@ text = "Online"
 [group_host_offline]
 text = "Offline"
 
-[group_hosts_online_here]
-one = "{count} Host online, auch dieser Computer. Beiträge gehen sofort raus."
-other = "{count} Hosts online, auch dieser Computer. Beiträge gehen sofort raus."
-
-[group_hosts_store_the_group_admin]
-text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird. Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
-
-[group_a_call_host_carries_admin]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Computer."
-
 [group_asked_this_computer_to_unnamed]
 text = "Ein Admin bittet diesen Computer, {group} zu hosten"
 
@@ -3812,3 +3623,52 @@ text = "Mit deinem Konto verknüpft"
 
 [chat_you_blocked_on]
 text = "Du hast {name} blockiert · {when}"
+
+[accounts_tap_to_switch]
+text = "Klicken zum Wechseln"
+
+[accounts_new_tap_to_switch]
+one = "{count} neue Nachricht · klicken zum Wechseln"
+other = "{count} neue Nachrichten · klicken zum Wechseln"
+
+[chat_couldnt_download_tap_to]
+text = "{value} · Download hat nicht geklappt — klicken, um es nochmal zu versuchen"
+
+[chat_messages_go_straight_to]
+text = "Nachrichten gehen direkt an ihre Geräte, ohne Server dazwischen. Sie kommen an, wenn ihr beide online seid."
+
+[chat_tap_to_retry]
+text = "Klicken zum Wiederholen"
+
+[gate_these_24_words_are]
+text = "Diese {words} Wörter bringen dein Konto auf jedem Gerät zurück. Bewahre sie an einem sicheren Ort auf."
+
+[gate_you_didnt_set_a]
+text = "Du hast keine Passphrase festgelegt. Deine {words} Wiederherstellungswörter sind also der Weg zurück, es sei denn, ein anderes verknüpftes Gerät hat dein Konto noch. Deine Kontakte bleiben."
+
+[gcall_a_call_host_is]
+text = "Ein Anruf-Host ist ein Gerät, dem ein Admin erlaubt hat, Anrufe zu tragen, und das zugestimmt hat. Admins ändern das unter Hosting-Berechtigungen in der Gruppeninfo."
+
+[group_a_host_keeps_a]
+text = "Ein Host hält eine vollständige Kopie einer Gruppe und leitet Nachrichten weiter, während die Handys der Mitglieder schlafen. Mitglieder verbinden sich mit Hosts, nicht miteinander; nur Hosts erfahren die Gruppenadressen der Mitglieder. Tinline hostet weiter, solange es läuft, auch bei geschlossenem Fenster (es bleibt im Tray)."
+
+[group_appoint_a_host_first]
+text = "Richte zuerst einen Host ein. Ein Link nennt einen Host."
+
+[group_it_starts_hosting_once]
+text = "Das Hosten beginnt, sobald ein Admin es erlaubt (wenn schon einer es erlaubt hat, sofort). Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
+
+[group_this_group_has_no_host]
+text = "Diese Gruppe hat keinen Host. Beiträge warten, bis ein Admin einen erlaubt."
+
+[profile_on_wi_fi_and]
+text = "Jedes Bild wird heruntergeladen, sobald es ankommt"
+
+[signup_couldnt_reach_s_tinline]
+text = "Tinline bei {name} war nicht erreichbar. Versuch es in einer Weile nochmal oder wenn {name} da ist."
+
+[signup_still_trying_s_tinline]
+text = "Wird weiter versucht. Wenn das Handy von {name} schläft, weckt Tinline es auf."
+
+[signup_that_doesnt_look_like]
+text = "Das sieht nicht nach einem Tinline-Code aus. Codes aus älteren Versionen funktionieren nicht, also frag die Person nach einem neuen."

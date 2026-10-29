@@ -72,9 +72,6 @@ text = "En attente d’un hôte"
 [groups_host_ask_title]
 text = "{name} demande à ce téléphone d’héberger {group}"
 
-[groups_host_ask_body]
-text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en ligne et consomme de la batterie : un ordinateur qui reste allumé est un meilleur hôte. Héberger ne fait pas de vous un admin."
-
 [groups_host_here]
 text = "Héberger ici"
 
@@ -203,9 +200,6 @@ text = "Rejoindre l’appel de groupe"
 
 [groups_chat_call_start]
 text = "Lancer un appel de groupe"
-
-[groups_chat_no_call_host]
-text = "Pas encore d’hôte d’appel : un admin peut en désigner un dans Infos du groupe"
 
 [groups_chat_info]
 text = "Infos du groupe"
@@ -391,9 +385,6 @@ text = "Une invitation privée pour chaque personne"
 [groupsb_create_link]
 text = "Créer un lien d’invitation"
 
-[groupsb_create_link_nohost]
-text = "Désignez d’abord un hôte. Un lien indique un seul hôte."
-
 [groupsb_create_link_valid]
 text = "Valable 7 jours"
 
@@ -449,9 +440,6 @@ text = "Membre"
 
 [groupsb_host]
 text = "Hôte"
-
-[groupsb_call_host]
-text = "Hôte d’appel"
 
 [groupsb_leave_group]
 text = "Quitter le groupe"
@@ -540,75 +528,8 @@ text = "Cet appareil"
 [groupsb_hosts_none]
 text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné."
 
-[groupsb_hosts_online]
-one = "{count} hôte en ligne. Les publications passent tout de suite."
-many = "{count} hôtes en ligne. Les publications passent tout de suite."
-other = "{count} hôtes en ligne. Les publications passent tout de suite."
-
-[groupsb_hosts_offline]
-text = "Aucun hôte n’est en ligne. Vos publications sont gardées et partiront dès qu’il y en aura un."
-
-[groupsb_also_hosts_calls]
-text = "héberge aussi les appels"
-
-[groupsb_remove_host_desc]
-text = "Retirer {device} comme hôte"
-
-[groupsb_cancel_host_desc]
-text = "Annuler la demande d’hébergement à {device}"
-
-[groupsb_waiting_accept]
-text = "En attente d’acceptation"
-
-[groupsb_offered_host]
-text = "Propose d’héberger · un admin doit valider"
-
-[groupsb_appoint]
-text = "Désigner"
-
-[groupsb_hosts_note]
-text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe."
-
-[groupsb_hosts_note_admin]
-text = "Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre."
-
-[groupsb_callhosts_sec]
-text = "Hôtes d’appel"
-
-[groupsb_callhosts_none]
-text = "Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’appel tant qu’un admin n’en a pas désigné un."
-
-[groupsb_callhosts_ready]
-one = "{count} hôte d’appel prêt. Les appels passent par lui."
-many = "{count} hôtes d’appel prêts. Les appels passent par eux."
-other = "{count} hôtes d’appel prêts. Les appels passent par eux."
-
-[groupsb_callhosts_offline]
-text = "Aucun hôte d’appel n’est disponible pour le moment. Un appel pourra démarrer dès que l’un d’eux sera de retour."
-
-[groupsb_callhosts_me]
-text = "Ce téléphone héberge les appels que vous lancez."
-
-[groupsb_remove_callhost_desc]
-text = "Retirer {device} comme hôte d’appel"
-
-[groupsb_cancel_callhost_desc]
-text = "Annuler la demande d’hôte d’appel à {device}"
-
-[groupsb_stop_calls_phone]
-text = "Ne plus héberger les appels sur ce téléphone"
-
-[groupsb_host_calls_phone]
-text = "Héberger les appels sur ce téléphone"
-
 [groupsb_host_calls_phone_sub]
 text = "Héberge les appels que vous lancez ici. Un ordinateur qui reste allumé peut héberger ceux de tout le monde."
-
-[groupsb_callhosts_note]
-text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
-
-[groupsb_callhosts_note_admin]
-text = "Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur ce téléphone. Un téléphone n’héberge que les appels lancés par son propriétaire."
 
 [groupsb_flags_on_you]
 text = "Signalements vous concernant"
@@ -715,48 +636,6 @@ text = "Nommer admin"
 [groupsb_remove_admin]
 text = "Retirer le rôle d’admin"
 
-[groupsb_make_device_host]
-text = "Faire de l’appareil {device} un hôte"
-
-[groupsb_make_host]
-text = "Nommer hôte"
-
-[groupsb_asks_host]
-text = "Demande à {name} d’héberger. Il faut son accord."
-
-[groupsb_stop_device_host]
-text = "Arrêter l’hébergement sur l’appareil {device}"
-
-[groupsb_remove_as_host]
-text = "Retirer comme hôte"
-
-[groupsb_cancel_callhost_request]
-text = "Annuler la demande d’hôte d’appel"
-
-[groupsb_waiting_device]
-text = "En attente de l’acceptation de l’appareil de {name}"
-
-[groupsb_remove_as_callhost]
-text = "Retirer comme hôte d’appel"
-
-[groupsb_make_callhost]
-text = "Nommer hôte d’appel"
-
-[groupsb_asks_callhost]
-text = "Demande à {name} d’héberger les appels de groupe. Il faut son accord."
-
-[groupsb_stop_hosting_device]
-text = "Arrêter d’héberger sur cet appareil"
-
-[groupsb_host_device]
-text = "Héberger sur cet appareil"
-
-[groupsb_host_device_sub]
-text = "Un admin doit aussi le désigner. Un ordinateur qui reste allumé est un meilleur hôte."
-
-[groupsb_stop_calls_device]
-text = "Arrêter d’héberger les appels sur cet appareil"
-
 [groupsb_flag_removal]
 text = "Signaler pour retrait"
 
@@ -797,9 +676,6 @@ text = "Nouveau groupe"
 
 [groupsb_group_name]
 text = "Nom du groupe"
-
-[groupsb_new_group_host_note]
-text = "Ce téléphone héberge le groupe au début : il le conserve et transmet les messages. Un ordinateur qui reste allumé est un meilleur hôte — désignez-en un depuis Infos du groupe une fois qu’il a rejoint."
 
 [groupsb_new_group_own]
 text = "Vous serez propriétaire du groupe. Invitez des personnes depuis Infos du groupe."
@@ -1533,12 +1409,6 @@ text = "Deux appareils valent mieux qu’un"
 [onboarding_tip_devices_body]
 text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous gardez l’accès à votre compte."
 
-[onboarding_tip_groups_title]
-text = "Les groupes sont hébergés sur un ordinateur"
-
-[onboarding_tip_groups_body]
-text = "Pour créer un groupe, installez Tinline sur un ordinateur qui peut rester allumé."
-
 [onboarding_name_title]
 text = "Comment voulez-vous qu’on vous appelle ?"
 
@@ -1673,9 +1543,6 @@ text = "En attente"
 
 [onboarding_sync_slow]
 text = "Rien pour l’instant. L’autre appareil est peut-être hors ligne : il reprendra là où il s’était arrêté la prochaine fois que les deux seront en ligne."
-
-[onboarding_sync_keep_online]
-text = "Gardez les deux appareils en ligne. La synchronisation continue en arrière-plan."
 
 [onboarding_savefail_title]
 text = "Impossible d’enregistrer votre compte"
@@ -3315,9 +3182,6 @@ text = "QR code de votre carte de contact"
 [card_preparing]
 text = "Préparation de votre code…"
 
-[card_works_once]
-text = "Fonctionne une fois. Créer un nouveau code annule celui-ci."
-
 [card_new_code]
 text = "Nouveau code"
 
@@ -3438,33 +3302,6 @@ text = "N’est plus admin."
 
 [groupsc_left_group]
 text = "Vous avez quitté le groupe. Ses messages restent ici."
-
-[groupsc_appointed]
-text = "Désigné. L’appareil héberge dès qu’il accepte."
-
-[groupsc_host_revoked]
-text = "Cet appareil n’héberge plus le groupe."
-
-[groupsc_host_agreed]
-text = "Ce téléphone a accepté d’héberger. Il héberge dès qu’un admin l’a désigné."
-
-[groupsc_host_stopped]
-text = "Ce téléphone n’héberge plus le groupe."
-
-[groupsc_call_host_asked]
-text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
-
-[groupsc_call_host_revoked]
-text = "Cet appareil n’héberge plus les appels du groupe."
-
-[groupsc_call_host_agreed]
-text = "Cet appareil héberge maintenant les appels du groupe."
-
-[groupsc_call_host_declined]
-text = "Cet appareil n’hébergera pas les appels du groupe."
-
-[groupsc_calls_here]
-text = "Ce téléphone héberge désormais les appels qu’il lance dans ce groupe."
 
 [groupsc_admins_only_on]
 text = "Seuls les admins publient désormais. Tout le monde peut toujours lire."
@@ -3720,14 +3557,8 @@ text = "Votre ligne avec {name} est ouverte. Dites bonjour."
 [addcontact_why_requested]
 text = "Demande envoyée. Votre ligne s’ouvre quand {name} accepte."
 
-[addcontact_why_slow]
-text = "Nouvel essai en cours. Le Tinline de {name} doit être ouvert et en ligne pour cela."
-
 [addcontact_why_reaching]
 text = "Connexion au Tinline de {name}…"
-
-[addcontact_why_timeout]
-text = "Impossible de joindre le Tinline de {name}. Il doit être ouvert et en ligne, alors réessayez quand {name} sera disponible."
 
 [addcontact_why_refused]
 text = "Le code de {name} n’est plus valable. Un nouveau a peut-être été créé : demandez à {name} son code le plus récent."
@@ -4426,9 +4257,6 @@ text = "Montrez votre code à un ami, ou copiez-le et envoyez-le. Ou scannez le 
 [home_first_scan]
 text = "Scanner son code"
 
-[home_first_paste]
-text = "Coller sa carte"
-
 [home_first_waiting]
 text = "En attente du scan — gardez ceci ouvert."
 
@@ -4957,9 +4785,6 @@ text = "{list}. Ouvrir les actions"
 [groupsb_role_host_lc]
 text = "hôte"
 
-[groupsb_role_callhost_lc]
-text = "hôte d’appel"
-
 [avail_note_unnamed]
 text = "Pendant votre absence, les personnes qui appellent voient qu’elles n’ont pas pu vous joindre. Rien n’est mis en attente et personne n’est informé de la raison."
 
@@ -4971,3 +4796,45 @@ text = "Quelqu’un appelle le groupe"
 
 [gcall_started_call_unnamed]
 text = "Quelqu’un a lancé un appel"
+
+[groupsb_create_link_nohost]
+text = "Désignez d’abord un hôte. Un lien désigne un seul hôte."
+
+[groupsb_new_group_host_note]
+text = "Ce téléphone héberge le groupe au départ : il garde le groupe et transmet les messages. Un ordinateur qui reste allumé est un meilleur hôte. Configurez-en un dans Autorisations d’hébergement, dans Infos du groupe, une fois qu’il a rejoint le groupe."
+
+[onboarding_tip_groups_title]
+text = "Un ordinateur fait un bon hôte"
+
+[onboarding_tip_groups_body]
+text = "Vous pouvez créer un groupe sur ce téléphone. Un ordinateur qui reste allumé le garde joignable quand votre téléphone est en veille."
+
+[onboarding_sync_keep_online]
+text = "Gardez les deux appareils ouverts et en ligne jusqu’à la fin."
+
+[card_works_once]
+text = "Valable 7 jours, pour toute personne à qui vous le donnez. Chacune vous demande d’abord. Créer un nouveau code annule celui-ci."
+
+[addcontact_why_slow]
+text = "Nouvel essai en cours. Si le téléphone de {name} est en veille, Tinline le réveille."
+
+[addcontact_why_timeout]
+text = "Impossible de joindre le Tinline de {name}. Réessayez dans un moment, ou quand {name} sera disponible."
+
+[home_first_paste]
+text = "Coller son code"
+
+[settings_account_rings]
+text = "Sonne ici · touchez pour changer"
+
+[settings_battery_keep_push]
+text = "Comment Tinline me joint"
+
+[notif_perm_optimized]
+text = "Optimisée"
+
+[onboarding_restored_lead_adding_push]
+text = "{name} est maintenant ouvert sur ce téléphone. Votre autre compte sonne quand même ici et vous signale les nouveaux messages. Vous pouvez changer dans Paramètres."
+
+[onboarding_restored_lead_adding_push_unnamed]
+text = "Ce compte est maintenant ouvert sur ce téléphone. Votre autre compte sonne quand même ici et vous signale les nouveaux messages. Vous pouvez changer dans Paramètres."

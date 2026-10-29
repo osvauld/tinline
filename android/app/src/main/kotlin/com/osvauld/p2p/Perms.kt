@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -37,8 +38,9 @@ object Perms {
     fun missing(c: Context): List<Need> = buildList {
         if (!granted(c, Manifest.permission.RECORD_AUDIO)) add(Need.Mic)
         if (!notificationsOn(c)) add(Need.Notifications)
-        // With wake-ups Tinline rests and a push starts it, so only the always-on line needs the exemption.
-        if (keepsLineOpen(c) && !batteryExempt(c)) add(Need.Battery)
+        // With wake-ups Tinline rests and a push starts it, so it needs no exemption, only not to be Restricted;
+        // the always-on line needs Unrestricted.
+        if (if (keepsLineOpen(c)) !batteryExempt(c) else backgroundRestricted(c)) add(Need.Battery)
         if (Build.VERSION.SDK_INT >= 34) {
             val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!nm.canUseFullScreenIntent()) add(Need.FullScreen)
@@ -49,6 +51,16 @@ object Perms {
     fun keepsLineOpen(c: Context) = PushPolicy.wantsAlwaysOnService(PushMode.mode(c))
 
     fun batteryExempt(c: Context) = (c.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(c.packageName)
+
+    /** The user set Tinline's battery use to Restricted. */
+    fun backgroundRestricted(c: Context) = (c.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).isBackgroundRestricted
+
+    /** Android's own name for Tinline's battery setting, as its settings page shows it. */
+    @StringRes fun batteryState(c: Context): Int = when {
+        backgroundRestricted(c) -> R.string.notif_perm_restricted
+        batteryExempt(c) -> R.string.notif_perm_unrestricted
+        else -> R.string.notif_perm_optimized
+    }
 
     fun settingsIntent(c: Context, need: Need): Intent? = when (need) {
         Need.Battery -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${c.packageName}"))

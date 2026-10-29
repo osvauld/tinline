@@ -72,9 +72,6 @@ text = "Odottaa isäntälaitetta"
 [groups_host_ask_title]
 text = "{name} pyysi tätä puhelinta isännöimään ryhmää {group}"
 
-[groups_host_ask_body]
-text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen pitää pysyä verkossa, ja se kuluttaa akkua: jatkuvasti päällä oleva tietokone on parempi isäntälaite. Isännöinti ei tee sinusta ylläpitäjää."
-
 [groups_host_here]
 text = "Isännöi täällä"
 
@@ -203,9 +200,6 @@ text = "Liity ryhmäpuheluun"
 
 [groups_chat_call_start]
 text = "Aloita ryhmäpuhelu"
-
-[groups_chat_no_call_host]
-text = "Puhelulla ei ole vielä isäntälaitetta: ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa"
 
 [groups_chat_info]
 text = "Ryhmän tiedot"
@@ -386,9 +380,6 @@ text = "Yksityinen kutsu jokaiselle"
 [groupsb_create_link]
 text = "Luo kutsulinkki"
 
-[groupsb_create_link_nohost]
-text = "Nimeä ensin isäntälaite. Linkissä on yksi isäntälaite."
-
 [groupsb_create_link_valid]
 text = "Voimassa 7 päivää"
 
@@ -443,9 +434,6 @@ text = "Jäsen"
 
 [groupsb_host]
 text = "Isäntälaite"
-
-[groupsb_call_host]
-text = "Puheluisäntä"
 
 [groupsb_leave_group]
 text = "Poistu ryhmästä"
@@ -534,73 +522,8 @@ text = "Tämä laite"
 [groupsb_hosts_none]
 text = "Tällä ryhmällä ei ole isäntälaitetta. Viestit odottavat, kunnes sellainen nimetään."
 
-[groupsb_hosts_online]
-one = "{count} isäntälaite verkossa. Viestit menevät perille heti."
-other = "{count} isäntälaitetta verkossa. Viestit menevät perille heti."
-
-[groupsb_hosts_offline]
-text = "Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
-
-[groupsb_also_hosts_calls]
-text = "isännöi myös puheluita"
-
-[groupsb_remove_host_desc]
-text = "Poista {device} isäntälaitteista"
-
-[groupsb_cancel_host_desc]
-text = "Peru isännöintipyyntö laitteelle {device}"
-
-[groupsb_waiting_accept]
-text = "Odottaa hyväksyntää"
-
-[groupsb_offered_host]
-text = "Tarjoutui isännöimään · tarvitsee ylläpitäjän"
-
-[groupsb_appoint]
-text = "Nimeä"
-
-[groupsb_hosts_note]
-text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun."
-
-[groupsb_hosts_note_admin]
-text = "Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää."
-
-[groupsb_callhosts_sec]
-text = "Puheluisännät"
-
-[groupsb_callhosts_none]
-text = "Tällä ryhmällä ei ole puheluisäntää. Kukaan ei voi aloittaa puhelua, ennen kuin ylläpitäjä nimeää sellaisen."
-
-[groupsb_callhosts_ready]
-one = "{count} puheluisäntä valmiina. Puhelut alkavat sen kautta."
-other = "{count} puheluisäntää valmiina. Puhelut alkavat niiden kautta."
-
-[groupsb_callhosts_offline]
-text = "Yksikään puheluisäntä ei ole juuri nyt saatavilla. Puhelu voi alkaa, kun jokin palaa."
-
-[groupsb_callhosts_me]
-text = "Tämä puhelin välittää aloittamasi puhelut."
-
-[groupsb_remove_callhost_desc]
-text = "Poista {device} puheluisännistä"
-
-[groupsb_cancel_callhost_desc]
-text = "Peru puheluisäntäpyyntö laitteelle {device}"
-
-[groupsb_stop_calls_phone]
-text = "Lopeta puheluiden isännöinti tällä puhelimella"
-
-[groupsb_host_calls_phone]
-text = "Isännöi puheluita tällä puhelimella"
-
 [groupsb_host_calls_phone_sub]
 text = "Välittää täältä aloittamasi puhelut. Jatkuvasti päällä oleva tietokone voi välittää kaikkien puhelut."
-
-[groupsb_callhosts_note]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan."
-
-[groupsb_callhosts_note_admin]
-text = "Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
 
 [groupsb_flags_on_you]
 text = "Sinuun kohdistuvat merkinnät"
@@ -704,48 +627,6 @@ text = "Tee ylläpitäjäksi"
 [groupsb_remove_admin]
 text = "Poista ylläpito-oikeudet"
 
-[groupsb_make_device_host]
-text = "Tee laitteesta {device} isäntälaite"
-
-[groupsb_make_host]
-text = "Tee isäntälaitteeksi"
-
-[groupsb_asks_host]
-text = "Pyytää henkilöä {name} isännöimään. Hänen täytyy hyväksyä."
-
-[groupsb_stop_device_host]
-text = "Lopeta laitteen {device} isännöinti"
-
-[groupsb_remove_as_host]
-text = "Poista isäntälaitteista"
-
-[groupsb_cancel_callhost_request]
-text = "Peru puheluisäntäpyyntö"
-
-[groupsb_waiting_device]
-text = "Odotetaan, että henkilön {name} laite hyväksyy"
-
-[groupsb_remove_as_callhost]
-text = "Poista puheluisännistä"
-
-[groupsb_make_callhost]
-text = "Tee puheluisännäksi"
-
-[groupsb_asks_callhost]
-text = "Pyytää henkilöä {name} välittämään ryhmäpuhelut. Hänen täytyy hyväksyä."
-
-[groupsb_stop_hosting_device]
-text = "Lopeta isännöinti tällä laitteella"
-
-[groupsb_host_device]
-text = "Isännöi tällä laitteella"
-
-[groupsb_host_device_sub]
-text = "Myös ylläpitäjän täytyy nimetä se. Jatkuvasti päällä oleva tietokone on parempi isäntälaite."
-
-[groupsb_stop_calls_device]
-text = "Lopeta puheluiden isännöinti tällä laitteella"
-
 [groupsb_flag_removal]
 text = "Merkitse poistettavaksi"
 
@@ -785,9 +666,6 @@ text = "Uusi ryhmä"
 
 [groupsb_group_name]
 text = "Ryhmän nimi"
-
-[groupsb_new_group_host_note]
-text = "Tämä puhelin isännöi ryhmää aluksi: se säilyttää ryhmän ja välittää viestit eteenpäin. Jatkuvasti päällä oleva tietokone on parempi isäntälaite — nimeä sellainen ryhmän tiedoista, kun se on liittynyt."
 
 [groupsb_new_group_own]
 text = "Ryhmä on sinun. Kutsu ihmisiä ryhmän tiedoista."
@@ -1518,12 +1396,6 @@ text = "Kaksi laitetta on parempi kuin yksi"
 [onboarding_tip_devices_body]
 text = "Linkitä toinen laite, kun ehdit, niin pääset tilillesi, vaikka yksi laite katoaisi."
 
-[onboarding_tip_groups_title]
-text = "Ryhmiä isännöidään tietokoneella"
-
-[onboarding_tip_groups_body]
-text = "Jos haluat aloittaa ryhmän, asenna Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
-
 [onboarding_name_title]
 text = "Millä nimellä ihmiset voivat kutsua sinua?"
 
@@ -1658,9 +1530,6 @@ text = "Odottaa"
 
 [onboarding_sync_slow]
 text = "Ei vielä mitään. Toinen laite ei ehkä ole verkossa: se jatkaa siitä, mihin jäi, kun molemmat ovat seuraavan kerran verkossa."
-
-[onboarding_sync_keep_online]
-text = "Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla."
 
 [onboarding_savefail_title]
 text = "Tiliäsi ei voitu tallentaa"
@@ -3297,9 +3166,6 @@ text = "Käyntikorttisi QR-koodi"
 [card_preparing]
 text = "Valmistellaan koodiasi…"
 
-[card_works_once]
-text = "Toimii kerran. Uuden koodin luominen peruu tämän."
-
 [card_new_code]
 text = "Uusi koodi"
 
@@ -3418,33 +3284,6 @@ text = "Ei enää ylläpitäjä."
 
 [groupsc_left_group]
 text = "Poistuit ryhmästä. Sen viestit jäävät tänne."
-
-[groupsc_appointed]
-text = "Nimetty. Laite alkaa isännöidä, kun se suostuu."
-
-[groupsc_host_revoked]
-text = "Se laite ei enää isännöi ryhmää."
-
-[groupsc_host_agreed]
-text = "Tämä puhelin suostui isännöimään. Se alkaa isännöidä heti, kun ylläpitäjä on nimennyt sen."
-
-[groupsc_host_stopped]
-text = "Tämä puhelin lopetti ryhmän isännöinnin."
-
-[groupsc_call_host_asked]
-text = "Pyydetty. Laite välittää puhelut, kun se hyväksyy."
-
-[groupsc_call_host_revoked]
-text = "Se laite ei enää isännöi ryhmän puheluita."
-
-[groupsc_call_host_agreed]
-text = "Tämä laite isännöi nyt ryhmän puheluita."
-
-[groupsc_call_host_declined]
-text = "Tämä laite ei isännöi ryhmän puheluita."
-
-[groupsc_calls_here]
-text = "Tämä puhelin välittää nyt itse aloittamansa puhelut tässä ryhmässä."
 
 [groupsc_admins_only_on]
 text = "Nyt vain ylläpitäjät kirjoittavat. Kaikki voivat yhä lukea."
@@ -3696,14 +3535,8 @@ text = "Linjasi henkilöön {name} on auki. Sano hei."
 [addcontact_why_requested]
 text = "Pyyntö lähetetty. Linjasi aukeaa, kun {name} hyväksyy."
 
-[addcontact_why_slow]
-text = "Yritetään yhä. Henkilön {name} Tinlinen täytyy olla auki ja verkossa tätä varten."
-
 [addcontact_why_reaching]
 text = "Tavoitetaan henkilön {name} Tinlinea…"
-
-[addcontact_why_timeout]
-text = "Henkilön {name} Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkossa, joten yritä uudelleen, kun {name} on paikalla."
 
 [addcontact_why_refused]
 text = "Henkilön {name} koodi ei ole enää voimassa. Hän on ehkä luonut uuden, joten pyydä henkilöltä {name} hänen uusin koodinsa."
@@ -4400,9 +4233,6 @@ text = "Näytä koodisi ystävälle tai kopioi ja lähetä se. Tai skannaa häne
 [home_first_scan]
 text = "Skannaa hänen koodinsa"
 
-[home_first_paste]
-text = "Liitä hänen käyntikorttinsa"
-
 [home_first_waiting]
 text = "Odotetaan, että hän skannaa — pidä tämä auki."
 
@@ -4925,9 +4755,6 @@ text = "{list}. Avaa toiminnot"
 [groupsb_role_host_lc]
 text = "isäntälaite"
 
-[groupsb_role_callhost_lc]
-text = "puheluisäntä"
-
 [avail_note_unnamed]
 text = "Kun olet poissa, soittajat näkevät, ettei sinua tavoitettu. Mitään ei jää jonoon, eikä kenellekään kerrota syytä."
 
@@ -4939,3 +4766,45 @@ text = "Joku soittaa ryhmälle"
 
 [gcall_started_call_unnamed]
 text = "Joku aloitti puhelun"
+
+[groupsb_create_link_nohost]
+text = "Määritä ensin isäntälaite. Linkki nimeää yhden isäntälaitteen."
+
+[groupsb_new_group_host_note]
+text = "Tämä puhelin isännöi ryhmää aluksi: se säilyttää ryhmän ja välittää viestit eteenpäin. Päällä pysyvä tietokone on parempi isäntälaite. Määritä sellainen kohdassa Isännöintioikeudet ryhmän tiedoissa, kun se on liittynyt."
+
+[onboarding_tip_groups_title]
+text = "Tietokone on hyvä isäntälaite"
+
+[onboarding_tip_groups_body]
+text = "Voit aloittaa ryhmän tällä puhelimella. Päällä pysyvä tietokone pitää sen tavoitettavana, kun puhelimesi nukkuu."
+
+[onboarding_sync_keep_online]
+text = "Pidä molemmat laitteet auki ja verkossa, kunnes tämä valmistuu."
+
+[card_works_once]
+text = "Toimii 7 päivää kaikille, joille sen annat. Jokainen kysyy ensin sinulta. Uuden koodin luominen mitätöi tämän."
+
+[addcontact_why_slow]
+text = "Yritetään yhä. Jos henkilön {name} puhelin nukkuu, Tinline herättää sen."
+
+[addcontact_why_timeout]
+text = "Henkilön {name} Tinlinea ei tavoitettu. Yritä uudelleen hetken kuluttua tai kun {name} on paikalla."
+
+[home_first_paste]
+text = "Liitä hänen koodinsa"
+
+[settings_account_rings]
+text = "Soi täällä · napauta vaihtaaksesi"
+
+[settings_battery_keep_push]
+text = "Miten Tinline tavoittaa minut"
+
+[notif_perm_optimized]
+text = "Optimoitu"
+
+[onboarding_restored_lead_adding_push]
+text = "{name} on nyt avoinna tällä puhelimella. Toinen tilisi soi silti täällä ja kertoo uusista viesteistä. Voit vaihtaa asetuksista."
+
+[onboarding_restored_lead_adding_push_unnamed]
+text = "Tämä tili on nyt avoinna tällä puhelimella. Toinen tilisi soi silti täällä ja kertoo uusista viesteistä. Voit vaihtaa asetuksista."
