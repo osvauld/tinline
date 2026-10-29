@@ -1,6 +1,8 @@
 //! A long run of one group on real nodes (`support::Peer`, loopback iroh): N days
 //! (`GROUP_LONGRUN_DAYS`, default 30) of posts from the owner/host O, a second host H, member A
-//! on two devices (A, A2) and member B. Each has days away and keeps posting while away; O
+//! on two devices (A, A2) and member B on two devices (B, B2). Each has days away and keeps
+//! posting while away (B2 is away for a week right after B's own gap, so B's posts of that gap
+//! reach B2 only through the hosts); O
 //! restarts once and rotates its group endpoint once; the group compacts on every device every
 //! day. After every reconnect every online device must show the same posts. At the end O
 //! restarts again (closed days come back from the store), a new member C joins and must backfill
@@ -48,13 +50,14 @@ impl Rng {
     }
 }
 
-/// Index into the device arrays: O, H, A, A2, B.
+/// Index into the device arrays: O, H, A, A2, B, B2.
 const O: usize = 0;
 const H: usize = 1;
 const A: usize = 2;
 const A2: usize = 3;
 const B: usize = 4;
-const NAMES: [&str; 5] = ["O", "H", "A", "A2", "B"];
+const B2: usize = 5;
+const NAMES: [&str; 6] = ["O", "H", "A", "A2", "B", "B2"];
 
 /// One post: who wrote it and whether every online device has agreed on it since.
 struct Sent {
@@ -132,7 +135,7 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
     let n = days();
     let t_run = Instant::now();
 
-    // O creates the group; H, A and B join; A2 links as A's second device and joins with a
+    // O creates the group; H, A and B join; A2 and B2 link as second devices and join with a
     // device token; H becomes the second host.
     let mut o = S.peer("o");
     let h = S.peer("h");
@@ -145,13 +148,19 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
     assert_eq!(join(&a2, tok), g);
     eventually(WAIT, "A2 sees the members", || members(&a2, &g) == members(&a, &g));
     println!("LONGRUN link: A2 linked and joined after {} ms", ms(t_link.elapsed()));
-    appoint_host(&o, &h, &g, &[&o, &h, &a, &a2, &b]);
-    for p in [&o, &h, &a, &a2, &b] {
+    let t_link = Instant::now();
+    let b2 = S.link_desk(&b, "b2");
+    let tok = b.node.group_device_token(g.clone()).unwrap();
+    assert_eq!(join(&b2, tok), g);
+    eventually(WAIT, "B2 sees the members", || members(&b2, &g) == members(&b, &g));
+    println!("LONGRUN link: B2 linked and joined after {} ms", ms(t_link.elapsed()));
+    appoint_host(&o, &h, &g, &[&o, &h, &a, &a2, &b, &b2]);
+    for p in [&o, &h, &a, &a2, &b, &b2] {
         p.node.group_backfill_pause_ms_for_test(5);
     }
 
     let today = now_ms() / DAY * DAY;
-    let mut up = [true; 5];
+    let mut up = [true; 6];
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
     let mut ledger: Vec<Sent> = Vec::new();
     let mut reconnects: Vec<(i64, &str, Duration)> = Vec::new();
@@ -169,14 +178,16 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
             restarted = true;
             println!("LONGRUN day {d}: O restarted in {} ms", ms(t.elapsed()));
         }
-        let peers = [&o, &h, &a, &a2, &b];
+        let peers = [&o, &h, &a, &a2, &b, &b2];
 
         // Who is up today. A host is always up: O stays when H is away and the other way round.
+        // B2 is away days 17..=23 (right after B's gap) and every 8th day.
         let h_want = d % 13 != 8;
         let o_want = !(d % 17 == 9) || !h_want;
-        let want = [o_want, h_want, d % 11 != 5, !(12..=18).contains(&d), !(d % 7 == 3 || (10..=16).contains(&d))];
+        let b2_want = !((17..=23).contains(&d) || d % 8 == 6);
+        let want = [o_want, h_want, d % 11 != 5, !(12..=18).contains(&d), !(d % 7 == 3 || (10..=16).contains(&d)), b2_want];
         let mut came_up: Vec<(usize, Instant)> = Vec::new();
-        for i in 0..5 {
+        for i in 0..6 {
             if up[i] && !want[i] {
                 peers[i].node.stop();
                 up[i] = false;
@@ -196,7 +207,7 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
             eventually(WAIT + 15, "O rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old_endpoint));
             o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
             let new = o.node.group_endpoint_id().unwrap();
-            for i in [A, A2, B] {
+            for i in [A, A2, B, B2] {
                 if up[i] {
                     eventually(WAIT, &format!("{} follows the rotation", NAMES[i]), || peers[i].node.group_known_endpoints_for_test(g.clone()).contains(&new));
                 }
@@ -226,6 +237,9 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
         for k in 0..1 + rng.below(3) {
             post(B, k, 8 * HOUR + rng.below(14 * HOUR), &mut ledger);
         }
+        if d % 5 == 1 {
+            post(B2, 0, 19 * HOUR, &mut ledger);
+        }
         if d % 9 == 4 && d < n - 1 {
             post(A, 90, DAY - 30_000, &mut ledger);
             post(A, 91, DAY + 30_000, &mut ledger);
@@ -240,7 +254,7 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
             let want = texts(peers[ref_i], &g);
             let mut set = want.clone();
             set.sort();
-            set == expected && (0..5).filter(|i| up[*i]).all(|i| texts(peers[i], &g) == want)
+            set == expected && (0..6).filter(|i| up[*i]).all(|i| texts(peers[i], &g) == want)
         });
         for s in ledger.iter_mut() {
             if up[s.dev] {
@@ -253,7 +267,7 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
         }
 
         // Compaction on every device that is up.
-        for i in 0..5 {
+        for i in 0..6 {
             if up[i] {
                 let t = Instant::now();
                 peers[i].node.group_compact_now_for_test().unwrap();
@@ -268,8 +282,8 @@ fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() 
 
     // Everyone up, final agreement.
     {
-        let peers = [&o, &h, &a, &a2, &b];
-        for i in 0..5 {
+        let peers = [&o, &h, &a, &a2, &b, &b2];
+        for i in 0..6 {
             if !up[i] {
                 online(&peers[i].node);
                 up[i] = true;
