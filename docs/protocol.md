@@ -138,6 +138,10 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
 
 1. B opens a connection to A's device and sends `CallHello { call_id, attestation, grant }`
    where `grant` is the call token A issued B (or, if B holds none, its message token).
+   After a `call` wake, A may instead open the connection itself and send
+   `CallReady { attestation }` (attested device = the connection's); B, dialling that device,
+   answers on the same stream with its `CallHello` and the steps below run unchanged, else
+   `Reject` (`docs/push.md` "Calls").
 2. A: `accept_hello`: attestation valid and `device == remote_device`; token issued by A to
    the attested DID, redeemed (`proto::issued`); DID is a contact. Then: blocked -> `Notice`;
    token taken back by a block (cut-off) -> `Reject { "not accepted" }`; not a call token,

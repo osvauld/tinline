@@ -91,9 +91,20 @@ A (caller)                 Relay / push                     B (asleep)
  |-- CallHello dial ---X
  |-- wake {call} -------------------------------------------->| rings now (local name)
  |-- redial every ~1 s while ringing                          | node starts, reachable
- |-- CallHello ---------------------------------------------->| (normal call protocol)
+ |<-------------------------------------------- CallReady ----| dial-back (B's connection)
+ |-- CallHello (on A's redial or on B's connection) --------->| (normal call protocol)
  |<-------------------------------------------- Accept -------| user answers
 ```
+
+- **Dial-back** (decided 2026-10-28, after a phone that could chat rang from the wake but no
+  `CallHello` ever reached it): while the wake ring is open, B dials each device of A on the
+  calls ALPN every ~1 s and sends `CallReady { attestation }`. The device of A that is dialling
+  B answers on that stream with its `CallHello`; the call then runs on B's connection exactly as
+  if A had dialled. A device of A that is not calling B answers `Reject`. Both sides dial at
+  once; A's leg for that device takes whichever connection comes first and only sends one
+  `CallHello`. The dial-back ends when the ring is consumed or ends. It reaches A before B's
+  user answers, so A learns B's device is online (as a `msg` wake's dial-back already does).
+  A dial-back from a device A does not hold for B (an unannounced rotation) is refused.
 
 - B rings before the call is connected, so answering may wait a moment for A's next redial;
   the UI shows "Connecting…" on answer until `CallHello` arrives.
@@ -432,7 +443,8 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W2 | B's app killed; A sends | One wake; B dials A; message delivered; B notifies; link closes after idle |
 | W3 | B asleep; A calls | B rings (Android full-screen / iOS CallKit) with A's local name; answer connects |
 | W4 | A hangs up before B is reachable | B's ringing ends within the no-`CallHello` window; no call connects |
-| W4b | Call wake: connection direction | The call session is dialled A→B with `CallHello`; B never dials for a call |
+| W4b | Call wake: connection direction | A dials A→B with `CallHello`; B dials back with `CallReady` and A's `CallHello` may come on B's connection. One call either way |
+| W4d | Call wake: A cannot reach B, B can reach A | B's dial-back carries the call; B rings and A hears `Ringing` (`wake_a_woken_callee_dials_back_a_caller_that_cannot_reach_it`) |
 | W4c | Call wake: caller UI | A shows "Calling…" until B's `Ringing` arrives, then "Ringing"; never "Ringing" before |
 | W5 | Call wake older than 30 s arrives | Android: nothing; iOS: reported and ended at once |
 | W6 | B blocks A, then A sends | After the revoke: relay answers 410 and A drops the token. Before it: Android shows nothing and dials nothing; iOS call reported and ended at once; never a dial to A |

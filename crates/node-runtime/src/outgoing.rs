@@ -33,6 +33,7 @@ impl NodeCtx {
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
             waking: AtomicBool::new(false),
+            dial_backs: Mutex::new(Default::default()),
             epoch,
             ended_wake: tokio::sync::Notify::new(),
             video: Default::default(),

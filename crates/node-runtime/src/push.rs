@@ -239,6 +239,8 @@ pub struct PushRt {
     woken: Mutex<HashMap<String, Instant>>,
     /// Wake rings and queued dial-backs of the receiving side (`ring.rs`).
     pub(super) rings: ring::Rings,
+    /// Wake rings whose dial-back waits for the endpoint (`call_back.rs`).
+    pub(super) call_backs: call_back::CallBacks,
     /// DIDs whose code the user is looking at ("Add Maya?"), and since when: a token of ours for
     /// them is registered now, so the hello does not wait for it (`code.rs` `code_peeked`).
     pub(super) peeked: Mutex<HashMap<String, Instant>>,
@@ -530,6 +532,7 @@ impl NodeCtx {
     /// [`RENEW_EVERY`] while the node lives.
     pub fn wake_started(self: &Arc<Self>) {
         self.wake_dial_backs_started();
+        self.call_backs_started();
         self.wake_kick();
         if self.push.periodic.swap(true, Ordering::SeqCst) {
             return;
@@ -844,6 +847,7 @@ impl NodeCtx {
     }
 }
 
+mod call_back;
 mod code;
 mod ring;
 pub use code::{

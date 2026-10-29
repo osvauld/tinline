@@ -4,7 +4,8 @@
 //!
 //! - `msg` wake: dial back (`chat_kick`, the path a local send takes). If the node is not up yet
 //!   the contact is queued and dialled when it starts.
-//! - `call` wake: B never dials. A ring is kept per contact for [`WAKE_RING_WINDOW_MS`] from the
+//! - `call` wake: B dials A back with `CallReady` (`call_back.rs`), and the `CallHello` may come
+//!   on that connection. A ring is kept per contact for [`WAKE_RING_WINDOW_MS`] from the
 //!   wake's arrival. A repeat wake extends the window from itself (never a second ring), capped
 //!   at [`WAKE_RING_CAP_MS`] in total. The real `CallHello` consumes the ring silently (the
 //!   normal `on_incoming_call` follows); if the user answered early, that call is accepted the
@@ -248,8 +249,10 @@ impl NodeCtx {
             }
         };
         if spawn {
-            let (this, did) = (self.clone(), did.to_string());
-            self.handle.spawn(async move { this.wake_ring_timer(did).await });
+            let (this, did2) = (self.clone(), did.to_string());
+            self.handle.spawn(async move { this.wake_ring_timer(did2).await });
+            // Reach the caller from our side too; its `CallHello` may come back on our connection.
+            self.call_back(did);
         }
     }
 
