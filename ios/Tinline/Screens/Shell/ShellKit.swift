@@ -993,6 +993,19 @@ struct ShellCountBadge: View {
     }
 }
 
+/// The switcher's unread dot on an account that is not open (`AccountSummary.unread`, docs/multi-online.md). A slot of the same
+/// size is kept when there is nothing unread, so the row does not shift when the dot appears.
+struct ShellAccountUnreadDot: View {
+    let unread: UInt32
+    @Environment(\.tin) private var tin
+    var body: some View {
+        let p = ShellPalette(tin)
+        Circle().fill(unread > 0 ? p.accent : .clear).frame(width: 10, height: 10)
+            .accessibilityHidden(unread == 0)
+            .accessibilityLabel(unread > 0 ? trn("shell_account_unread", Int(unread)) : "")
+    }
+}
+
 /// Section headers in lists (`.sec`, `h3`): 12, 650, uppercase, .06em, muted.
 struct ShellListSection: View {
     let text: String

@@ -72,7 +72,7 @@ impl SessPolicy {
                 Body::OpenJoin { .. } if e.rec.author != did => {
                     return Err("an open join must come from its own author".into());
                 }
-                Body::Post { .. } if refused_admins_only(state, did, &e.rec.author, &e.rec.seen) => {
+                Body::Post { .. } | Body::Voice { .. } if refused_admins_only(state, did, &e.rec.author, &e.rec.seen) => {
                     return Err(ADMINS_ONLY.into());
                 }
                 _ => {}

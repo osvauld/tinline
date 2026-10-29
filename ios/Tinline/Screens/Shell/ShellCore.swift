@@ -12,6 +12,11 @@ import SwiftUI
  * TODO(ios-device): background behaviour. Android keeps a foreground service so calls ring with the app closed. On iOS that
  * needs PushKit + CallKit (a VoIP push wakes the app, the node starts, the call is reported to CallKit) and a background
  * audio session during calls. Until then the line is open only while Tinline is in front or recently backgrounded.
+ *
+ * Several accounts (docs/multi-online.md): the core can wake a sleeping account on a push (`BackgroundMode.onWake`). iOS has
+ * no PushKit/APNs handler calling `Node.onWake` yet, so the node runs `.openOnly`: only the open account is online, the others
+ * catch up when opened. The account events (remembered key from the Keychain, background message notice, switcher refresh)
+ * and the account-naming ring are wired already; with pushes in place only `backgroundMode` changes.
  */
 
 /// Set while a new account is being created/restored next to the existing ones (android `P2pApp.Adding`).
@@ -86,6 +91,7 @@ final class ShellCore {
     let groupLauncher: ShellGroupCallLauncher
     private let lifecycle = ShellSerial("p2p-lifecycle")
     private var events: ShellNodeEvents?
+    private var accountEvents: ShellAccountEvents?
     private var requestEvents: ShellRequestEvents?
     private var availTask: Task<Void, Never>?
     private var network: ShellNetworkWatch?
@@ -107,6 +113,7 @@ final class ShellCore {
         calls = env
         groupLauncher = ShellGroupCallLauncher(ui: env.groupUi, groupLog: app.$groupLog.eraseToAnyPublisher())
         links.core = self
+        env.controller.accountOpened = { [weak self] in await self?.callAccountOpened() }
         // A call holds the microphone: no voice messages meanwhile (Chat area).
         ChatHooks.callActive = { [weak env] in env.map { $0.controller.ui != nil || $0.groupUi.state.active } ?? false }
         env.groupUi.appInFront = { [weak self] in self?.resumed ?? true }
@@ -142,6 +149,12 @@ final class ShellCore {
         node.setProfileEvents(events: people.profiles)
         node.setVideoEnabled(enabled: prefs.videoEnabled)
         node.setLinkEvents(events: links)
+        // Before start (docs/multi-online.md "Background mode").
+        node.setBackgroundMode(mode: Self.backgroundMode)
+        let ae = ShellAccountEvents(core: self, keys: keys)
+        accountEvents = ae
+        node.setAccountEvents(events: ae)
+        ShellNotices.shared.core = self
         let rq = ShellRequestEvents(core: self)
         requestEvents = rq
         node.setContactRequestEvents(events: rq)
@@ -167,6 +180,10 @@ final class ShellCore {
         try? url.setResourceValues(values)
         return url.path
     }
+
+    /// `.onWake` once a PushKit/APNs handler hands wake pushes to `Node.onWake`; until then a wake can never reach a sleeping
+    /// account, so only the open one runs (TODO(ios-push): PushKit + CallKit report, alert push, `setPushTarget`).
+    nonisolated static let backgroundMode: BackgroundMode = .openOnly
 
     // ---------------------------------------------------------------- refresh
 
@@ -399,6 +416,8 @@ final class ShellCore {
             }
             _ = Self.rememberKey(node, keys: keys)
         }
+        // Its background notices are on screen now.
+        ShellNotices.shared.clear(account: did)
         await refreshNow()
         startNode()
     }
@@ -488,6 +507,39 @@ final class ShellCore {
         if case .ended = state { refreshHistory() }
         calls.onCallState(callId, state)
     }
+
+    // ---------------------------------------------------------------- other accounts (docs/multi-online.md)
+
+    /// Unread counts or the running accounts changed, or the core switched accounts itself (answering another account's call):
+    /// the switcher re-reads `accounts()`, and the screens follow the open account.
+    fileprivate func onAccountsChanged() {
+        app.accountsTick &+= 1
+        refresh()
+    }
+
+    /// A 1:1 message reached an account that is not open: a notice naming the account (Settings > Notifications > Messages).
+    fileprivate func onBackgroundMessage(_ account: AccountRef, fromDid: String, fromName: String) {
+        guard prefs.alert("messages"), account.did != app.accountDid else { return }
+        ShellNotices.shared.postBackgroundMessage(account: account, fromDid: fromDid, fromName: fromName)
+    }
+
+    /// A tap on a background message notice: switch to that account first (its remembered key, else its unlock screen),
+    /// then open the conversation. During a call the switch is refused and the notice only brings the app forward.
+    func openFromNotice(account did: String, peer: String) async {
+        if app.accountDid != did {
+            do { try await switchTo(did, passphrase: nil) } catch {
+                NSLog("Tinline: switch from a notice failed: \(error)")
+                return
+            }
+        }
+        OpenChat.request.send(peer)
+    }
+
+    /// The core switched to another account to answer its call (`CallInfo.account`): re-read before the call screen opens.
+    func callAccountOpened() async {
+        profiles.invalidate()
+        await refreshNow()
+    }
 }
 
 /// What the call screens read from the other areas (Calls area `CallDirectory`), from the app state, People and Settings.
@@ -539,6 +591,27 @@ final class ShellNodeEvents: NodeEvents, @unchecked Sendable {
         NSLog("p2pcore: %@", line)
         #endif
     }
+}
+
+/// The core's account callbacks (`AccountEvents`). `accountKey` runs on the thread that called `onWake`/`start` (inside the
+/// PushKit handler's time budget once pushes come): a Keychain read only, nothing on the main actor.
+final class ShellAccountEvents: AccountEvents, @unchecked Sendable {
+    private weak var core: ShellCore?
+    private let keys: ShellKeyStore
+    @MainActor init(core: ShellCore, keys: ShellKeyStore) { self.core = core; self.keys = keys }
+
+    /// The remembered data key for `did`, or nil (passphrase-only here, or the Keychain is not readable yet). A key that is gone
+    /// is cleared by the next unlock of that account, as `autoUnlock` does; here it is only not handed out.
+    func accountKey(did: String) -> Data? {
+        guard keys.exists(did), case .key(let bytes) = keys.load(did) else { return nil }
+        return bytes
+    }
+
+    func onBackgroundMessage(account: AccountRef, fromDid: String, fromName: String) {
+        Task { @MainActor [weak core] in core?.onBackgroundMessage(account, fromDid: fromDid, fromName: fromName) }
+    }
+
+    func onAccountsChanged() { Task { @MainActor [weak core] in core?.onAccountsChanged() } }
 }
 
 /// The core's contact-request callbacks, handed to the People area's model on the main actor.

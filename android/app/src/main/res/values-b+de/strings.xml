@@ -353,14 +353,17 @@
     <string name="accounts_online_here">Online auf diesem Handy</string>
     <string name="accounts_on_this_phone">Auf diesem Handy</string>
     <string name="accounts_locked_not_ringing">Gesperrt · klingelt hier nicht</string>
+    <string name="accounts_rings_here">Klingelt und meldet sich hier</string>
     <string name="accounts_current_desc">Aktuelles Konto</string>
     <string name="accounts_create">Neues Konto erstellen</string>
     <string name="accounts_link">Konto von einem anderen Gerät verknüpfen</string>
     <string name="accounts_restore">Mit 24 Wörtern wiederherstellen</string>
     <string name="accounts_one_online_hint">Es ist immer nur ein Konto online. Anrufe an ein gesperrtes Konto klingeln nur auf deinen anderen Geräten.</string>
+    <string name="accounts_others_ring_hint">Das geöffnete Konto bleibt online. Deine anderen Konten klingeln trotzdem hier und melden dir neue Nachrichten.</string>
     <string name="accounts_finish_call_first">Beende zuerst deinen Anruf</string>
     <string name="accounts_switch_to">Zu %1$s wechseln?</string>
     <string name="accounts_switch_lead">%1$s geht auf diesem Handy offline. Anrufe an %1$s klingeln nur auf deinen anderen verknüpften Geräten, bis du zurückwechselst.</string>
+    <string name="accounts_switch_lead_push">%1$s ruht auf diesem Handy. Anrufe an %1$s klingeln trotzdem hier, und neue Nachrichten werden dir gemeldet.</string>
     <string name="accounts_passphrase_for">Passphrase für %1$s</string>
     <string name="accounts_not_on_call">Du telefonierst gerade nicht. Sonst würde der Wechsel den Anruf beenden.</string>
     <string name="accounts_switching">Wechseln…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline schläft danach von selbst wieder ein.</string>
     <string name="notif_wake_notice_title">Vielleicht hast du eine neue Nachricht</string>
     <string name="notif_wake_notice_text">Öffne Tinline und entsperre es, um alles zu sehen.</string>
+    <string name="notif_bg_message_text">Neue Nachricht</string>
     <string name="notif_return_to_call">Tippe, um zum Anruf zurückzukehren</string>
     <string name="notif_leave">Verlassen</string>
     <string name="notif_end_call">Auflegen</string>

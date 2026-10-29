@@ -146,7 +146,7 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
     reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false, video: Boolean = false,
     onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, signal: Int = 0, direct: Boolean? = null,
     onMessage: (() -> Unit)? = null, waiting: Boolean = false, muted: Boolean = false,
-    waitingCard: (@Composable (Modifier) -> Unit)? = null, waking: Boolean = false, controls: @Composable () -> Unit) {
+    waitingCard: (@Composable (Modifier) -> Unit)? = null, waking: Boolean = false, title: String = name, controls: @Composable () -> Unit) {
     val c = Tin.c
     val density = androidx.compose.ui.platform.LocalDensity.current.density
     var root by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
@@ -175,7 +175,7 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Box(Modifier.onGloballyPositioned { avatar = it.boundsInRoot() }) { Avatar(name, did, 112.dp) }
                 Column(Modifier.fillMaxWidth().onGloballyPositioned { text = it.boundsInRoot() }, horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(name, Modifier.padding(top = 22.dp).fillMaxWidth().heightIn(min = 34.dp),
+                    Text(title, Modifier.padding(top = 22.dp).fillMaxWidth().heightIn(min = 34.dp),
                         style = TinType.h1.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold),
                         color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Box(Modifier.padding(top = 6.dp).heightIn(min = 30.dp), contentAlignment = Alignment.Center) {

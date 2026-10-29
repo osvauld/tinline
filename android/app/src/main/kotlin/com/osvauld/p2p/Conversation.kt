@@ -218,7 +218,8 @@ fun ConversationScreen(
     val rows = remember(msgs.toList(), calls, nowMs / 3_600_000, dividerId) {
         buildList<ConvRow> {
             var last: Long? = null
-            val pending = calls.sortedBy { it.startedAt }.toMutableList()
+            // One row per call: the call id is the row's key (an older log may hold a call twice).
+            val pending = calls.distinctBy { it.callId }.sortedBy { it.startedAt }.toMutableList()
             fun flushCalls(upTo: Long) {
                 while (pending.isNotEmpty() && pending.first().startedAt.toLong() * 1000 <= upTo) {
                     val r = pending.removeAt(0); val at = r.startedAt.toLong() * 1000
@@ -260,7 +261,13 @@ fun ConversationScreen(
             }
         }
     }
-    LaunchedEffect(msgs.size) { if (!find.open && searchHit == null && listState.firstVisibleItemIndex <= 2) listState.scrollToItem(0) }
+    // A new newest message: follow it when we sent it, or when the reader is already at the bottom. requestScrollToItem,
+    // not scrollToItem: the list keeps its first visible row by key when a row is inserted before it, so a scroll that
+    // measures before the new row is composed leaves the new message just below the screen.
+    val newest = msgs.lastOrNull()
+    LaunchedEffect(newest?.id) {
+        if (newest != null && !find.open && (newest.outgoing || (searchHit == null && listState.firstVisibleItemIndex <= 2))) listState.requestScrollToItem(0)
+    }
     suspend fun jumpTo(hit: FindHit) {
         if (hit.day.isNotBlank()) {
             val page = withContext(Dispatchers.IO) { source.day(peerDid, hit.day) }
@@ -336,8 +343,7 @@ fun ConversationScreen(
                     upsert(m)
                     loadReceipt(m.id)
                     if (draft == originalDraft && editing == edit && replying == reply) savedDraft.sent()
-                    if (edit == null) { TinFx.messageSent(); Cues.sent() }
-                    listState.scrollToItem(0)
+                    if (edit == null) { TinFx.messageSent(); Cues.sent(); listState.requestScrollToItem(0) }
                 }.onFailure { toast(friendly(it)) }
             } finally { sending = false }
         }
@@ -345,7 +351,7 @@ fun ConversationScreen(
     fun sendFile(file: File, mime: String) {
         scope.launch(Dispatchers.IO) {
             runCatching { source.sendFile(peerDid, file.path, mime, null) }
-                .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.animateScrollToItem(0) } }
+                .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.requestScrollToItem(0) } }
                 .onFailure { withContext(Dispatchers.Main) { toast(ctx.getString(R.string.conv_send_file_failed)) } }
             file.parentFile?.takeIf { it.parentFile?.name == "chat_out" }?.deleteRecursively()
         }
@@ -979,7 +985,6 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
 /** Voice message body: decrypts the attachment to the cache once, then hands the file to the player. */
 @Composable
 private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean, source: ChatSource, onDownload: () -> Unit) {
-    val c = Tin.c
     val ctx = LocalContext.current
     var path by remember(m.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(m.id, ready) {
@@ -993,14 +998,7 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
     }
     val p = path
     if (p != null) VoiceBubbleContent(m.id, p, a.durationMs.toInt(), a.waveform, out)
-    else Row(Modifier.widthIn(min = 230.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        val remote = !ready && a.state != TransferState.DOWNLOADING
-        Box(
-            Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
-            contentAlignment = Alignment.Center,
-        ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, stringResource(if (remote) R.string.conv_voice_download else R.string.conv_voice_loading), tint = c.onPr) }
-        Text(uniffi.present.clockMs(a.durationMs.toUInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
-    }
+    else VoicePendingContent(a.durationMs.toInt(), remote = !ready && a.state != TransferState.DOWNLOADING, failed = false, outgoing = out, onDownload = onDownload)
 }
 
 // ------------------------------------------------------------------ blocking

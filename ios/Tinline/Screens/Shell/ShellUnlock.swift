@@ -194,6 +194,7 @@ struct ShellAccountSheet: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         if a.current { TinIcon(TinIcons.check, size: 24, tint: tin.pr, label: tr("unlock_current_account")) }
+                        else { ShellAccountUnreadDot(unread: a.unread).frame(width: 24, height: 24) }
                     }
                     .frame(minHeight: 64)
                 }
@@ -213,7 +214,7 @@ struct ShellAccountSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tin.sfRaised.ignoresSafeArea())
         .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
-        .task { list = await core.accounts() }
+        .task(id: app.accountsTick) { list = await core.accounts() }
     }
 }
 

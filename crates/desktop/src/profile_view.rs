@@ -414,12 +414,16 @@ impl App {
             container(row![Space::new().height(44), body].align_y(Alignment::Center)).padding([8, 16]).width(Fill).into()
         }));
         for a in self.accounts.iter().filter(|a| !a.current) {
-            let (name, did) = (a.name.clone(), a.did.clone());
+            let (name, did, unread) = (a.name.clone(), a.did.clone(), a.unread);
             accounts.push(Box::new(move |r| {
                 let face = avatar(t, &name, &did, 36.0);
-                let body = row![face, column![semi(name.clone(), 15.0, t.ink).line_height(lh(20.0)), tx(crate::i18n::tr_str("profile_paused_tap_to_switch"), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                let mut body = row![face, column![semi(name.clone(), 15.0, t.ink).line_height(lh(20.0)), tx(crate::accounts_bg::switch_line(unread), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
                     .spacing(14)
                     .align_y(Alignment::Center);
+                // Messages that reached it while another account is open (it stays online on this computer).
+                if unread > 0 {
+                    body = body.push(super::shell_view::t_badge(t, unread, false));
+                }
                 button(row![Space::new().height(44), body].align_y(Alignment::Center)).padding([8, 16]).width(Fill)
                     .style(move |_, st| iced::widget::button::Style {
                         background: matches!(st, iced::widget::button::Status::Hovered).then_some(iced::Background::Color(t.surface2)),
@@ -458,7 +462,7 @@ impl App {
         let mut c = column![
             pf_sec(16.0, pf_card(t, vec![me_row])),
             pf_sec(24.0, column![pf_card(t, accounts),
-                container(tx(crate::i18n::tr_args("profile_only_the_selected_account", &[]), 13.0, t.ink2).line_height(lh(18.0)))
+                container(tx(crate::i18n::tr_str("accounts_every_account_stays_online"), 13.0, t.ink2).line_height(lh(18.0)))
                     .padding(Padding { top: 8.0, right: 16.0, bottom: 0.0, left: 16.0 })].into()),
             pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("profile_appearance")), pf_card(t, looks)].into()),
             pf_sec(24.0, pf_card(t, areas)),

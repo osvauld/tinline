@@ -952,6 +952,9 @@ text = "इस फ़ोन पर"
 [accounts_locked_not_ringing]
 text = "लॉक है · यहाँ घंटी नहीं बजेगी"
 
+[accounts_rings_here]
+text = "यहाँ घंटी बजेगी और सूचना आएगी"
+
 [accounts_current_desc]
 text = "मौजूदा खाता"
 
@@ -967,6 +970,9 @@ text = "रिकवरी शब्दों से वापस लाएँ"
 [accounts_one_online_hint]
 text = "एक समय में एक खाता ऑनलाइन रहता है। लॉक खाते की कॉल सिर्फ़ आपके दूसरे डिवाइस पर बजती हैं।"
 
+[accounts_others_ring_hint]
+text = "जो खाता खुला है, वह ऑनलाइन रहता है। आपके दूसरे खातों की कॉल भी यहाँ बजती हैं और नए संदेशों की सूचना आती है।"
+
 [accounts_finish_call_first]
 text = "पहले अपनी कॉल पूरी करें"
 
@@ -975,6 +981,9 @@ text = "{name} पर जाएँ?"
 
 [accounts_switch_lead]
 text = "इस फ़ोन पर {current} ऑफ़लाइन हो जाएगा। जब तक आप वापस इस खाते पर न आएँ, {current} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
+
+[accounts_switch_lead_push]
+text = "इस फ़ोन पर {current} शांत रहेगा। {current} की कॉल फिर भी यहाँ बजेंगी और नए संदेशों की सूचना आएगी।"
 
 [accounts_passphrase_for]
 text = "{name} का पासफ़्रेज़"
@@ -2713,6 +2722,9 @@ text = "आपके लिए शायद कोई नया संदेश 
 
 [notif_wake_notice_text]
 text = "देखने के लिए Tinline खोलें और अनलॉक करें।"
+
+[notif_bg_message_text]
+text = "नया संदेश"
 
 [notif_return_to_call]
 text = "कॉल पर लौटने के लिए टैप करें"

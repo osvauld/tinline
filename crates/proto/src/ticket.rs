@@ -13,12 +13,18 @@ pub struct InviteClaim {
     pub device: [u8; 32],
     pub name: String,
     pub relay: Option<String>,
+    /// The owner's code wake token (`docs/push.md` "Code wake tokens"): the relay's sealed bytes,
+    /// `msg` wakes only, expiring with the ticket. `None` when the owner has no push.
+    pub wake: Option<Vec<u8>>,
 }
 
 pub(crate) const TICKET_EPOCH: u64 = 1_767_225_600;
-pub(crate) const TICKET_NONCE_LEN: usize = 6;
+pub const TICKET_NONCE_LEN: usize = 6;
 pub(crate) const MAX_TICKET_NAME: usize = 31;
 pub(crate) const MAX_TICKET_RELAY: usize = 255;
+/// Longest code wake token a ticket carries, in raw bytes (an FCM token seals to about 250; an
+/// APNs pair less). A longer one (a long UnifiedPush endpoint) is left out of the ticket.
+pub const MAX_TICKET_WAKE: usize = 400;
 pub(crate) const KNOWN_RELAYS: [&str; 4] = [
     "https://use1-1.relay.n0.iroh.link./",
     "https://usw1-1.relay.n0.iroh.link./",
@@ -66,12 +72,25 @@ pub struct Ticket {
     pub exp_min: u32,
     pub name: String,
     pub relay: TicketRelay,
+    /// Signed with the rest, so nobody can swap in another device's token. Last field: a ticket
+    /// without one costs a single byte.
+    pub wake: Option<Vec<u8>>,
 }
 
 impl Signable for Ticket {
     const DOMAIN: domains::Domain = domains::INVITE_V2;
-    const MAX_BODY: usize =
-        32 + 32 + TICKET_NONCE_LEN + 5 + 1 + MAX_TICKET_NAME + 1 + 2 + MAX_TICKET_RELAY;
+    const MAX_BODY: usize = 32
+        + 32
+        + TICKET_NONCE_LEN
+        + 5
+        + 1
+        + MAX_TICKET_NAME
+        + 1
+        + 2
+        + MAX_TICKET_RELAY
+        + 1
+        + 2
+        + MAX_TICKET_WAKE;
     fn signer(&self) -> Signer<'_> {
         Signer::Key(&self.pk)
     }
@@ -81,7 +100,11 @@ impl Signable for Ticket {
             TicketRelay::Known(i) => (*i as usize) < KNOWN_RELAYS.len(),
             TicketRelay::Custom(r) => !r.is_empty() && r.len() <= MAX_TICKET_RELAY,
         };
-        if self.name.len() > MAX_TICKET_NAME || !relay_ok {
+        let wake_ok = self
+            .wake
+            .as_ref()
+            .is_none_or(|w| !w.is_empty() && w.len() <= MAX_TICKET_WAKE);
+        if self.name.len() > MAX_TICKET_NAME || !relay_ok || !wake_ok {
             return Err(Error::Decode);
         }
         Ok(())
@@ -101,6 +124,7 @@ impl Ticket {
             device: self.device,
             name: sanitize_name(&self.name),
             relay: self.relay.url(),
+            wake: self.wake.clone(),
         }
     }
 }
@@ -218,12 +242,14 @@ pub fn issue_contact_ticket(
     now: u64,
     ttl_secs: u64,
 ) -> ContactTicket {
-    // Fit the compact layout: name capped at a char boundary, expiry rounded up to a minute.
-    let name = sanitize_name(name);
-    let mut end = name.len().min(MAX_TICKET_NAME);
-    while !name.is_char_boundary(end) {
-        end -= 1;
-    }
+    let (nonce, exp_min) = ticket_nonce_and_exp(now, ttl_secs);
+    issue_contact_ticket_with(id, device, name, relay, nonce, exp_min, None)
+}
+
+/// A fresh nonce and the compact expiry (minutes since the ticket epoch, rounded up) for a
+/// ticket issued at `now` for `ttl_secs`: what the owner needs to register a code wake token
+/// for it before signing (`issue_contact_ticket_with`).
+pub fn ticket_nonce_and_exp(now: u64, ttl_secs: u64) -> ([u8; TICKET_NONCE_LEN], u32) {
     let exp_min = now
         .saturating_add(ttl_secs)
         .saturating_sub(TICKET_EPOCH)
@@ -231,6 +257,32 @@ pub fn issue_contact_ticket(
         .min(u32::MAX as u64) as u32;
     let mut nonce = [0u8; TICKET_NONCE_LEN];
     cryptography::rng::fill(&mut nonce);
+    (nonce, exp_min)
+}
+
+/// Unix seconds of a compact expiry from [`ticket_nonce_and_exp`].
+pub fn ticket_exp_secs(exp_min: u32) -> u64 {
+    TICKET_EPOCH + 60 * exp_min as u64
+}
+
+/// `issue_contact_ticket` with a given nonce and expiry and an optional code wake token (raw
+/// bytes, at most [`MAX_TICKET_WAKE`]; a longer or empty one is left out).
+pub fn issue_contact_ticket_with(
+    id: &Identity,
+    device: [u8; 32],
+    name: &str,
+    relay: Option<String>,
+    nonce: [u8; TICKET_NONCE_LEN],
+    exp_min: u32,
+    wake: Option<Vec<u8>>,
+) -> ContactTicket {
+    // Fit the compact layout: name capped at a char boundary, expiry rounded up to a minute.
+    let name = sanitize_name(name);
+    let mut end = name.len().min(MAX_TICKET_NAME);
+    while !name.is_char_boundary(end) {
+        end -= 1;
+    }
+    let wake = wake.filter(|w| !w.is_empty() && w.len() <= MAX_TICKET_WAKE);
     let relay = relay.filter(|r| !r.is_empty() && r.len() <= MAX_TICKET_RELAY);
     let body = Ticket {
         pk: id.signing_public_key(),
@@ -239,6 +291,7 @@ pub fn issue_contact_ticket(
         exp_min,
         name: name[..end].to_string(),
         relay: TicketRelay::of(relay.as_deref()),
+        wake,
     };
     let invite = Signed::sign(&body, id).expect("own ticket signs");
     ContactTicket::of(invite).expect("own ticket reads")

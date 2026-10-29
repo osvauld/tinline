@@ -226,7 +226,10 @@ impl App {
     pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
         if let Some(w) = self.ring_head_waiting(t) { return Some(w); }
         let c = self.incoming_card()?;
-        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") }, Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
+        let sub = if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") };
+        // A call for another account of this computer names it: "Incoming call · Work".
+        let sub = match &c.info.account { Some(a) => crate::i18n::tr_dots(&[sub, &a.name]), None => sub.to_string() };
+        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, &sub, Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
     }
 
     fn ring_row(&self, t: Tok, name: &str, did: &str, sub: &str, open: Msg, decline: Msg, answer: Msg) -> El<'_> {
@@ -246,7 +249,13 @@ impl App {
 
     fn notice_bar(&self, t: Tok) -> El<'_> {
         match &self.notice {
-            Some(n) => ui::raised(container(tx(n.clone(), 14.0, t.on_primary_c)).padding([10, 14]).width(Fill), t, ui::Depth::Pop, ui::plain(t.primary_c, 10.0)),
+            Some(n) => {
+                let mut content = row![container(tx(n.clone(), 14.0, t.on_primary_c)).width(Fill)].spacing(10).align_y(Alignment::Center);
+                if self.screen == Screen::Home {
+                    content = content.push(button(ui::icon(Icon::X, 16.0, t.on_primary_c)).padding(5).style(button::text).on_press(Msg::DismissNotice));
+                }
+                ui::raised(container(content).padding([10, 14]).width(Fill), t, ui::Depth::Pop, ui::plain(t.primary_c, 10.0))
+            }
             None => Space::new().into(),
         }
     }
@@ -377,7 +386,10 @@ impl App {
         for a in others {
             c = c.push(
                 button(
-                    row![avatar(t, &a.name, &a.did, 28.0), semi(a.name.clone(), 14.0, t.ink), Space::new().width(Fill), ui::icon(Icon::Lock, 16.0, t.ink2)]
+                    row![avatar(t, &a.name, &a.did, 28.0), semi(a.name.clone(), 14.0, t.ink), Space::new().width(Fill),
+                        // Its unread count, kept from when it last ran (every account is shut while this one is locked).
+                        if a.unread > 0 { shell_view::t_badge(t, a.unread, false) } else { Space::new().into() },
+                        ui::icon(Icon::Lock, 16.0, t.ink2)]
                         .spacing(10)
                         .align_y(Alignment::Center),
                 )

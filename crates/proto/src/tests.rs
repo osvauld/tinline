@@ -92,4 +92,5 @@ mod handshake;
 mod link;
 mod notices;
 mod ticket;
+mod ticket_wake;
 mod wire;

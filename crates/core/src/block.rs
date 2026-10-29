@@ -64,9 +64,10 @@ impl Node {
     /// ticket redemptions with the reason `"blocked"`. Any call with them ends. Does not rotate
     /// any endpoint and does not change group membership. Blocking a blocked contact is a no-op.
     pub fn block(&self, did: String) -> Result<(), Error> {
-        let me = self.inner.me()?;
+        let slot = self.open();
+        let me = slot.me()?;
         let notice = {
-            let mut s = self.inner.shared.lock();
+            let mut s = slot.shared.lock();
             if !s.state.contacts.iter().any(|c| c.did == did) {
                 return Err(Error::NotFound);
             }
@@ -83,15 +84,15 @@ impl Node {
             retire_ticket(&mut s.state, false);
             n
         };
-        self.inner.block.signed.lock().insert(did.clone(), 1);
+        slot.block.signed.lock().insert(did.clone(), 1);
         // The block holds in memory whether or not it reached the disk: act on it either way.
-        let saved = self.inner.persist();
-        self.inner.chat.chat_close_sessions(&did);
-        self.inner.calls_blocked(&did, &notice);
-        self.inner.ctx.notice_kick(did);
+        let saved = slot.persist();
+        slot.chat.chat_close_sessions(&did);
+        slot.calls_blocked(&did, &notice);
+        slot.ctx.notice_kick(did);
         // Their wake token is taken back at the relay.
-        self.inner.ctx.wake_kick();
-        self.inner.sink.on_contacts_changed();
+        slot.ctx.wake_kick();
+        slot.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
 
@@ -100,30 +101,32 @@ impl Node {
     /// "blocked you". Messaging resumes once they add us again (ticket / QR). No-op if not
     /// blocked.
     pub fn unblock(&self, did: String) -> Result<(), Error> {
-        if !self.inner.unblock_inner(&did)? {
+        let slot = self.open();
+        if !slot.unblock_inner(&did)? {
             return Ok(());
         }
-        let saved = self.inner.persist();
-        self.inner.ctx.notice_kick(did.clone());
-        self.inner.ctx.wake_kick();
-        self.inner.chat.chat_kick(did);
-        self.inner.sink.on_contacts_changed();
+        let saved = slot.persist();
+        slot.ctx.notice_kick(did.clone());
+        slot.ctx.wake_kick();
+        slot.chat.chat_kick(did);
+        slot.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
 
     /// The block state of the conversation with `did`.
     pub fn block_state(&self, did: String) -> BlockState {
-        block_state_in(&self.inner.shared.lock().state, &did)
+        block_state_in(&self.open().shared.lock().state, &did)
     }
 
     /// `block_state`, `calls_allowed` and `can_call` for each of `dids`, in that order, in one
     /// call: the apps' block refresh at start-up asks this for every contact and kept chat, and
     /// one crossing per DID per question grows with the contact list.
     pub fn peer_blocks(&self, dids: Vec<String>) -> Vec<PeerBlocks> {
-        let me = self.inner.me().ok();
+        let slot = self.open();
+        let me = slot.me().ok();
         // Read under the lock; the call tokens' signatures are checked after it is released.
         let rows: Vec<_> = {
-            let s = self.inner.shared.lock();
+            let s = slot.shared.lock();
             let st = &s.state;
             dids.into_iter()
                 .map(|did| {
@@ -146,7 +149,8 @@ impl Node {
 
     /// Everyone we block, newest block first (one list across our devices).
     pub fn blocked_contacts(&self) -> Vec<BlockedContact> {
-        let s = self.inner.shared.lock();
+        let slot = self.open();
+        let s = slot.shared.lock();
         let mut v: Vec<BlockedContact> = s
             .state
             .blocked
@@ -165,10 +169,11 @@ impl Node {
     /// block us and it has not reached them (UI: "Not delivered: <name> blocked you"); `None`
     /// when delivered, still pending for another reason, or not ours.
     pub fn not_delivered_reason(&self, peer_did: String, message_id: String) -> Option<String> {
-        if !blocked_me(&self.inner.shared.lock().state, &peer_did) {
+        let slot = self.open();
+        if !blocked_me(&slot.shared.lock().state, &peer_did) {
             return None;
         }
-        self.inner.chat.chat_pending(&peer_did, &message_id).then(|| BLOCKED.to_string())
+        slot.chat.chat_pending(&peer_did, &message_id).then(|| BLOCKED.to_string())
     }
 }
 
@@ -176,7 +181,7 @@ impl Node {
     /// For tests: notices signed for `did` since its last block (retries not counted).
     #[doc(hidden)]
     pub fn block_notices_sent_for_test(&self, did: String) -> u32 {
-        self.inner.block.signed.lock().get(&did).copied().unwrap_or(0)
+        self.open().block.signed.lock().get(&did).copied().unwrap_or(0)
     }
 
     /// For tests: a block notice to `to` that claims to come from `claimed_from` but is signed
@@ -184,7 +189,7 @@ impl Node {
     #[cfg(any(test, feature = "dev-tools"))]
     #[doc(hidden)]
     pub fn forge_block_notice_for_test(&self, claimed_from: String, to: String) -> Result<String, Error> {
-        let me = self.inner.me()?;
+        let me = self.open().me()?;
         let n = proto::forge_block_notice_for_test(&me.id, &claimed_from, &to, true, now_ms());
         Ok(serde_json::to_string(&n)?)
     }
@@ -193,13 +198,13 @@ impl Node {
     /// taken.
     #[doc(hidden)]
     pub fn offer_block_notice_for_test(&self, notice_json: String) -> bool {
-        serde_json::from_str::<SignedBlob>(&notice_json).is_ok_and(|n| self.inner.ctx.take_notice(&n).is_ok())
+        serde_json::from_str::<SignedBlob>(&notice_json).is_ok_and(|n| self.open().ctx.take_notice(&n).is_ok())
     }
 
     /// For tests: make this node behave like a modified app that ignores block notices.
     #[doc(hidden)]
     pub fn ignore_block_notices_for_test(&self, ignore: bool) {
-        self.inner.block.ignore.store(ignore, Ordering::SeqCst);
+        self.open().block.ignore.store(ignore, Ordering::SeqCst);
     }
 }
 

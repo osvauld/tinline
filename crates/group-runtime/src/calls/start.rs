@@ -18,6 +18,12 @@ impl GroupRt {
         self.not_in_call()?;
         let dir = GroupCallDir::new(self);
         let now = now_ms();
+        let me = dir.my_host_ref(gid);
+        if let Some(host_ref) = me.clone() {
+            // The local host can have been enabled, finished a call, or recovered conditions
+            // since the last dial-loop tick. Rank its current status, not that old snapshot.
+            self.calls_publish_status(&core, gid, host_ref, now);
+        }
         let members = core.groups.lock().get(gid).map_or(0, |l| l.state.members.len());
         let expected = members.clamp(2, MAX_PARTICIPANTS) as u8;
         let call_id = w::new_call_id();
@@ -28,7 +34,6 @@ impl GroupRt {
             }
             st.statuses.get(gid).map(|m| m.values().map(|(b, _)| b.clone()).collect()).unwrap_or_default()
         };
-        let me = dir.my_host_ref(gid);
         let ranking = rank::rank(&dir, &blobs, &RankCtx { gid, call_id: &call_id, expected: expected as usize, starter: me.as_ref(), now_ms: now });
         self.log(format!("group {}: starting call {call_id}, {} candidate(s)", short(gid), ranking.len()));
         let mut picker = Picker::new(ranking);
@@ -55,7 +60,7 @@ impl GroupRt {
         } else if fresh == 0 {
             "Nobody who can host calls is online right now."
         } else if busy == fresh {
-            "Everyone who can host is busy right now, maybe in another call."
+            "Call hosts are unavailable right now. They may be in another call, or unable to host because of battery, heat or network settings."
         } else if !i_host && phones == fresh - busy {
             "Only phones can host here, and a phone hosts only its own calls. An admin can let you host calls, or keep Tinline open on a computer that can."
         } else {
@@ -147,6 +152,19 @@ impl GroupRt {
         }
     }
 
+    /// Publish on change or expiry, also immediately before ranking our own device.
+    pub(super) fn calls_publish_status(self: &Arc<Self>, core: &GroupCore, gid: &str, host_ref: HostRef, now: u64) {
+        let Some(status) = own_status(gid, host_ref, self.gcall.cond_known(), self.gcall.busy()) else { return };
+        let due = self.calls.st.lock().published.get(gid).is_none_or(|(s, _, at)| *s != status || now >= at + STATUS_REFRESH_MS);
+        if !due { return; }
+        let signed = CallHostStatus { issued_ms: now, ..status.clone() };
+        let Ok(blob) = Signed::sign(&signed, &core.account) else { return };
+        self.calls.st.lock().published.insert(gid.to_string(), (status, blob.clone(), now));
+        self.calls_keep_status(gid, blob.clone(), signed);
+        let sig = *blob.sig();
+        self.calls_originate(core, gid, &sig, GroupMsg::CallHostStatus { status: blob }, Route::All);
+    }
+
     // ---- periodic work (the group dial loop's tick, every ~2 s) --------------------------------
 
     pub fn group_calls_tick(self: &Arc<Self>, core: &Arc<GroupCore>) {
@@ -160,46 +178,8 @@ impl GroupRt {
         if !mine.is_empty() {
             self.group_calls_configure();
         }
-        let fed = self.gcall.cond_known();
-        let busy = self.gcall.busy();
         for (gid, host_ref) in mine {
-            // Nothing until the platform reported its conditions (GA-A1).
-            let Some(status) = own_status(&gid, host_ref, fed, busy) else { continue };
-            let due = self.calls.st.lock().published.get(&gid).is_none_or(|(s, _, at)| *s != status || now >= at + STATUS_REFRESH_MS);
-            if !due {
-                continue;
-            }
-            let Ok(blob) = Signed::sign(
-                &CallHostStatus {
-                    issued_ms: now,
-                    ..status.clone()
-                },
-                &core.account,
-            ) else {
-                continue;
-            };
-            self
-                .calls
-                .st
-                .lock()
-                .published
-                .insert(gid.clone(), (status.clone(), blob.clone(), now));
-            self.calls_keep_status(
-                &gid,
-                blob.clone(),
-                CallHostStatus {
-                    issued_ms: now,
-                    ..status
-                },
-            );
-            let sig = *blob.sig();
-            self.calls_originate(
-                core,
-                &gid,
-                &sig,
-                GroupMsg::CallHostStatus { status: blob },
-                Route::All,
-            );
+            self.calls_publish_status(core, &gid, host_ref, now);
         }
         // The starter's pick: the asked candidate did not answer in time.
         let step = {

@@ -21,6 +21,11 @@ pub enum Msg {
         /// back without waiting on DNS discovery. A wrong one only costs a slower dial.
         #[serde(default)]
         relay: Option<String>,
+        /// The joiner's wake token for the owner (`docs/push.md` "Tokens at setup"), so the
+        /// owner's Accept can wake the joiner to deliver the Welcome. Unsigned, like `WakeTokens`:
+        /// kept only once the joiner is a contact, for its attested device. Absent without push.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        wake: Option<WakeHandover>,
     },
     ContactWelcome {
         attestation: SignedAttestation,
@@ -30,6 +35,10 @@ pub enum Msg {
         /// The owner's call token for the joiner, if it may call.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         call_grant_for_you: Option<SignedGrant>,
+        /// The owner's wake token for the joiner, as `WakeTokens` would carry it; absent without
+        /// push. Filled in when the Welcome is sent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        wake: Option<WakeHandover>,
     },
     Reject {
         reason: String,
@@ -144,6 +153,24 @@ pub enum Msg {
         kinds: u8,
     },
     WakeTokensTaken,
+    /// The callee's dial-back after a `call` wake (`docs/push.md` "Calls"), the first message of
+    /// a connection it opens to the caller on the calls ALPN: "I am reachable here". The caller
+    /// answers on the same stream with its `CallHello` when it is dialling this device, else
+    /// `Reject`. Authenticated by the attestation (= the connection's device); carries no token,
+    /// since the caller is the one who wants this connection.
+    CallReady {
+        attestation: SignedAttestation,
+    },
+}
+
+/// A wake token handed over inside the contact setup (`ContactHello` / `ContactWelcome`): the
+/// fields of `Msg::WakeTokens` without `device`, which is the sender's attested device.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WakeHandover {
+    #[serde(deserialize_with = "de_wake_token")]
+    pub token: String,
+    pub exp_ms: u64,
+    pub kinds: u8,
 }
 
 /// Longest wake token a peer may send, in chars. Keep equal to

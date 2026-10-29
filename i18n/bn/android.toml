@@ -952,6 +952,9 @@ text = "এই ফোনে"
 [accounts_locked_not_ringing]
 text = "লক করা · এখানে রিং হবে না"
 
+[accounts_rings_here]
+text = "এখানে রিং হবে আর জানাবে"
+
 [accounts_current_desc]
 text = "বর্তমান অ্যাকাউন্ট"
 
@@ -967,6 +970,9 @@ text = "রিকভারি শব্দ দিয়ে ফিরিয়ে
 [accounts_one_online_hint]
 text = "একবারে একটি অ্যাকাউন্ট অনলাইনে থাকে। লক করা অ্যাকাউন্টে কল এলে শুধু আপনার অন্য ডিভাইসগুলোতে রিং হয়।"
 
+[accounts_others_ring_hint]
+text = "যে অ্যাকাউন্ট খোলা আছে, সেটি অনলাইনে থাকে। আপনার অন্য অ্যাকাউন্টগুলোতেও এখানে রিং হয় আর নতুন মেসেজের খবর আসে।"
+
 [accounts_finish_call_first]
 text = "আগে কলটি শেষ করুন"
 
@@ -975,6 +981,9 @@ text = "{name}-এ বদলাবেন?"
 
 [accounts_switch_lead]
 text = "এই ফোনে {current} অফলাইন হয়ে যাবে। আপনি আবার ফিরে না আসা পর্যন্ত {current}-এ কল এলে শুধু আপনার অন্য লিঙ্ক করা ডিভাইসগুলোতে রিং হবে।"
+
+[accounts_switch_lead_push]
+text = "এই ফোনে {current} চুপচাপ থাকবে। তবু {current}-এ কল এলে এখানে রিং হবে আর নতুন মেসেজের খবর আসবে।"
 
 [accounts_passphrase_for]
 text = "{name}-এর পাসফ্রেজ"
@@ -2713,6 +2722,9 @@ text = "আপনার একটা নতুন মেসেজ এসে থ�
 
 [notif_wake_notice_text]
 text = "সব দেখে নিতে Tinline খুলে আনলক করুন।"
+
+[notif_bg_message_text]
+text = "নতুন মেসেজ"
 
 [notif_return_to_call]
 text = "কলে ফিরে যেতে ট্যাপ করুন"

@@ -4,7 +4,8 @@
 //!
 //! - `msg` wake: dial back (`chat_kick`, the path a local send takes). If the node is not up yet
 //!   the contact is queued and dialled when it starts.
-//! - `call` wake: B never dials. A ring is kept per contact for [`WAKE_RING_WINDOW_MS`] from the
+//! - `call` wake: B dials A back with `CallReady` (`call_back.rs`), and the `CallHello` may come
+//!   on that connection. A ring is kept per contact for [`WAKE_RING_WINDOW_MS`] from the
 //!   wake's arrival. A repeat wake extends the window from itself (never a second ring), capped
 //!   at [`WAKE_RING_CAP_MS`] in total. The real `CallHello` consumes the ring silently (the
 //!   normal `on_incoming_call` follows); if the user answered early, that call is accepted the
@@ -92,14 +93,16 @@ impl NodeCtx {
     pub fn on_wake(self: &Arc<Self>, hint: &str) -> Result<WakeAction, Error> {
         let me = self.me()?;
         let action = {
-            let s = self.shared.lock();
+            let mut s = self.shared.lock();
             if s.epoch != me.epoch {
                 return Err(Error::Locked);
             }
-            let st = &s.state;
-            match &st.wake {
+            let st = &mut s.state;
+            let blocked: std::collections::HashSet<String> =
+                st.blocked.iter().cloned().chain(st.notices.keys().filter(|d| crate::block::blocked_me(st, d)).cloned()).collect();
+            match st.wake.as_mut() {
                 None => WakeAction::Ignore,
-                Some(w) => w.on_wake(hint, now_ms(), |did| st.blocked.contains(did) || crate::block::blocked_me(st, did)),
+                Some(w) => w.on_wake(hint, now_ms(), |did| blocked.contains(did)),
             }
         };
         match &action {
@@ -117,10 +120,63 @@ impl NodeCtx {
                     return Ok(WakeAction::IgnoreCall);
                 }
             }
+            WakeAction::CodeWake => {
+                // A stranger holding our code: nobody to dial. The app keeps the node up for the
+                // usual window; their hello arrives as an ordinary contact request.
+                tracing::info!("wake received: outcome CodeWake");
+                // The code throttle outlives a restart.
+                self.persist_in_background(me.epoch);
+            }
             WakeAction::Ignore => tracing::info!("wake received: outcome Ignore"),
             WakeAction::IgnoreCall => tracing::info!("wake received: outcome EndCall"),
         }
         Ok(action)
+    }
+
+    /// Whether this account's hint key opens `hint`: the wake is for this account (several
+    /// accounts on one device, `docs/multi-online.md`). False while locked.
+    pub fn wake_opens(&self, hint: &str) -> bool {
+        self.shared.lock().state.wake.as_ref().is_some_and(|w| w.opens(hint))
+    }
+
+    /// This account's hint key, while unlocked (kept by the device to route later wakes without
+    /// unlocking every account again).
+    pub fn wake_hint_key(&self) -> Option<[u8; 32]> {
+        self.shared.lock().state.wake.as_ref().map(|w| w.hint_key)
+    }
+
+    /// A wake ring is open or a dial-back waits for the start: the account has a wake in hand.
+    pub fn wake_busy(&self) -> bool {
+        !self.push.rings.map.lock().is_empty() || !self.push.rings.dial_backs.lock().is_empty()
+    }
+
+    /// For tests: the hint a relay would push for a wake of `kind` from contact `did`, under a
+    /// token issued to them here (one is made up if none was, as the relay would have issued).
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn wake_hint_for_test(&self, did: &str, call: bool) -> Result<String, Error> {
+        use wake::{Issued, IssuedEntry, Kind, Kinds};
+        let me = self.me()?;
+        let (key, tag) = {
+            let mut s = self.shared.lock();
+            let w = crate::push::wake_mut(&mut s.state);
+            let tag = match w.issued_for(did) {
+                Some(i) => i.tag,
+                None => {
+                    let mut tag = [0u8; 16];
+                    tag.copy_from_slice(&proto::new_device_secret()[..16]);
+                    let issued = Issued { tag, kinds: Kinds::ALL, token: "test-token".into(), exp_ms: now_ms() + 20 * 86_400_000 };
+                    w.issued.push(IssuedEntry { did: did.to_string(), issued });
+                    tag
+                }
+            };
+            (w.hint_key, tag)
+        };
+        self.persist_for(Some(me.epoch))?;
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&proto::new_device_secret()[..12]);
+        let kind = if call { Kind::Call } else { Kind::Msg };
+        let hint = wake_relay_core::hint::Hint { tag, kind, sent_at_ms: now_ms() };
+        wake_relay_core::hint::seal(&key, &hint, nonce).map_err(|e| Error::Protocol(e.to_string()))
     }
 
     /// The name of `did` for the ring: the local alias, else the name they gave; blank when unknown.
@@ -160,6 +216,21 @@ impl NodeCtx {
         self.push.rings.map.lock().get(did).is_some_and(|r| r.expires > Instant::now())
     }
 
+    /// A wake ring the user has not declined is open, for any contact (only one ring at a time
+    /// across the accounts of a device, `docs/multi-online.md`).
+    pub fn wake_ringing_any(&self) -> bool {
+        let now = Instant::now();
+        self.push.rings.map.lock().values().any(|r| r.expires > now && r.early != Early::Declined)
+    }
+
+    /// This account is no longer the one on the screen: a wake ring answered early rings again
+    /// when its call arrives (naming the account), instead of connecting where nobody hears it.
+    pub fn wake_rings_unanswer(&self) {
+        for r in self.push.rings.map.lock().values_mut().filter(|r| r.early == Early::Answered) {
+            r.early = Early::Undecided;
+        }
+    }
+
     fn wake_ring(self: &Arc<Self>, did: &str) {
         let now = Instant::now();
         let rings = &self.push.rings;
@@ -178,8 +249,10 @@ impl NodeCtx {
             }
         };
         if spawn {
-            let (this, did) = (self.clone(), did.to_string());
-            self.handle.spawn(async move { this.wake_ring_timer(did).await });
+            let (this, did2) = (self.clone(), did.to_string());
+            self.handle.spawn(async move { this.wake_ring_timer(did2).await });
+            // Reach the caller from our side too; its `CallHello` may come back on our connection.
+            self.call_back(did);
         }
     }
 

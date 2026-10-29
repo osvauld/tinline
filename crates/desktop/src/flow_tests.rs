@@ -157,3 +157,22 @@ fn restoring_a_phrase_already_here_restores_that_account_in_place() {
     let e = node.restore_identity(phrase, "Ann".into(), String::new()).unwrap_err();
     assert!(matches!(e, Error::AccountExists(ref x) if *x == did) || matches!(e, Error::HaveIdentity));
 }
+
+#[test]
+fn switching_back_to_an_account_running_in_the_background_finds_it_open() {
+    let d = dir("keep-all");
+    let st = Mem::default();
+    let node = open(&d);
+    node.set_background_mode(p2pcore::BackgroundMode::KeepAll);
+    node.create_identity("Ann".into(), String::new()).unwrap();
+    finish_setup(&st, &d, &node, Some("A")).unwrap();
+    let ann = keystore::current_did(&node).unwrap();
+    node.begin_new_account().unwrap();
+    node.create_identity("Bo".into(), String::new()).unwrap();
+    finish_setup(&st, &d, &node, Some("B")).unwrap();
+
+    // Ann kept running while Bo was set up: switching back opens her as she is, with no key asked.
+    assert!(switch_to(&keystore::Unavailable, &d, &node, &ann).unwrap());
+    assert_eq!(node.lock_state(), LockState::Unlocked);
+    assert_eq!(keystore::current_did(&node).as_deref(), Some(ann.as_str()));
+}

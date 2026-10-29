@@ -38,9 +38,12 @@ scripts/                   build + end-to-end tests (Python)
 cargo build --release -p desktop -p peer         # desktop app + test peer
 cargo build --release -p desktop --features test-hooks   # e2e builds only: P2P_AUTO_ANSWER etc.; never ship this
 ./target/release/p2p-desktop                     # tray app; --data DIR for a separate profile
+python3 scripts/build_android.py --install                      # phone build (arm64-v8a)
 python3 scripts/build_android.py --install --abis x86_64        # emulator build
-python3 scripts/build_android.py --install                      # + arm64 for phones
 ```
+
+Gradle builds the core for `arm64-v8a` only unless told otherwise: pass `-Pabis=x86_64` for an emulator,
+or `-Pabis=x86_64,arm64-v8a` for Play (CI's release and `build_android.py --bundle` do).
 
 Heavy builds queue through `scripts/buildlock.py` (one at a time on this machine).
 

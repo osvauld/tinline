@@ -13,7 +13,7 @@ use wake_relay_core::api::IssuedToken;
 
 use super::*;
 use crate::store::{Profile, StoredContact};
-use crate::{CallInfo, CallState, Me, NodeSink, NodeStatus, Shared};
+use crate::{CallFloor, CallInfo, CallState, Me, NodeSink, NodeStatus, Shared};
 
 /// What a test does when the relay is asked to wake a token (the phone starting up).
 type WakeHook = Arc<dyn Fn(&str, Kind) + Send + Sync>;
@@ -30,6 +30,23 @@ pub(super) struct FakeRelay {
     /// The HTTP status a wake gets; 0: 202.
     pub(super) wake_status: AtomicU32,
     pub(super) on_wake: Mutex<Option<WakeHook>>,
+    /// How long a register takes to answer, in ms (a slow relay).
+    pub(super) register_delay_ms: std::sync::atomic::AtomicU64,
+}
+
+/// What the fake relay seals: canonical base64url (so it fits a contact ticket) of a marker,
+/// the tag and the kinds. [`fake_tag`] reads the tag back.
+fn fake_token(tag: &[u8; 16], kinds: Kinds) -> String {
+    let mut raw = b"fake".to_vec();
+    raw.extend_from_slice(tag);
+    raw.push(kinds.bits());
+    wake::token_text(&raw)
+}
+
+/// The tag inside a token of the fake relay.
+pub(super) fn fake_tag(token: &str) -> Option<[u8; 16]> {
+    let raw = wake::token_bytes(token)?;
+    raw.get(4..20)?.try_into().ok()
 }
 
 pub(super) fn hex(b: &[u8]) -> String {
@@ -45,11 +62,17 @@ impl WakeRelay for FakeRelay {
         let result = if take_one(&self.fail_register) {
             Err(RelayError::status(503))
         } else {
-            let tokens = req.tags.iter().map(|t| IssuedToken { tag: t.tag, token: format!("fake-{}-{}", hex(&t.tag), t.kinds.bits()) }).collect();
+            let tokens = req.tags.iter().map(|t| IssuedToken { tag: t.tag, token: fake_token(&t.tag, t.kinds) }).collect();
             self.registers.lock().push(req);
             Ok(RegisterResponse { tokens })
         };
-        Box::pin(async move { result })
+        let delay = self.register_delay_ms.load(Ordering::SeqCst);
+        Box::pin(async move {
+            if delay > 0 {
+                tokio::time::sleep(Duration::from_millis(delay)).await;
+            }
+            result
+        })
     }
 
     fn wake(&self, token: String, kind: Kind) -> BoxFuture<u16> {
@@ -152,15 +175,21 @@ pub(super) async fn node(lookup: &MemoryLookup) -> T {
 
 async fn node_with(lookup: &MemoryLookup, state: State) -> T {
     let (_id, phrase) = identity::generate();
-    node_as(lookup, state, phrase.to_string()).await
+    node_as(lookup, state, phrase.to_string(), None).await
+}
+
+/// A node on `floor`, as another account's slot of one device would be (`docs/multi-online.md`).
+pub(super) async fn node_on_floor(lookup: &MemoryLookup, floor: &Arc<CallFloor>) -> T {
+    let (_id, phrase) = identity::generate();
+    node_as(lookup, State::default(), phrase.to_string(), Some(floor.clone())).await
 }
 
 /// Another device of the account `other` belongs to.
 pub(super) async fn second_device(lookup: &MemoryLookup, other: &T) -> T {
-    node_as(lookup, State::default(), other.mnemonic.clone()).await
+    node_as(lookup, State::default(), other.mnemonic.clone(), None).await
 }
 
-async fn node_as(lookup: &MemoryLookup, state: State, mnemonic: String) -> T {
+async fn node_as(lookup: &MemoryLookup, state: State, mnemonic: String, floor: Option<Arc<CallFloor>>) -> T {
     let secret = proto::new_device_secret();
     let profile = Profile { mnemonic: mnemonic.clone(), name: "synthetic".into(), device_secret: secret };
     let me = Arc::new(Me::load(profile, 1).unwrap());
@@ -179,7 +208,12 @@ async fn node_as(lookup: &MemoryLookup, state: State, mnemonic: String) -> T {
     shared.state = state;
     let accounts = account_model::accounts::AccountDirs::open(dir.0.clone()).unwrap();
     let rec = Arc::new(Rec::default());
-    let ctx = Arc::new(NodeCtx::new(tokio::runtime::Handle::current(), accounts, shared, rec.clone()));
+    let mut ctx = NodeCtx::new(tokio::runtime::Handle::current(), accounts, shared, rec.clone());
+    if let Some(floor) = floor {
+        ctx = ctx.with_floor(floor);
+    }
+    let ctx = Arc::new(ctx);
+    ctx.join_floor();
     let relay = Arc::new(FakeRelay::default());
     ctx.set_wake_relay(relay.clone());
     ctx.serve_private(ep.clone(), true);
@@ -238,8 +272,12 @@ pub(super) fn set_target(t: &T, target: Option<Target>) {
     }
 }
 
-pub(super) async fn eventually(what: &str, mut ok: impl FnMut() -> bool) {
-    for _ in 0..400 {
+pub(super) async fn eventually(what: &str, ok: impl FnMut() -> bool) {
+    eventually_within(what, Duration::from_secs(20), ok).await
+}
+
+pub(super) async fn eventually_within(what: &str, within: Duration, mut ok: impl FnMut() -> bool) {
+    for _ in 0..within.as_millis() / 50 {
         if ok() {
             return;
         }

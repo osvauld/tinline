@@ -72,6 +72,7 @@ fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKi
         failure: None,
         before_removal: false,
         image: None,
+        voice: None,
     }
 }
 
@@ -297,6 +298,21 @@ impl GroupApi for Fake {
     }
     fn group_image_path(&self, _id: String, message_id: String) -> Option<String> {
         Some(format!("/pictures/{message_id}.jpg"))
+    }
+    fn group_fetch_voice(&self, _id: String, message_id: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(format!("voice:{message_id}"));
+        Ok(())
+    }
+    fn group_post_voice(&self, id: String, path: String, waveform: Vec<u8>) -> Result<GroupMessage, Error> {
+        let mut m = self.group_post(id.clone(), String::new(), None)?;
+        let _ = path;
+        m.voice = Some(p2pcore::GroupVoice { duration_ms: 1_500, waveform, size: 4_000, state: p2pcore::GroupImageState::Ready });
+        self.with(&id, |g| {
+            if let Some(last) = g.msgs.last_mut() {
+                *last = m.clone();
+            }
+            Ok(m.clone())
+        })
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         self.with(&id, |g| {
@@ -1011,3 +1027,6 @@ mod public;
 
 #[path = "group_image_tests.rs"]
 mod images;
+
+#[path = "group_voice_tests.rs"]
+mod voice;

@@ -44,8 +44,8 @@ pub(in crate::sync::engine) async fn endpoint(secret: [u8; 32]) -> Endpoint {
         .unwrap()
 }
 pub(in crate::sync::engine) fn registry(node: &Node, remote: [u8; 32]) {
-    let me = node.inner.me().unwrap();
-    node.inner
+    let me = node.open().me().unwrap();
+    node.open()
         .shared
         .lock()
         .state
@@ -177,14 +177,14 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
             .unwrap();
         let _ = b.unlock_key().unwrap();
         b.commit_identity().unwrap();
-        let ma = a.inner.me().unwrap();
-        let mb = b.inner.me().unwrap();
+        let ma = a.open().me().unwrap();
+        let mb = b.open().me().unwrap();
         let (source, gid, _) =
             crate::group::engine::own_content_core_for_test(ma.id.clone(), ma.epoch, true);
         let (target, _, _) =
             crate::group::engine::own_content_core_for_test(mb.id.clone(), mb.epoch, false);
-        *a.inner.group.core.lock() = Some(source.clone());
-        *b.inner.group.core.lock() = Some(target.clone());
+        *a.open().group.core.lock() = Some(source.clone());
+        *b.open().group.core.lock() = Some(target.clone());
         // 70 cold days plus the fixture's recent day. One cold day has more
         // than the 64-operation wire budget; originals are not re-authored.
         let meta_seen = source
@@ -238,14 +238,14 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                 .unwrap()
                 .await
                 .unwrap();
-            a.inner.sync.clone().self_run(incoming, false).await
+            a.open().sync.clone().self_run(incoming, false).await
         };
         let run_b = async {
             let outgoing = client
                 .connect(server.addr(), b"tinline/self/3")
                 .await
                 .unwrap();
-            b.inner.sync.clone().self_run(outgoing, true).await
+            b.open().sync.clone().self_run(outgoing, true).await
         };
         let monitor = async {
             loop {

@@ -23,7 +23,7 @@ impl Node {
 #[uniffi::export]
 impl Node {
     pub fn set_group_call_events(&self, events: Arc<dyn GroupCallEvents>) {
-        *self.inner.group.calls.events.lock() = Some(Arc::new(GroupCallEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.group_call = Some(Arc::new(GroupCallEventsAdapter(events))));
     }
 
     /// Starts a call in the group: picks the best call host from the fresh `CallHostStatus`es
@@ -32,25 +32,27 @@ impl Node {
     /// `Rejected("no call host available")` when no call host advertises.
     pub fn group_call_start(&self, group_id: String) -> Result<String, Error> {
         self.calls_ready()?;
-        Ok(self.inner.group.group_call_start(&group_id)?)
+        Ok(self.open().group.group_call_start(&group_id)?)
     }
 
     /// Joins a call announced in the group (`group_calls`).
     pub fn group_call_join(&self, group_id: String, call_id: String) -> Result<(), Error> {
+        let slot = self.open();
         let core = self.calls_ready()?;
-        self.inner.group.group_member_check(&core, &group_id)?;
-        let blob = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(b, _)| b.clone());
+        slot.group.group_member_check(&core, &group_id)?;
+        let blob = slot.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(b, _)| b.clone());
         let blob = blob.ok_or(Error::NotFound)?;
-        self.inner.group.gcall.join(&blob, None).map_err(Into::into)
+        slot.group.gcall.join(&blob, None).map_err(Into::into)
     }
 
     /// Leaves the call this device is in. A call hosted here that nobody is in any more ends.
     pub fn group_call_leave(&self) {
-        self.inner.group.calls.st.lock().pending = None;
-        self.inner.group.gcall.leave();
-        let empty = self.inner.group.gcall.status().and_then(|s| s.hosting).is_some_and(|h| h.roster.is_empty());
+        let slot = self.open();
+        slot.group.calls.st.lock().pending = None;
+        slot.group.gcall.leave();
+        let empty = slot.group.gcall.status().and_then(|s| s.hosting).is_some_and(|h| h.roster.is_empty());
         if empty {
-            self.inner.group.gcall.end();
+            slot.group.gcall.end();
         }
     }
 
@@ -58,26 +60,27 @@ impl Node {
     /// §2.4). Until the first call this device advertises no call hosting and declines to host.
     /// Push on start and whenever they change.
     pub fn group_call_set_conditions(&self, conditions: GroupCallConditions) {
-        self.inner.group.gcall.set_cond(conditions.into())
+        self.open().group.gcall.set_cond(conditions.into())
     }
 
     /// The group call this device is in or hosts, if any: what the apps' audio threads and
     /// foreground service follow (re-read on every `GroupCallEvents` callback; the callbacks
     /// can arrive out of order).
     pub fn group_call_here(&self) -> Option<GroupCallHere> {
-        let st = self.inner.group.gcall.status()?;
-        let in_call = self.inner.group.gcall.own_in_call();
-        let hosting = self.inner.group.gcall.busy() && st.hosting.is_some();
+        let slot = self.open();
+        let st = slot.group.gcall.status()?;
+        let in_call = slot.group.gcall.own_in_call();
+        let hosting = slot.group.gcall.busy() && st.hosting.is_some();
         if !in_call && !hosting {
             return None;
         }
-        let group_id = self.inner.group.call_gid(&st.call_id).unwrap_or_default();
+        let group_id = slot.group.call_gid(&st.call_id).unwrap_or_default();
         Some(GroupCallHere { group_id, call_id: st.call_id, in_call, hosting })
     }
 
     /// Mutes this device's microphone in the group call.
     pub fn group_call_set_muted(&self, muted: bool) {
-        self.inner.group.gcall.set_mic_muted(muted)
+        self.open().group.gcall.set_mic_muted(muted)
     }
 
     /// How long a started group call rings, in ms (apps ring up to this long from the moment
@@ -91,37 +94,40 @@ impl Node {
     /// me, and this device is on no group call. The apps add what only they know: a 1:1 call in
     /// progress, and a muted group where the app has a per-group mute.
     pub fn group_call_rings(&self, group_id: String, call_id: String) -> bool {
-        let Ok(core) = self.inner.group.group_core() else { return false };
-        let found = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| (s.starter_did.clone(), s.started_ms));
+        let slot = self.open();
+        let Ok(core) = slot.group.group_core() else { return false };
+        let found = slot.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| (s.starter_did.clone(), s.started_ms));
         let Some((starter, started)) = found else { return false };
         // Only a call started within the ring time rings: an old one re-announced to a device
         // that just (re)connected or restarted shows as "Call in progress", silently.
         if now_ms().saturating_sub(started) > GROUP_CALL_RING_MS {
             return false;
         }
-        if starter == core.did || self.inner.group.gcall.busy() {
+        if starter == core.did || slot.group.gcall.busy() {
             return false;
         }
-        let s = self.inner.shared.lock();
+        let s = slot.shared.lock();
         !s.state.blocked.contains(&starter) && !crate::block::blocked_me(&s.state, &starter)
     }
 
     /// The calls going on in the group, as this device knows them.
     pub fn group_calls(&self, group_id: String) -> Result<Vec<GroupCall>, Error> {
-        let core = self.inner.group.group_core()?;
-        Ok(self.inner.group.group_calls_list(&core, &group_id))
+        let slot = self.open();
+        let core = slot.group.group_core()?;
+        Ok(slot.group.group_calls_list(&core, &group_id))
     }
 
     /// Group calls this device was in or missed, newest first; `None` lists every group (the
     /// Calls tab), `Some` one group (its thread). Local to this device.
     pub fn group_call_history(&self, group_id: Option<String>) -> Result<Vec<crate::group::calllog::GroupCallRecord>, Error> {
-        Ok(self.inner.group.group_core()?.store.clog_list(group_id.as_deref())?)
+        Ok(self.open().group.group_core()?.store.clog_list(group_id.as_deref())?)
     }
 
     /// Test hook: the DIDs whose fresh `CallHostStatus` this device holds for the group.
     pub fn group_call_hosts_advertising_for_test(&self, group_id: String) -> Vec<String> {
+        let slot = self.open();
         let now = now_ms();
-        let st = self.inner.group.calls.st.lock();
+        let st = slot.group.calls.st.lock();
         st.statuses.get(&group_id).map(|m| m.values().filter(|(_, s)| s.is_fresh(now)).map(|(_, s)| s.host_ref.holder_did.clone()).collect()).unwrap_or_default()
     }
 
@@ -129,7 +135,8 @@ impl Node {
     /// signed `CallHostAccept`: while paused it advertises nothing, declines requests and does
     /// not take calls over. Not persisted (a restart resumes).
     pub fn group_call_hosting_enable(&self, group_id: String, enable: bool) {
-        let mut p = self.inner.group.calls.paused.lock();
+        let slot = self.open();
+        let mut p = slot.group.calls.paused.lock();
         if enable {
             p.remove(&group_id);
         } else {

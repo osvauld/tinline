@@ -27,9 +27,15 @@ signer to the one they expected (`open_from`).
 ## Contact ticket (QR)
 
 Text: `OSVC2:` + RFC 4648 base32 (uppercase, no padding, so the QR uses alphanumeric mode, about
-240 chars) of a `Signed<Ticket>`. Decoding is case-insensitive and trims whitespace.
-`Ticket { pk[32], device[32], nonce[6], exp_min: u32, name, relay: None | Known(u8) | Custom(url) }`
+260 chars, about 670 with a code wake token) of a `Signed<Ticket>`. Decoding is case-insensitive and trims whitespace.
+`Ticket { pk[32], device[32], nonce[6], exp_min: u32, name, relay: None | Known(u8) | Custom(url), wake: Option<bytes ≤ 400> }`
 under domain `osvauld/p2p/invite/v2\0`, signed by the DID key `pk` it carries.
+
+- `wake` (2026-10-26): the owner device's **code wake token** (`docs/push.md` "Code wake
+  tokens"), the relay's sealed bytes: `msg` wakes only, a tag of its own, expiring with the
+  ticket. Present only when the owner's device has push registered; signed with the rest. With
+  an FCM token (163 chars, sealed to 250 bytes) a typical code grows from 262 to 666 characters:
+  QR version 9 → 17 at level M, the apps' level (53 → 85 modules a side; alphanumeric mode). Codes from before this field fail to decode (pre-release; they expire within 7 days).
 
 - `exp_min`: minutes since 2026-01-01T00:00:00Z (issuer rounds up). `nonce` is the ticket's id;
   good for anyone, any number of times, until it expires or is reset (see "Tickets in the core").
@@ -46,7 +52,8 @@ The visible fields are display-only; `verify` requires them to equal the signed 
 1. B: `contact_hello` verifies the ticket, then sends `ContactHello`:
    attestation(B, B.dev), B's name, A's invite blob, `binding`, `grant_for_you` (B's
    message token for A) and `call_grant_for_you` (B's call token for A, absent when B gives
-   A message only; see "Tokens").
+   A message only; see "Tokens"), and with push on `wake` (B's wake token for A, `{token,
+   exp_ms, kinds}`, unsigned like `WakeTokens`; see "Contact requests").
    `binding = sign_B(bind || nonce || B.dev || A.dev)`.
 2. A: `accept_contact_hello` checks, in order:
    invite signed by claimed issuer and `iss == A`; unexpired; `invite.device == A.dev`;
@@ -86,17 +93,34 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
   the joiner answers `WelcomeTaken`, or `Reject` (no matching request: delivery stops), or its
   block notice. Untaken Welcomes are retried after 2, 5, 15, 30, 60, then every 300 s while
   online, and at start, for 7 days.
+- **Tokens at setup** (2026-10-26, `docs/push.md` "Tokens at setup"): with push on, the hello
+  carries the joiner's wake token for the owner and the Welcome the owner's for the joiner
+  (optional `wake` field on both, filled in when sent). Each side keeps the other's token as if
+  `WakeTokens` had arrived, once the other is its contact (the owner at Accept, for the
+  joiner's attested device; the joiner when it takes the Welcome). The normal `WakeTokens` round
+  still runs afterwards (idempotent). A Welcome whose dial fails wakes the joiner (`msg`) with
+  that token and redials on the fast schedule.
 - **Not now** sends nothing. There is no decline message, so the joiner never learns the
   request was seen.
 - **Joiner.** Before the hello leaves, `State::sent_requests[owner DID]` keeps the
   `PendingContact` (serialisable), the ticket's relay and `exp`, and whether our hello gave
   them a call token. `ContactPending` marks it delivered (`add_contact_by_code` returns
-  `Requested`); a Welcome on the same connection adds them at once (`Added`). A dial that never
-  connected restores what was held before; a reply timeout keeps it unlisted so a late Accept
-  still lands. A dialled-back `ContactWelcome` is taken only if a held request names the
+  `Requested`); a Welcome on the same connection adds them at once (`Added`).
+- **Queued request** (2026-10-26, `crates/node-runtime/src/request_out.rs`): a code request
+  whose owner device cannot be reached (no connection, or no answer to the hello) is not
+  dropped. `SentRequest` keeps the code text (`ticket`), `add_contact_by_code` returns
+  `Requested` and the request is listed in `sent_contact_requests`. A background outbox makes a
+  fresh hello from the code and redials it until the owner answers (`ContactPending`, a Welcome,
+  `Reject` or its block notice) or the code expires; it survives restarts (sealed state) and runs
+  again at start. When the code carries a wake token, the first dial sends a `msg` wake if it has
+  not connected after 3 s (`MSG_EARLY_WAKE_MS`), every failed dial wakes again (at most once per
+  30 s, `MSG_WAKE_EVERY_MS`; a relay 410 stops it) and the redials follow `MSG_REDIAL_AT_MS`;
+  otherwise they back off 2, 5, 15, 30, 60, 300, then every 900 s (PROVISIONAL). A group chat
+  request ticket is not queued: a dial that never connected restores what was held before, and
+  a reply timeout keeps it unlisted so a late Accept still lands. A dialled-back `ContactWelcome` is taken only if a held request names the
   connection's device and `accept_contact_welcome` passes against it (and we don't block them);
   then the contact is stored, the request dropped, and `on_request_accepted` raised. Sent
-  requests are listed (`sent_contact_requests`) while delivered and unexpired, and kept 7 days
+  requests are listed (`sent_contact_requests`) while delivered or queued, and unexpired, and kept 7 days
   past `exp` for a late Welcome.
 - Requests, sent requests and the Welcome outbox are local to the device (not in the account
   doc): the hello names this device. PROVISIONAL.
@@ -114,6 +138,10 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
 
 1. B opens a connection to A's device and sends `CallHello { call_id, attestation, grant }`
    where `grant` is the call token A issued B (or, if B holds none, its message token).
+   After a `call` wake, A may instead open the connection itself and send
+   `CallReady { attestation }` (attested device = the connection's); B, dialling that device,
+   answers on the same stream with its `CallHello` and the steps below run unchanged, else
+   `Reject` (`docs/push.md` "Calls").
 2. A: `accept_hello`: attestation valid and `device == remote_device`; token issued by A to
    the attested DID, redeemed (`proto::issued`); DID is a contact. Then: blocked -> `Notice`;
    token taken back by a block (cut-off) -> `Reject { "not accepted" }`; not a call token,
@@ -713,6 +741,10 @@ messages (an older app fails to decode them, U18).
   signed name), a relay change or the last day of life; they stay good until they expire.
   `reset_ticket` ("New code") and `block` clear them all at once, so every code handed out so
   far stops working; the next `my_ticket` mints a fresh one. Redeeming no longer drops it.
+  A ticket that stops adding contacts this way has its code wake token revoked at the relay
+  (`docs/push.md` "Code wake tokens"); an expired one is only forgotten (the relay refuses it
+  by itself). With push on, a ticket without a token is replaced once the relay seals one, and
+  one with a token is replaced when push goes off or the push token changes.
 - The inviter makes the new contact and the redeemed (joiner, nonce) durable in one write
   (sealed account store) BEFORE it sends `ContactWelcome` (at once or after Accept); if that
   write fails it sends `Reject` (or Accept fails), nothing changed, and the joiner can try again.

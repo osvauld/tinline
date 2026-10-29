@@ -261,6 +261,27 @@ Image posts for both spaces, on `crates/transfer` (BlobHub) once it lands:
 - **Open:** a member never re-asks a host that got the image later than its retries (until a new
   session or a tap); hosts' opened copies (`group-images/`) are made only when asked for.
 
+**Voice posts** (after the image build; same path, both spaces):
+
+- **Record:** a new last variant `Body::Voice { reply_to, voice: VoiceRef { hash, key, size,
+  duration_ms, waveform } }` (records written before it decode unchanged; an app older than it
+  refuses a batch that carries one). It is a post everywhere (`Body::is_post`): day docs, U11
+  visibility, admins-only, removal judging, the list row. Every device checks `0 < size <= 16 MiB`
+  (`MAX_VOICE_BYTES`, the voice decoder's file cap), `1 <= duration_ms <= 30 min` (`MAX_VOICE_MS`,
+  what the decoder plays; the apps stop recording at 15) and at most 64 waveform bars. The file is
+  the 1:1 voice format: Ogg Opus, 16 kHz mono, `audio/ogg`.
+- **Sending:** `group_post_voice(id, path, waveform)`: the core opens the file with its voice
+  decoder (refused if it does not play or is over the limits) and takes the duration from it; same
+  checks as `group_post`. No reply and no caption (as 1:1 `send_voice`).
+- **Transport and limits:** exactly the image path (sealed per blob, rows in `img/`, fetch from
+  hosts, gate, retries, auto-download setting, 2 GB per group budget, eviction); the local row is
+  the recording's `VoiceRef::as_blob()` (`mime = audio/ogg`). A host's per-blob refusal for voice
+  is `MAX_VOICE_BYTES`, not the 1 MB image limit. Opened copies are `group-images/<hash>.ogg`.
+- **Showing:** `GroupMessage.voice: Option<GroupVoice { duration_ms, waveform, size, state }>`
+  (`text` and `image` empty); `group_voice_path` / `group_fetch_voice`; `on_group_image` reports
+  state changes. Apps: Android records (hold to record, the 1:1 composable) and plays; desktop and
+  iOS play (the 1:1 players). Lists and notifications say "Voice message".
+
 ### 6. Moderation
 
 Existing removal stays (3 counted flags; one admin may flag 3 times). No new rule now.

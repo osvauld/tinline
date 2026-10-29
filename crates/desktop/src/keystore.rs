@@ -177,6 +177,14 @@ pub fn load(st: &dyn Store, data: &Path, did: &str) -> Option<Vec<u8>> {
     std::fs::read_to_string(file(data, did)).ok().and_then(|s| unhex(&s))
 }
 
+/// The key that opens `did` without asking, for running it in the background
+/// (`AccountEvents::account_key`): the opt-in "Remember on this computer" entry of a passphrase
+/// account, else the automatic key of one without (keyring, or the old file). `None` for a
+/// passphrase-only account: it comes up once it is unlocked.
+pub fn remembered_key(st: &dyn Store, data: &Path, did: &str) -> Option<Vec<u8>> {
+    st.get(&user_pp(data, did)).and_then(|s| unhex(&s)).or_else(|| load(st, data, did))
+}
+
 /// Drops the remembered key of `did` (it got a passphrase, or the account was removed).
 pub fn clear(st: &dyn Store, data: &Path, did: &str) {
     st.delete(&user(data, did));

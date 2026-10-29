@@ -260,6 +260,8 @@ struct App {
     acct_menu: bool,
     /// Account the user is being asked to confirm switching to.
     switch_ask: Option<String>,
+    /// The conversation to open once the switch in flight lands (a background account's notification).
+    open_after_switch: Option<String>,
     /// Account the user is being asked to confirm removing.
     remove_ask: Option<String>,
     /// The account that was current when "new account" / "restore" started; Cancel goes back to it.
@@ -288,6 +290,7 @@ struct App {
     me: Option<Contact>,
     busy: bool,
     notice: Option<String>,
+    notice_timer: crate::notice_timer::NoticeTimer,
     /// Bumped when a message is sent; the sidebar mark plucks its string on each change.
     mark_pluck: u64,
     status: NodeStatus,
@@ -322,6 +325,7 @@ struct App {
     shots: u32,
     fetching: bool,
     chat: ChatState,
+    message_alerts: crate::message_alerts::MessageAlerts,
     /// The window has keyboard focus (false with no window).
     focused: bool,
     /// A contact card found on the clipboard, offered as "Add <name>?".
@@ -366,12 +370,15 @@ pub enum Target {
     Show,
     /// The conversation with this contact.
     Chat(String),
+    /// The conversation with `peer` in another account of this computer: switches to it first.
+    AccountChat { account: String, peer: String },
 }
 
 #[derive(Debug, Clone)]
 enum Msg {
     Ev(EvBox),
     Tick,
+    DismissNotice,
     /// A display frame while a transition runs.
     Frame(Instant),
     WindowOpened(#[allow(dead_code)] window::Id),
@@ -397,6 +404,8 @@ enum Msg {
     SwitchNow(String),
     SwitchGo,
     Switched(Result<bool, String>),
+    /// `answer` of a call that rang another account returned: the core switched to it first.
+    AnsweredSwitched(Result<(), String>),
     /// Start a new account (`true`: restore from a phrase).
     NewAccount(bool),
     NewAccountBegun(Result<(), String>, bool),
@@ -550,7 +559,8 @@ fn events() -> impl iced::futures::Stream<Item = Msg> {
     iced::stream::channel(64, async |mut out| {
         let rx = crate::EV_RX.get().and_then(|m| m.lock().unwrap().take());
         let Some(mut rx) = rx else { return };
-        while let Some(ev) = rx.recv().await {
+        let mut pending = None;
+        while let Some(ev) = crate::event_batch::next(&mut rx, &mut pending).await {
             let _ = out.send(Msg::Ev(EvBox(std::sync::Mutex::new(Some(ev))))).await;
         }
     })
@@ -633,6 +643,30 @@ pub(crate) static NOTIFY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atom
 
 /// A desktop notification, off the UI thread (some servers block on show). Clicking it (the
 /// "default" action, Linux) sends `target` back into the app.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn notify(summary: &str, body: &str, target: Target) {
+    // Reuse one runtime rather than keeping an OS thread per notification alive until
+    // the user dismisses it. Both the server call and action listener have a deadline.
+    static RUNTIME: std::sync::OnceLock<Option<tokio::runtime::Runtime>> = std::sync::OnceLock::new();
+    let Some(rt) = RUNTIME.get_or_init(|| tokio::runtime::Builder::new_multi_thread().worker_threads(1).enable_all().build().ok()) else { return };
+    let (summary, body) = (summary.to_string(), body.to_string());
+    rt.spawn(async move {
+        let mut n = notify_rust::Notification::new();
+        n.appname("Tinline").summary(&summary).body(&body).timeout(10_000)
+            .action("default", crate::i18n::tr_str("common_open"));
+        if let Ok(Ok(handle)) = tokio::time::timeout(Duration::from_secs(5), n.show_async()).await {
+            let _ = tokio::time::timeout(Duration::from_secs(120), handle.wait_for_action_async(|action| {
+                if matches!(action, notify_rust::NotificationResponse::Default)
+                    && let Some(init) = INIT.get()
+                {
+                    let _ = init.tx.send(Ev::Open(target));
+                }
+            })).await;
+        }
+    });
+}
+
+#[cfg(not(all(unix, not(target_os = "macos"))))]
 fn notify(summary: &str, body: &str, target: Target) {
     let (summary, body) = (summary.to_string(), body.to_string());
     std::thread::spawn(move || {
@@ -716,6 +750,7 @@ impl App {
 
     /// Everything tied to the account that was in memory is dropped when another one is selected.
     fn reset_account_state(&mut self) {
+        self.message_alerts = Default::default();
         self.leave_chat();
         let tab = self.chat.tab;
         let account_epoch = self.chat.account_epoch.checked_add(1).expect("chat account epoch exhausted");
@@ -837,6 +872,7 @@ impl App {
             accounts: node.accounts(),
             acct_menu: false,
             switch_ask: None,
+            open_after_switch: None,
             remove_ask: None,
             return_to: None,
             exists_hint: false,
@@ -858,6 +894,7 @@ impl App {
             me: node.profile().map(|p| self_contact(&p.did)),
             busy: false,
             notice: None,
+            notice_timer: Default::default(),
             mark_pluck: 0,
             status: node.status(),
             contacts: node.contacts(),
@@ -882,6 +919,7 @@ impl App {
             shots: 0,
             fetching: false,
             chat: ChatState::default(),
+            message_alerts: Default::default(),
             focused: false,
             offer: None,
             dismissed: Default::default(),
@@ -1271,6 +1309,7 @@ impl App {
         }
         let old_owner = self.profile_owner();
         let task = self.update_inner(msg);
+        self.notice_timer.update(&mut self.notice, self.screen == Screen::Home && !self.busy, Instant::now());
         self.settle_motion();
         self.call_ui.bind(self.call.as_ref().map(|c| c.info.call_id.as_str()));
         if identity_may_change {
@@ -1289,6 +1328,7 @@ impl App {
 
     fn update_inner(&mut self, msg: Msg) -> Task<Msg> {
         match msg {
+            Msg::DismissNotice => self.notice = None,
             Msg::Frame(now) => self.fx.now = now,
             Msg::Ev(b) => {
                 let Some(ev) = b.0.lock().unwrap().take() else { return Task::none() };
@@ -2162,7 +2202,31 @@ impl App {
                 if let Some(c) = &self.call {
                     self.ctl.stop_ring();
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
+                    // A call for another account: the core opens that account first, then answers.
+                    if c.info.account.is_some() {
+                        self.busy = true;
+                        return blocking(move || node.answer(id).map_err(s), Msg::AnsweredSwitched);
+                    }
                     return blocking(move || node.answer(id).map_err(s), Msg::Done);
+                }
+            }
+            Msg::AnsweredSwitched(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        // The account that rang is the open one now: re-read everything for it, and
+                        // the call screen stops naming it (it is just "the call" from here on).
+                        self.reset_account_state();
+                        self.screen = Screen::Home;
+                        if let Some(c) = self.call.as_mut() {
+                            c.info.account = None;
+                        }
+                    }
+                    Err(e) => {
+                        self.reload_contacts();
+                        self.refresh_accounts();
+                        self.notice = Some(e);
+                    }
                 }
             }
             Msg::AnswerVideo => return self.answer_with_video(),
@@ -2276,6 +2340,7 @@ impl App {
             }
             Msg::Switched(r) => {
                 self.busy = false;
+                let open_chat = self.open_after_switch.take();
                 match r {
                     Ok(unlocked) => {
                         self.reset_account_state();
@@ -2284,7 +2349,11 @@ impl App {
                         self.return_to = None;
                         self.screen = Screen::Home;
                         if unlocked {
-                            return self.start_node();
+                            let mut tasks = vec![self.start_node()];
+                            if let Some(peer) = open_chat.filter(|p| self.selectable(p)) {
+                                tasks.push(self.update(Msg::Select(peer)));
+                            }
+                            return Task::batch(tasks);
                         }
                         self.screen = Screen::Unlock;
                         return self.probe_remember();
@@ -2442,7 +2511,8 @@ impl App {
                     let attended = self.win.is_some() && self.focused;
                     match &g {
                         crate::GroupEv::Message(m) if !m.outgoing && m.kind == p2pcore::GroupItemKind::Post
-                            && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did) => {
+                            && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did)
+                            && self.message_alerts.allow(m.at, Instant::now()) => {
                             let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("app_a_group").into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
                             notify(&group, &crate::i18n::tr_args("app_text", &[("name", &(who).to_string()),("value", &(crate::app::group_live::post_line(m)).to_string())]), Target::Show);
@@ -2497,7 +2567,7 @@ impl App {
             Ev::Incoming(info) => {
                 // Its ordinary ring: a waiting call whose call ended, or a fresh one.
                 self.waiting = None;
-                let name = info.peer_name.clone();
+                let line = crate::accounts_bg::calling_line(&info.peer_name, info.account.as_ref());
                 self.call = Some(CallView {
                     info: info.clone(),
                     state: CallState::Ringing,
@@ -2505,7 +2575,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &view::is_calling_line(&name), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &line, Target::Show); }
                 // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
                 // "Video" buttons work the moment they are pressed.
                 let mut tasks = vec![self.show_window(), self.find_camera()];
@@ -2554,14 +2624,37 @@ impl App {
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];
-                if let Target::Chat(did) = target
-                    && self.selectable(&did)
-                    && self.call.is_none()
-                {
-                    tasks.push(self.update(Msg::Select(did)));
+                let target = match target {
+                    // Already the open one (I switched since): just the conversation.
+                    Target::AccountChat { account, peer } if keystore::current_did(&self.node).as_deref() == Some(account.as_str()) => Target::Chat(peer),
+                    t => t,
+                };
+                match target {
+                    Target::Chat(did) if self.selectable(&did) && self.call.is_none() => tasks.push(self.update(Msg::Select(did))),
+                    // Switch first, then the conversation opens (`Switched`). Not during a call or another switch.
+                    Target::AccountChat { account, peer } if self.call.is_none() && !self.busy => {
+                        self.open_after_switch = Some(peer);
+                        self.switch_ask = Some(account);
+                        tasks.push(self.update(Msg::SwitchGo));
+                    }
+                    _ => {}
                 }
                 return Task::batch(tasks);
             }
+            Ev::Background { account, from_did, from_name } => {
+                // Notifications > Messages applies to every account; the core already left out blocked people
+                // and messages read on another device of mine.
+                if NOTIFY_MESSAGES.load(Ordering::Relaxed) {
+                    notify(
+                        &crate::accounts_bg::ring_name(&from_name, Some(&account)),
+                        crate::i18n::tr_str("accounts_new_message"),
+                        Target::AccountChat { account: account.did, peer: from_did },
+                    );
+                    self.play_received();
+                }
+                self.refresh_accounts();
+            }
+            Ev::Accounts => self.refresh_accounts(),
             Ev::Tray(TrayCmd::Quit) => return self.update(Msg::Quit),
         }
         Task::none()

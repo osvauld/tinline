@@ -31,7 +31,7 @@ use transfer::{BlobHub, Gate, UploadEnd, UploadProgress, crypt};
 
 use super::*;
 use chat_core::store::PictureDownload;
-use crate::record::{ImageRef, MAX_IMAGE_BYTES};
+use crate::record::{ImageRef, MAX_IMAGE_BYTES, MAX_VOICE_BYTES, VoiceRef};
 use crate::store::{ImgRow, plan_eviction};
 
 /// A host keeps at most this many bytes of image blobs per group.
@@ -90,6 +90,7 @@ impl ImagesRt {
         let ext = match mime {
             "image/png" => "png",
             "image/webp" => "webp",
+            crate::record::VOICE_MIME => "ogg",
             _ => "jpg",
         };
         self.dir
@@ -292,7 +293,8 @@ impl GroupRt {
         let host = core.am_host(gid);
         let max_blob = core.images.limits.lock().0;
         for i in posts.iter().flat_map(|d| d.put.iter()) {
-            let Some(img) = &i.image else { continue };
+            // A voice post's recording rides the same path: sealed blob, rows, fetch, serve.
+            let Some(img) = &i.image.clone().or_else(|| i.voice.as_ref().map(VoiceRef::as_blob)) else { continue };
             match core.store.image(gid, &img.hash) {
                 Ok(Some(row)) => {
                     if row.post != i.id {
@@ -306,10 +308,11 @@ impl GroupRt {
                     continue;
                 }
             }
-            let refused = host && img.size > max_blob;
+            let limit = if i.voice.is_some() { MAX_VOICE_BYTES } else { max_blob };
+            let refused = host && img.size > limit;
             if refused {
                 self.log(format!(
-                    "group {}: refused an image of {} bytes (limit {max_blob})",
+                    "group {}: refused a blob of {} bytes (limit {limit})",
                     crate::short(gid),
                     img.size
                 ));
@@ -761,33 +764,59 @@ impl GroupRt {
         p: &crate::images::Prepared,
         mime: &str,
     ) -> Result<ImageRef, Error> {
-        let hub = self.group_hub(core).await?;
-        let key = crypt::new_key();
-        let hash = hub
-            .add_bytes_owned(&owner_of(gid), key, p.jpeg.clone())
-            .await?;
-        let img = ImageRef {
-            hash: *hash.as_bytes(),
+        let (hash, key) = self.group_blob_add(core, gid, &p.jpeg, mime).await?;
+        Ok(ImageRef {
+            hash,
             key,
             size: p.jpeg.len() as u64,
             w: p.w,
             h: p.h,
             mime: mime.to_string(),
             preview: p.preview.clone(),
-        };
-        let path = core.images.opened(&img.hash, mime);
-        // Our own picture is shown from this file: without it the post would look like one we
-        // still have to download. The blob goes again and nothing has been announced.
+        })
+    }
+
+    /// Seals the recording `ogg` (Ogg Opus, already checked by the caller) into the store under a
+    /// fresh key, for a voice post of ours in `gid`; kept opened like our own pictures.
+    pub async fn group_voice_add(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        ogg: &[u8],
+        duration_ms: u32,
+        waveform: Vec<u8>,
+    ) -> Result<VoiceRef, Error> {
+        let (hash, key) = self.group_blob_add(core, gid, ogg, crate::record::VOICE_MIME).await?;
+        Ok(VoiceRef { hash, key, size: ogg.len() as u64, duration_ms, waveform })
+    }
+
+    /// Seals `bytes` under a fresh key into the group's blob store and keeps the plain copy
+    /// opened (`hash`, `key`).
+    async fn group_blob_add(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        bytes: &[u8],
+        mime: &str,
+    ) -> Result<([u8; 32], [u8; 32]), Error> {
+        let hub = self.group_hub(core).await?;
+        let key = crypt::new_key();
+        let hash = hub
+            .add_bytes_owned(&owner_of(gid), key, bytes.to_vec())
+            .await?;
+        let path = core.images.opened(hash.as_bytes(), mime);
+        // Our own picture (or recording) is shown from this file: without it the post would look
+        // like one we still have to download. The blob goes again and nothing has been announced.
         let cached = match path.parent() {
             Some(parent) => std::fs::create_dir_all(parent),
             None => Ok(()),
         }
-        .and_then(|()| std::fs::write(&path, &p.jpeg));
+        .and_then(|()| std::fs::write(&path, bytes));
         if let Err(e) = cached {
             let _ = hub.release_owned(&owner_of(gid), &hash).await;
             return Err(e.into());
         }
-        Ok(img)
+        Ok((*hash.as_bytes(), key))
     }
 
     /// A post of ours could not be written after its blob went in: let the blob go.

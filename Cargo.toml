@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/receipts-core", "crates/group-core", "crates/account-model", "crates/chat-core", "crates/video-call-core", "crates/call-video", "crates/transfer", "crates/gcall-net", "crates/node-runtime", "crates/search-ix", "crates/chat-runtime", "crates/group-runtime", "crates/sync-runtime", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present", "crates/wake-relay-core", "crates/wake"]
 
 [workspace.package]
-version = "0.2.3"
+version = "0.2.5"
 edition = "2024"
 license = "GPL-3.0-or-later"
 

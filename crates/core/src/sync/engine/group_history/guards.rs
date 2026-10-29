@@ -15,12 +15,12 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             .unwrap();
         let _ = node.unlock_key().unwrap();
         node.commit_identity().unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (source, gid, day) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, true);
         let (target, _, _) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let server = endpoint(me.profile.device_secret).await;
         let client_secret = proto::new_device_secret();
         let client = endpoint(client_secret).await;
@@ -58,13 +58,13 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             open: false,
         })
         .unwrap();
-        node.inner.group.group_own_apply(&[token], true);
+        node.open().group.group_own_apply(&[token], true);
         let meta_name = format!("group/{gid}/meta");
         let (meta, _) = source
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner.group
+        node.open().group
             .group_own_content_apply(me.epoch, &remote, &meta_name, &meta)
             .unwrap();
         let doc = format!("group/{gid}/{day}");
@@ -76,7 +76,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
         let mut peer = PeerChat::default();
         assert!(
             handle(
-                &node.inner.sync,
+                &node.open().sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -89,7 +89,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
         peer.history.enabled = true;
         assert!(
             handle(
-                &node.inner.sync,
+                &node.open().sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -137,7 +137,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             more: false,
             deferred: false,
         };
-        handle(&node.inner.sync, &me, &remote, &mut peer, stale, &mut writer)
+        handle(&node.open().sync, &me, &remote, &mut peer, stale, &mut writer)
             .await
             .unwrap();
         assert_eq!(
@@ -155,14 +155,14 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             deferred: false,
         };
         assert!(
-            handle(&node.inner.sync, &me, &remote, &mut peer, forged, &mut writer)
+            handle(&node.open().sync, &me, &remote, &mut peer, forged, &mut writer)
                 .await
                 .is_err()
         );
         target.store.fail_next_append_for_test();
         assert!(matches!(
             handle(
-                &node.inner.sync,
+                &node.open().sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -176,7 +176,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             target.doc_vv(&gid, &DocId::Day(day.clone())),
             VersionVector::default()
         );
-        node.inner
+        node.open()
             .shared
             .lock()
             .state
@@ -186,7 +186,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             .unwrap()
             .removed = true;
         assert!(matches!(
-            handle(&node.inner.sync, &me, &remote, &mut peer, want, &mut writer).await,
+            handle(&node.open().sync, &me, &remote, &mut peer, want, &mut writer).await,
             Err(Error::Rejected(_))
         ));
         assert!(

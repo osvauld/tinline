@@ -23,6 +23,11 @@ final class CallController: ObservableObject {
     var callScreenShown = false
     /** Opens the call screen (the Shell presents [CallScreenRoot]). */
     var openCallScreen: () -> Void = {}
+    /**
+     * Answering a call for another account of this device (`CallInfo.account`) makes the core switch to it first; the Shell
+     * re-reads the open account here before the call screen opens. Decline and hang up never switch.
+     */
+    var accountOpened: () async -> Void = {}
 
     private let core: @Sendable () -> CallCore?
     private let platform: CallPlatform
@@ -213,9 +218,16 @@ final class CallController: ObservableObject {
         let id = c.info.callId
         if ui?.info.callId == id { ui?.answered = true }
         session?.answering()
-        let core = core
+        let core = core, switches = c.info.account != nil
         Task { [weak self] in
-            do { try await callOffMain { try core()?.answer(callId: id) } } catch {
+            do {
+                try await callOffMain { try core()?.answer(callId: id) }
+                // The core is on the call's account now: the screens follow it, then show the call.
+                if switches, let self {
+                    await self.accountOpened()
+                    if self.ui?.info.callId == id { self.openCallScreen() }
+                }
+            } catch {
                 CallLog.warn("answer: \(error)")
                 CallTrace.add("answer \(shortId(id)) failed")
                 // Not answered after all: back to only ringing.
@@ -318,7 +330,7 @@ final class CallController: ObservableObject {
         let id = info.callId
         videoNow = info.video
         let s = CallSession(
-            provider: provider, engine: audio, name: callOr(info.peerName, tr("call_system_call_name")), incoming: info.incoming,
+            provider: provider, engine: audio, name: info.ringName(tr("call_system_call_name")), incoming: info.incoming,
             // A video call (either side pressed Video) is a system video call on the loudspeaker; a headset still wins.
             video: info.video, preferSpeaker: info.video,
             onAnswer: { [weak self] in self?.systemAnswer(id) },

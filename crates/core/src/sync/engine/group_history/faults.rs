@@ -45,7 +45,7 @@ async fn session(
     interrupt: bool,
     replay: Option<SelfMsg>,
 ) -> Observed {
-    let me = node.inner.me().unwrap();
+    let me = node.open().me().unwrap();
     let name = format!("group/{gid}/{day}");
     let token = cryptography::codec::to_bytes(&InviteToken {
         group: gid.into(),
@@ -65,7 +65,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.sync.clone().self_run(incoming, false).await
+        node.open().sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client
@@ -263,12 +263,12 @@ async fn lost_want_page_and_cache_ack_reconnect_from_durable_frontier_without_du
             .unwrap();
         let _ = node.unlock_key().unwrap();
         node.commit_identity().unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (source, gid, day) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, true);
         let (target, _, _) =
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let server = endpoint(me.profile.device_secret).await;
         let secret = proto::new_device_secret();
         let client = endpoint(secret).await;

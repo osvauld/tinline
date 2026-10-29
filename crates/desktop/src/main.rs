@@ -18,6 +18,8 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+/// Every account with a remembered key stays online (docs/multi-online.md): the core bridge and its labels.
+mod accounts_bg;
 /// Every user-visible string: generated table (i18n/en/desktop.toml) + language and placeholders.
 mod i18n;
 mod geom;
@@ -52,12 +54,16 @@ mod call_field;
 mod call_ui;
 mod raise;
 mod media;
+mod photo_frame;
 mod camera;
 mod frames;
 mod video_surface;
 mod reason;
 mod single;
 mod startup;
+mod message_alerts;
+mod notice_timer;
+mod event_batch;
 mod tray;
 mod ui;
 mod voice;
@@ -92,6 +98,10 @@ pub enum Ev {
     Request(p2pcore::ContactRequest),
     /// They accepted the request we sent: our line to them is open.
     Accepted(p2pcore::Contact),
+    /// A 1:1 message reached an account running in the background (not the open one).
+    Background { account: p2pcore::AccountRef, from_did: String, from_name: String },
+    /// Unread counts or the running accounts changed: the switcher re-reads `accounts`.
+    Accounts,
 }
 
 /// Bridges `ContactRequestEvents` into the same channel as `NodeEvents`.
@@ -204,6 +214,7 @@ impl p2pcore::GroupEvents for GroupBridge {
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.
 pub enum ChatEv {
+    Batch(Vec<ChatEv>),
     Added(Message),
     Changed(Message),
     Chat(Chat),
@@ -458,6 +469,12 @@ fn main() -> Result<(), String> {
         node.stop();
         return Ok(());
     }
+
+    // No push on desktop: every account with a remembered key keeps its own endpoint up, so its
+    // calls and messages arrive while another account is open. Set before the first `start`
+    // (which asks `account_key` on its blocking worker, never on the UI thread).
+    node.set_background_mode(p2pcore::BackgroundMode::KeepAll);
+    node.set_account_events(Arc::new(accounts_bg::AccountBridge { tx: tx.clone(), data: data.clone() }));
 
     quit_on_sigterm(tx.clone());
     let show_tx = tx.clone();

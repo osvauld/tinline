@@ -33,6 +33,7 @@ impl NodeCtx {
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
             waking: AtomicBool::new(false),
+            dial_backs: Mutex::new(Default::default()),
             epoch,
             ended_wake: tokio::sync::Notify::new(),
             video: Default::default(),
@@ -57,8 +58,19 @@ impl NodeCtx {
                 if live.call.is_some() {
                     return Err(Error::Busy);
                 }
-                // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
-                if self.hooks().is_some_and(|h| h.in_group_call()) {
+                // Another account of this device is in a call (or ringing): one 1:1 call at a
+                // time across them. Incoming calls get Busy, outgoing InCall, as for a group call.
+                if !self.floor.take(self.slot_id) {
+                    return Err(Error::InCall);
+                }
+                // The user is in a group call (G6), on this account or another of the device:
+                // incoming 1:1 calls get Busy, outgoing InCall. And one ring at a time: an
+                // incoming call while another account rings for a wake is busy too.
+                if self.hooks().is_some_and(|h| h.in_group_call())
+                    || self.floor.group_call_elsewhere(self.slot_id)
+                    || (call.info.incoming && self.floor.wake_ring_elsewhere(self.slot_id))
+                {
+                    self.floor.release(self.slot_id);
                     return Err(Error::InCall);
                 }
                 live.call = Some(call.clone());
@@ -112,6 +124,7 @@ impl NodeCtx {
             incoming: false,
             // Only a call that offers video can be one.
             video: video && self.video_enabled(),
+            account: None,
         };
         let contact = match (contact, held_name) {
             (Some(c), None) => c,

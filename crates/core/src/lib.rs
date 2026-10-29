@@ -49,7 +49,7 @@ mod voice;
 pub use error::Error;
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact, PeerBlocks};
-pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupImage, GroupImageState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary, OnlineMember};
+pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupImage, GroupImageState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary, GroupVoice, OnlineMember};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::rotation::RotationPolicy;
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
@@ -70,7 +70,7 @@ pub use store::CallRecord;
 pub use video_call::{video_codec_label, video_recv_label, video_send_label};
 pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats, VideoTuning, video_tuning_stats_label};
 pub use video_call::{VideoChoice, VideoLive, VideoStatRow, video_stat_rows};
-pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
+pub use node::{AccountEvents, AccountRef, AccountSummary, Availability, BackgroundMode, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo, WakeOutcome};
 pub use licences::{open_source_licences, OpenSourceLicence};
 
 #[uniffi::export]

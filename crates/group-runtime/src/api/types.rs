@@ -57,6 +57,20 @@ pub struct GroupMessage {
     pub before_removal: bool,
     /// The post's picture (public group §5); `text` may then be empty.
     pub image: Option<GroupImage>,
+    /// A voice post's recording; `text` and `image` are then empty.
+    pub voice: Option<GroupVoice>,
+}
+
+/// A voice post's recording: what the bubble draws before it is here, and where it is (the same
+/// states as a picture; `Node::group_voice_path` opens it, `Node::group_fetch_voice` loads it).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GroupVoice {
+    pub duration_ms: u32,
+    /// About 64 peaks, 0..=255.
+    pub waveform: Vec<u8>,
+    /// Bytes.
+    pub size: u64,
+    pub state: GroupImageState,
 }
 
 /// Where a post's picture is on this device.

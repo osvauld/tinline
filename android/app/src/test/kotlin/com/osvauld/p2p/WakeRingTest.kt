@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uniffi.p2pcore.AccountRef
 import uniffi.p2pcore.WakeOutcome
 
 /** The wake ring's state changes and the plan a core answer maps to (docs/push.md "Calls"). Synthetic DIDs. */
@@ -23,6 +24,15 @@ class WakeRingTest {
         val answered = WakeRingLogic.answered(first)
         val repeat = WakeRingLogic.ring(answered, a, "Maya")
         assertEquals(WakeRingUi(a, "Maya", answered = true), repeat)
+    }
+
+    /** 2026-10-28 moto: a repeat wake after Answer brought the ring back over "Connecting…". */
+    @Test fun onlyANewRingAlerts() {
+        assertTrue(WakeRingLogic.alerts(null, a))
+        val ring = WakeRingLogic.ring(null, a, "Maya")
+        assertFalse(WakeRingLogic.alerts(ring, a))
+        assertFalse(WakeRingLogic.alerts(WakeRingLogic.answered(ring), a))
+        assertTrue(WakeRingLogic.alerts(ring, b))
     }
 
     @Test fun theEndOfTheRingClearsOnlyItsOwnContact() {
@@ -52,6 +62,18 @@ class WakeRingTest {
         assertEquals(WakePlan.Nothing, WakePlan.of(WakeOutcome.Ignore))
         assertEquals(WakePlan.Nothing, WakePlan.of(WakeOutcome.EndCall))
         assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.DialedBack(a)))
-        assertEquals(WakePlan.Ring(a, "Maya"), WakePlan.of(WakeOutcome.Ring(a, "Maya")))
+        assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.CodeWake))
+        assertEquals(WakePlan.Ring(a, "Maya"), WakePlan.of(WakeOutcome.Ring(a, "Maya", null)))
+    }
+
+    /** docs/multi-online.md: a call wake for another account of this phone carries it to the ring, which names it. */
+    @Test fun aRingForABackgroundAccountNamesIt() {
+        val work = AccountRef("did:key:zWork", "Work")
+        assertEquals(WakePlan.Ring(a, "Maya", work), WakePlan.of(WakeOutcome.Ring(a, "Maya", work)))
+        val ring = WakeRingLogic.ring(null, a, "Maya", work.name)
+        assertEquals("Maya → Work", ring.title)
+        assertEquals("Maya", WakeRingLogic.ring(null, a, "Maya").title)
+        // A repeat wake keeps the early answer and the account.
+        assertEquals(WakeRingUi(a, "Maya", answered = true, account = "Work"), WakeRingLogic.ring(WakeRingLogic.answered(ring), a, "Maya", "Work"))
     }
 }

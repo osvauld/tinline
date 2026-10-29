@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import android.content.Context
+import uniffi.p2pcore.BackgroundMode
 import uniffi.p2pcore.PushTarget
 
 /**
@@ -36,6 +37,12 @@ object PushPolicy {
 
     /** The plain always-on service start (boot, app open, account switch) is wanted only in always-on mode. */
     fun wantsAlwaysOnService(mode: Mode) = mode == Mode.ALWAYS_ON
+
+    /**
+     * Which other accounts the core may run (docs/multi-online.md): with wake pushes a sleeping account opens on a wake
+     * for it; always-on (and Liberum, which has no push) keeps only the open account, as before.
+     */
+    fun backgroundMode(mode: Mode): BackgroundMode = if (mode == Mode.PUSH) BackgroundMode.ON_WAKE else BackgroundMode.OPEN_ONLY
 }
 
 /** The app's reachability mode: the edition's provider plus the stored Settings choice. */
@@ -60,6 +67,9 @@ object PushMode {
     fun mode(c: Context): PushPolicy.Mode = PushPolicy.mode(provider.available(c), alwaysOnChosen(c))
 
     fun pushOn(c: Context) = mode(c) == PushPolicy.Mode.PUSH
+
+    /** May block on the first Play services check: not for the main thread. */
+    fun backgroundMode(c: Context): BackgroundMode = PushPolicy.backgroundMode(mode(c))
 
     fun setAlwaysOn(c: Context, on: Boolean) { prefs(c).edit().putBoolean(KEY_ALWAYS_ON, on).apply() }
 

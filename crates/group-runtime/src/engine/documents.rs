@@ -112,7 +112,7 @@ impl GroupCore {
             seen: live.doc.seen(),
             body,
         };
-        if matches!(rec.body, Body::Post { .. }) {
+        if rec.body.is_post() {
             self.write_post(live, gid, rec)
         } else {
             self.write_meta(live, gid, rec)
@@ -126,7 +126,7 @@ impl GroupCore {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
         let rec = Record { group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen, body };
-        if matches!(rec.body, Body::Post { .. }) { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
+        if rec.body.is_post() { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
     }
 
     /// Test hook (a modified app): a fresh identity writes `OpenJoin{name}` claiming `seen`; the

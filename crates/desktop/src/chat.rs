@@ -13,7 +13,7 @@ use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message
 use crate::app::Target;
 use crate::media::{self, Class, Pixels};
 
-use crate::voice::{Player, Recorder};
+use crate::voice::{Player, RecTo, Recorder};
 use super::{blocking, notify, s, App, Msg, Screen};
 use crate::ChatEv;
 #[path = "compose_state.rs"]
@@ -152,8 +152,9 @@ pub(super) struct ChatState {
     pub confirm_delete: Option<String>,
     /// The message a reply quote jumped to, ringed for a moment.
     pub flash: Option<(String, std::time::Instant)>,
-    /// A voice message being recorded, and the file it goes to.
-    pub rec: Option<(Recorder, PathBuf)>,
+    /// A voice message being recorded, the file it goes to and the 1:1 chat or group it is for
+    /// (one recorder for both).
+    pub rec: Option<(Recorder, PathBuf, RecTo)>,
     /// The voice message playing (or paused), by message id.
     pub player: Option<(String, Player)>,
     /// Decrypted voice files by message id, for playing again; removed when the app quits.
@@ -990,30 +991,42 @@ impl App {
                 }
                 return self.find_scroll();
             }
+            // One recorder for the open 1:1 chat or group (the group composer uses these too).
             Cm::RecStart => {
-                if self.chat.peer.is_none() || self.chat.rec.is_some() {
+                if self.chat.rec.is_some() {
                     return Task::none();
+                }
+                let Some(to) = RecTo::of(self.chat.peer.as_deref(), self.live.open.as_deref()) else { return Task::none() };
+                if let RecTo::Group(_) = to {
+                    // As for text: a member of an admins-only group (or one who left) cannot post.
+                    if !self.live.can_post() || self.live.admins_only_locked() {
+                        return Task::none();
+                    }
                 }
                 self.chat.player = None;
                 let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
                 let path = voice_dir().join(format!("rec-{stamp}.ogg"));
                 match Recorder::start(&path) {
-                    Ok(r) => self.chat.rec = Some((r, path)),
+                    Ok(r) => self.chat.rec = Some((r, path, to)),
                     Err(e) => self.notice = Some(crate::i18n::tr_args("chat_could_not_record", &[("error", &(e).to_string())])),
                 }
             }
             Cm::RecCancel => {
-                if let Some((r, _)) = self.chat.rec.take() {
+                if let Some((r, _, _)) = self.chat.rec.take() {
                     r.cancel();
                 }
             }
             Cm::RecSend => {
-                let (Some((rec, path)), Some(peer)) = (self.chat.rec.take(), self.chat.peer.clone()) else {
+                let Some((rec, path, to)) = self.chat.rec.take() else {
                     return Task::none();
                 };
                 match rec.finish() {
                     Ok(Some(info)) => {
                         let p = path.to_string_lossy().into_owned();
+                        let peer = match to {
+                            RecTo::Peer(peer) => peer,
+                            RecTo::Group(gid) => return self.live_post_voice(gid, p, info.waveform),
+                        };
                         return self.send_task(peer, move |src, peer| {
                             let r = src.send_voice(peer, p.clone(), info.duration_ms, info.waveform);
                             let _ = std::fs::remove_file(p);
@@ -1159,7 +1172,11 @@ impl App {
                 if self.chat.player.as_ref().is_some_and(|(_, p)| p.finished()) {
                     self.chat.player = None;
                 }
-                if self.chat.rec.as_ref().is_some_and(|(r, _)| r.elapsed_ms() >= crate::voice::MAX_MS) {
+                // Leaving the conversation drops its recording (it never goes to another chat).
+                if self.chat.rec.as_ref().is_some_and(|(_, _, to)| !to.is_open(self.chat.peer.as_deref(), self.live.open.as_deref())) {
+                    return self.update_chat(Cm::RecCancel);
+                }
+                if self.chat.rec.as_ref().is_some_and(|(r, _, _)| r.elapsed_ms() >= crate::voice::MAX_MS) {
                     return self.update_chat(Cm::RecSend);
                 }
             }
@@ -1169,9 +1186,25 @@ impl App {
 
     /// Core chat events, already on the UI loop.
     pub(super) fn on_chat_event(&mut self, ev: ChatEv) -> Task<Msg> {
-        let t = self.on_chat_event_inner(ev);
+        let events = match ev { ChatEv::Batch(events) => events, ev => vec![ev] };
+        let mut tasks = Vec::new();
+        let mut marks_changed = false;
+        let mut read_peer = None;
+        for ev in events {
+            marks_changed |= matches!(&ev, ChatEv::Added(_) | ChatEv::Changed(_) | ChatEv::Chat(_) | ChatEv::Delivery(..));
+            if let ChatEv::Added(m) = &ev
+                && !m.outgoing && self.chat_visible() && self.chat.peer.as_deref() == Some(m.peer_did.as_str())
+                && self.win.is_some() && self.focused
+            {
+                read_peer = Some(m.peer_did.clone());
+            }
+            tasks.push(self.on_chat_event_inner(ev));
+        }
+        if let Some(peer) = read_peer { tasks.push(self.mark_read(&peer)); }
         self.sync_ticks();
-        Task::batch([t, self.ensure_thumbs(), self.refresh_marks()])
+        tasks.push(self.ensure_thumbs());
+        if marks_changed { tasks.push(self.refresh_marks()); }
+        Task::batch(tasks)
     }
 
     fn on_chat_event_inner(&mut self, ev: ChatEv) -> Task<Msg> {
@@ -1181,12 +1214,15 @@ impl App {
                 let open = self.chat_visible() && self.chat.peer.as_deref() == Some(peer.as_str());
                 // Seen only if the window exists and the user is in it.
                 let attended = open && self.win.is_some() && self.focused;
-                if incoming && !attended && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) {
+                let alert = incoming && !self.blocks.blocked_by_me(&peer)
+                    && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed)
+                    && self.message_alerts.allow(m.at, std::time::Instant::now());
+                if alert && !attended {
                     notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
                 }
                 // audio.ts `received`: the can, tapped once, for a message in front of me and for one that raised a notification
                 // (the window away); Notifications > Messages and blocks apply, and Quiet is checked by the player.
-                if incoming && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) && !self.blocks.blocked_by_me(&peer) {
+                if alert {
                     self.play_received();
                 }
                 let receipt = if open && !incoming { self.load_receipt(&peer, &m.id) } else { Task::none() };
@@ -1194,14 +1230,11 @@ impl App {
                 if open && !incoming {
                     self.refresh_undelivered();
                 }
-                if incoming && attended {
-                    return Task::batch([receipt, self.mark_read(&peer)]);
-                }
                 return receipt;
             }
             // Also raised when the contact's signed receipts for the shown version were committed.
             ChatEv::Changed(m) => {
-                let receipt = if m.outgoing { self.load_receipt(&m.peer_did, &m.id) } else { Task::none() };
+                let receipt = if m.outgoing && self.chat.peer.as_deref() == Some(m.peer_did.as_str()) { self.load_receipt(&m.peer_did, &m.id) } else { Task::none() };
                 self.chat.upsert(m);
                 return receipt;
             }
@@ -1228,6 +1261,7 @@ impl App {
                     self.chat.progress.insert(hash, (done, total));
                 }
             }
+            ChatEv::Batch(events) => return self.on_chat_event(ChatEv::Batch(events)),
         }
         Task::none()
     }

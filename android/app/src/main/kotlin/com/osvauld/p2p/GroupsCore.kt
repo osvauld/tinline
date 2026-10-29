@@ -91,6 +91,12 @@ interface GroupApi {
     fun fetchImage(id: String, messageId: String) {}
     /** Blocking the first time (the core opens the picture into a file): IO threads only. */
     fun imagePath(id: String, messageId: String): String? = null
+    // Voice posts: the 1:1 recording (Ogg Opus), sealed and fetched as a picture is.
+    /** Blocking (the core checks and seals the file): IO threads only. */
+    fun postVoice(id: String, path: String, waveform: ByteArray): GroupMessage = throw UnsupportedOperationException()
+    fun fetchVoice(id: String, messageId: String) {}
+    /** Blocking the first time (the core opens the recording into a file): IO threads only. */
+    fun voicePath(id: String, messageId: String): String? = null
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -133,6 +139,9 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun postImage(id: String, bytes: ByteArray, caption: String) = node().groupPostImageBytes(id, bytes, caption)
     override fun fetchImage(id: String, messageId: String) = node().groupFetchImage(id, messageId)
     override fun imagePath(id: String, messageId: String) = node().groupImagePath(id, messageId)
+    override fun postVoice(id: String, path: String, waveform: ByteArray) = node().groupPostVoice(id, path, waveform)
+    override fun fetchVoice(id: String, messageId: String) = node().groupFetchVoice(id, messageId)
+    override fun voicePath(id: String, messageId: String) = node().groupVoicePath(id, messageId)
 }
 
 /** A contact as the "Add members" picker sees it. */
@@ -233,8 +242,9 @@ object GroupText {
         }
     }
 
-    /** A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one. Same words as desktop. */
+    /** A post in one line: its text, "Voice message", "Photo" for a picture alone, "Photo · caption" with one. Same words as desktop. */
     fun postLine(m: GroupMessage): String = when {
+        m.voice != null -> appString(R.string.chat_preview_voice)
         m.image == null -> m.text
         m.text.isEmpty() -> appString(R.string.groups_photo_desc)
         else -> appString(R.string.groupsc_photo_caption_line, m.text)
@@ -517,6 +527,21 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
         } }.mapError()
     }
+
+    /** Posts the finished recording at [path] (the 1:1 voice format) with its [waveform]. IO threads only. */
+    fun postVoice(id: String, path: String, waveform: ByteArray): Result<GroupMessage> {
+        if (_open.value?.takeIf { it.id == id }?.detail?.let(GroupText::adminsOnlyLocked) == true) return Result.failure(GroupFailure(GroupText.ADMINS_ONLY_ERROR))
+        return runCatching { api.postVoice(id, path, waveform) }.onSuccess { m -> synchronized(this) {
+            _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
+            _list.value = try { api.groups() } catch (e: Exception) { _list.value }
+        } }.mapError()
+    }
+
+    /** Loads a voice post's recording now (tap, or try again); `onGroupImage` reports it, as for pictures. IO threads only. */
+    fun fetchVoice(id: String, messageId: String): Result<Unit> = runCatching { api.fetchVoice(id, messageId) }.mapError()
+
+    /** The voice post's recording as a file once it is here (null before). IO threads only. */
+    fun voicePath(id: String, messageId: String): String? = try { api.voicePath(id, messageId) } catch (_: Exception) { null }
 
     /** Loads a post's picture now (tap to load, or try again). IO threads only. */
     fun fetchImage(id: String, messageId: String): Result<Unit> = runCatching { api.fetchImage(id, messageId) }.mapError()

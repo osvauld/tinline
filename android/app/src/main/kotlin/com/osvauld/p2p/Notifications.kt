@@ -13,6 +13,7 @@ import uniffi.p2pcore.CallInfo
 
 object Notifications {
     const val CH_SERVICE = "service"
+    private const val GROUP_SERVICE = "tinline.service"
     const val CH_CALLS = "calls"
     const val CH_ONGOING = "ongoing_calls"
     const val CH_MISSED = "missed"
@@ -153,6 +154,9 @@ object Notifications {
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            // A group of its own: left ungrouped, Android bundles it with a message the moment one is posted (a push
+            // wake starts this service), and the regroup takes the message's heads-up off the screen at once.
+            .setGroup(GROUP_SERVICE)
             .setColor(0xFF0B6B5B.toInt())
             .setContentTitle(inCall ?: idleTitle(c))
             .setContentText(if (inCall != null) c.getString(R.string.notif_return_to_call) else idleText(c))
@@ -190,7 +194,8 @@ object Notifications {
 
     fun incoming(c: Context, call: CallInfo) {
         if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
-        ring(c, call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.video,
+        // A call to a background account names it ("Asha → Work"); answering switches to it (the core does).
+        ring(c, AccountLabels.ringName(call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.account?.name), call.video,
             answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
             decline = service(c, CoreService.ACTION_DECLINE, 22))
     }

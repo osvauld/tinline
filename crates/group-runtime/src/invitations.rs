@@ -16,7 +16,9 @@
 //! - The inviter sees per invitee Pending / Joined (the invitee is a member in the group's records)
 //!   / Declined / Expired / Blocked.
 //! - Undelivered letters wait in an outbox (`inv/{id}` rows with `owe`) and are retried with
-//!   backoff while the endpoint is up and after every start, like the device-list push (P4).
+//!   backoff while the endpoint is up and after every start, like the device-list push (P4). A
+//!   failed delivery wakes the other side's phone with the token they gave us
+//!   (`NodeCtx::wake_unreached`), as a chat message does.
 //! - P5: we never invite a DID we block or that blocks us (refused locally; the app does not offer
 //!   them); an invitee that blocks us answers its block notice, and the invitation reads Blocked.
 //!   An invitation from a DID we block is answered with our notice and never listed.
@@ -254,6 +256,7 @@ impl GroupRt {
                     break;
                 };
                 let mut progressed = false;
+                let mut unreached = Vec::new();
                 for (mut r, letter) in todo {
                     let text = letter_text(&letter);
                     let mut outcome = None;
@@ -263,7 +266,12 @@ impl GroupRt {
                                 outcome = Some(o);
                                 break;
                             }
-                            Err(e) => tracing::debug!("group invitation to {}: {e}", crate::short(&did)),
+                            Err(e) => {
+                                tracing::debug!("group invitation to {}: {e}", crate::short(&did));
+                                if !unreached.contains(&d.device) {
+                                    unreached.push(d.device);
+                                }
+                            }
                         }
                     }
                     let Some(o) = outcome else { continue };
@@ -290,7 +298,13 @@ impl GroupRt {
                 if devices.is_empty() {
                     break;
                 }
-                tokio::time::sleep(node_runtime::wire::retry_pause(&RETRY_SECS, round)).await;
+                // Their phone may be asleep: wake it with the token they gave us, on the usual
+                // schedule, and redial sooner while the wake takes effect.
+                if !unreached.is_empty() {
+                    this.ctx.wake_unreached(&did, &unreached).await;
+                }
+                let pause = this.ctx.fast_redial(&did).unwrap_or_else(|| node_runtime::wire::retry_pause(&RETRY_SECS, round));
+                tokio::time::sleep(pause).await;
                 round += 1;
             }
             this.inv_delivering.lock().remove(&did);

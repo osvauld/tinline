@@ -3,7 +3,7 @@
 //! the type metadata, so they stay in this module).
 
 
-pub use node_runtime::{Availability, CallInfo, CallState, CallStats, CardPeek, Contact, NodeStatus, ProfileInfo};
+pub use node_runtime::{AccountRef, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, NodeStatus, ProfileInfo};
 
 /// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
 /// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
@@ -25,6 +25,9 @@ pub struct AccountSummary {
     /// The account `has_identity`, `unlock` and the rest act on.
     pub current: bool,
     pub has_passphrase: bool,
+    /// Unread 1:1 messages to show on it in the switcher: 0 for the open account; a background
+    /// account's live count, or the count it had when it last closed (`docs/multi-online.md`).
+    pub unread: u32,
 }
 
 /// Whether the identity's secrets are available. `Locked` needs `unlock` (or
@@ -99,6 +102,17 @@ pub struct CallInfo {
     /// Placed as a video call (the caller pressed Video and calls with its camera on). The callee
     /// learns it from `CallHello.camera`; either camera can still go on in any call.
     pub video: bool,
+    /// The account of this device the call rings, when it is not the open one ("Asha → Work");
+    /// answering it switches to that account first. `None`: the open account.
+    #[uniffi(default = None)]
+    pub account: Option<AccountRef>,
+}
+
+/// One account of this device, as a background event or ring names it.
+#[uniffi::remote(Record)]
+pub struct AccountRef {
+    pub did: String,
+    pub name: String,
 }
 
 #[uniffi::remote(Enum)]
@@ -130,13 +144,4 @@ pub struct CallStats {
     /// Still dialling, and the relay took a wake for the callee's phone: "Waking their phone…".
     pub waking: bool,
 }
-sink_adapter!(
-    /// Hands the runtime's events to the app's `NodeEvents`.
-    pub(crate) NodeEventsAdapter(NodeEvents) => node_runtime::NodeSink {
-        fn on_status(status: NodeStatus);
-        fn on_contacts_changed();
-        fn on_incoming_call(call: CallInfo);
-        fn on_call_state(call_id: String, state: CallState);
-        fn on_log(line: String);
-    }
-);
+// The runtime's events reach the app's `NodeEvents` through each slot's gate (`slots.rs`).

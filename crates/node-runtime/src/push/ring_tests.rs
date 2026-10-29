@@ -4,6 +4,7 @@
 //! `wake_` (`cargo test -p node-runtime --lib wake`).
 
 use std::sync::Weak;
+use std::sync::atomic::AtomicBool;
 use std::time::{Duration, Instant};
 
 use iroh::address_lookup::memory::MemoryLookup;
@@ -18,11 +19,12 @@ use super::*;
 use crate::call::Cmd;
 use crate::hooks::NodeHooks;
 use crate::wire::Ctrl;
-use crate::{CallState, Me};
+use crate::{CallFloor, CallState, Me};
 
-/// The engine side of a test node: only `chat_kick` does anything, and it is recorded.
+/// The engine side of a test node: `chat_kick` is recorded, and `in_group_call` says what the
+/// second field holds.
 #[derive(Default)]
-struct Kicks(Mutex<Vec<String>>);
+struct Kicks(Mutex<Vec<String>>, AtomicBool);
 
 impl NodeHooks for Kicks {
     fn group_unpark(self: Arc<Self>) {}
@@ -57,7 +59,7 @@ impl NodeHooks for Kicks {
         Box::pin(async { Ok(()) })
     }
     fn in_group_call(&self) -> bool {
-        false
+        self.1.load(Ordering::SeqCst)
     }
     fn chat_call_activity(self: Arc<Self>, _: &str) {}
     fn chat_close_sessions(self: Arc<Self>, _: &str) {}
@@ -74,6 +76,16 @@ impl NodeHooks for Kicks {
 /// `a` holds the token `b` issued, and `b` has an engine that records its dials.
 async fn pair(lookup: &MemoryLookup) -> (T, T, Arc<Kicks>) {
     let (a, b) = (node(lookup).await, node(lookup).await);
+    hook_up(a, b).await
+}
+
+/// As `pair`, with `b` on `floor` (one account slot of a device that has others).
+async fn pair_on(lookup: &MemoryLookup, floor: &Arc<CallFloor>) -> (T, T, Arc<Kicks>) {
+    let (a, b) = (node(lookup).await, node_on_floor(lookup, floor).await);
+    hook_up(a, b).await
+}
+
+async fn hook_up(a: T, b: T) -> (T, T, Arc<Kicks>) {
     befriend(&a, &b);
     set_target(&b, Some(fcm(2)));
     eventually("A holds B's token", || a.held_from(&b).is_some()).await;
@@ -239,6 +251,68 @@ async fn wake_answered_early_but_no_call_in_time_just_ends() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_answered_early_then_left_rings_when_the_call_arrives() {
+    // The user answered, then switched to another account before the call came: it must ring
+    // (naming the account), not connect where nobody hears it.
+    let lookup = MemoryLookup::new();
+    let (a, b, _kicks) = pair(&lookup).await;
+    b.ctx.on_wake(&fresh(&b, &a, Kind::Call)).unwrap();
+    b.ctx.answer_wake_ring(&a.did()).unwrap();
+    assert!(b.ctx.wake_ringing_any());
+    b.ctx.wake_rings_unanswer();
+    assert!(b.ctx.wake_ringing_any(), "still ringing, only not answered");
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("B rings", || b.rec.incoming.lock().len() == 1).await;
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert!(!states(&a).contains(&CallState::Active), "nobody accepted it for the user");
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+    eventually("the call ends", || matches!(states(&a).last(), Some(CallState::Ended { .. }))).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_ring_on_another_account_makes_an_incoming_call_busy() {
+    // One device, two account slots on one floor: `b` and `x`. While `x` rings for a wake,
+    // a call to `b` is busy; once `x`'s ring is declined, it rings again.
+    let lookup = MemoryLookup::new();
+    let floor: Arc<CallFloor> = Default::default();
+    let (a, b, _k) = pair_on(&lookup, &floor).await;
+    let (y, x, _kx) = pair_on(&lookup, &floor).await;
+    assert_eq!(x.ctx.on_wake(&fresh(&x, &y, Kind::Call)).unwrap(), WakeAction::Ring { did: y.did() });
+    assert!(floor.wake_ring_elsewhere(b.ctx.slot_id) && !floor.wake_ring_elsewhere(x.ctx.slot_id));
+    let _ = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("a is told busy", || matches!(states(&a).last(), Some(CallState::Ended { reason }) if reason == "busy")).await;
+    assert!(b.rec.incoming.lock().is_empty(), "b never rang");
+
+    x.ctx.decline_wake_ring(&y.did()).unwrap();
+    assert!(!floor.wake_ring_elsewhere(b.ctx.slot_id), "a declined ring does not count");
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("b rings now", || b.rec.incoming.lock().len() == 1).await;
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_group_call_on_another_account_makes_a_call_busy() {
+    // While the user is in a group call on account `x`, a 1:1 call to account `b` of the same
+    // device is busy (as on one account), and `b` cannot place one.
+    let lookup = MemoryLookup::new();
+    let floor: Arc<CallFloor> = Default::default();
+    let (a, b, _k) = pair_on(&lookup, &floor).await;
+    let (_y, x, kx) = pair_on(&lookup, &floor).await;
+    kx.1.store(true, Ordering::SeqCst);
+    assert!(floor.group_call_elsewhere(b.ctx.slot_id) && !floor.group_call_elsewhere(x.ctx.slot_id));
+    let _ = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("a is told busy", || matches!(states(&a).last(), Some(CallState::Ended { reason }) if reason == "busy")).await;
+    assert!(b.rec.incoming.lock().is_empty(), "b never rang");
+    assert!(matches!(b.ctx.clone().start_call(a.did(), false), Err(Error::InCall)));
+    assert!(!floor.held_by_other(x.ctx.slot_id), "the refused calls left the floor free");
+
+    kx.1.store(false, Ordering::SeqCst);
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("b rings once the group call is over", || b.rec.incoming.lock().len() == 1).await;
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn wake_declined_at_the_ring_turns_the_call_away_unrung() {
     let lookup = MemoryLookup::new();
     let (a, b, _kicks) = pair(&lookup).await;
@@ -358,4 +432,46 @@ async fn wake_w14_a_device_key_rotation_keeps_the_token_working() {
     assert_eq!(a.held_from(&b).unwrap().token, token);
     assert_eq!(b.ctx.on_wake(&fresh(&b, &a, Kind::Msg)).unwrap(), WakeAction::DialBack { did: a.did() });
     assert_eq!(kicks.0.lock().len(), 1);
+}
+
+/// 2026-10-28 (moto): chat worked, but the caller's call dials never reached the phone, which rang
+/// from the wake with nothing following. The woken phone dials back and the call runs on its
+/// connection (`call_back.rs`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_woken_callee_dials_back_a_caller_that_cannot_reach_it() {
+    let lookup = MemoryLookup::new();
+    let (a, b, _kicks) = pair(&lookup).await;
+    // B moves to a new port and nobody can look it up: A's dials go nowhere, B can still reach A.
+    b.ep.close().await;
+    bring_up(&b.ctx, b.secret, &lookup).await;
+    lookup.remove_endpoint_info(iroh::PublicKey::from_bytes(&b.me.device).unwrap());
+    let h = fresh(&b, &a, Kind::Call);
+    let (bctx, caller, woke) = (b.ctx.clone(), a.did(), Arc::new(AtomicBool::new(false)));
+    let woke2 = woke.clone();
+    *a.relay.on_wake.lock() = Some(Arc::new(move |_, k| {
+        if k == Kind::Call && !woke2.swap(true, Ordering::SeqCst) {
+            assert_eq!(bctx.on_wake(&h).unwrap(), WakeAction::Ring { did: caller.clone() });
+        }
+    }));
+
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    eventually("the call wake is sent", || woke.load(Ordering::SeqCst)).await;
+    eventually("the call reaches B over B's own connection", || b.rec.incoming.lock().len() == 1).await;
+    assert_eq!(b.rec.incoming.lock()[0].call_id, info.call_id);
+    assert!(!b.ctx.wake_ringing(&a.did()), "the call took the wake ring over");
+    eventually("the caller hears Ringing", || states(&a).contains(&CallState::Ringing)).await;
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+    eventually("the call ends on B", || matches!(b.rec.states.lock().last(), Some(CallState::Ended { .. }))).await;
+}
+
+/// A dial-back to a caller that is not calling us is refused, and the ring goes on as before.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_a_dial_back_to_a_caller_that_is_not_calling_changes_nothing() {
+    let lookup = MemoryLookup::new();
+    let (a, b, _kicks) = pair(&lookup).await;
+    assert!(matches!(b.ctx.on_wake(&fresh(&b, &a, Kind::Call)).unwrap(), WakeAction::Ring { .. }));
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    assert!(b.ctx.wake_ringing(&a.did()), "still ringing from the wake");
+    assert!(b.rec.incoming.lock().is_empty());
+    assert!(a.rec.incoming.lock().is_empty(), "a CallReady is no call for the caller");
 }

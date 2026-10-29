@@ -8,6 +8,12 @@
 //! - Sending side: [`WakeState::hold`] keeps the tokens contacts gave us; [`WakeState::wake_for`]
 //!   says whether to wake a device now, [`WakeState::wake_result`] learns from the relay's answer.
 //!
+//! - Code wake tokens: [`WakeState::plan_code`] / [`WakeState::apply_code`] get one `msg` token
+//!   per contact ticket we hand out (keyed by the ticket nonce, expiring with it), so a stranger
+//!   holding our code can wake us to deliver a contact request. [`WakeState::on_wake`] answers
+//!   such a wake with [`WakeAction::CodeWake`], throttled per tag ([`CODE_WAKE_CAP`] per
+//!   [`CODE_WAKE_WINDOW_MS`]).
+//!
 //! Nothing here carries content: no name, no text. DIDs stay local, as keys of this state.
 
 use serde::{Deserialize, Serialize};
@@ -17,6 +23,10 @@ use wake_relay_core::relay::MAX_TAGS_PER_REGISTER;
 use wake_relay_core::token::{MAX_TOKEN_CHARS, MAX_TOKEN_LIFE_MS};
 pub use wake_relay_core::{Kind, Kinds, Target};
 
+#[cfg(test)]
+mod backoff_tests;
+#[cfg(test)]
+mod code_tests;
 #[cfg(test)]
 mod tests;
 
@@ -30,9 +40,57 @@ pub const RENEW_BEFORE_MS: u64 = 7 * DAY_MS;
 /// At most one `msg` wake per device this often (PROVISIONAL: the relay's rate limiter is only
 /// approximate, so this is the real limit).
 pub const MSG_WAKE_EVERY_MS: u64 = 30_000;
+/// The least time between `msg` wakes of one target that does not answer, after the 1st, 2nd,
+/// 3rd, 4th and every later wake: wakes at 0, 30 s, 2 min, 10 min, 30 min from the first, then
+/// hourly, about 24 a day (PROVISIONAL, `docs/notifications-plan.md` N2). Reaching the target
+/// starts it over ([`WakeState::reached`]); [`MSG_WAKE_EVERY_MS`] stays the floor.
+pub const MSG_WAKE_GAPS_MS: [u64; 5] = [
+    MSG_WAKE_EVERY_MS,
+    90_000,
+    8 * 60_000,
+    20 * 60_000,
+    60 * 60_000,
+];
+
+/// The least time after the last `msg` wake of a target before the next, when `count` wakes
+/// have gone out since it was last reached ([`MSG_WAKE_GAPS_MS`]).
+pub fn msg_wake_gap_ms(count: u32) -> u64 {
+    let i = (count as usize)
+        .saturating_sub(1)
+        .min(MSG_WAKE_GAPS_MS.len() - 1);
+    MSG_WAKE_GAPS_MS[i]
+}
+
+/// Whether a `msg` wake of a target may go out at `now_ms`: never woken, or the gap of
+/// [`msg_wake_gap_ms`] has passed since `last_ms`. Pure; the caller records the wake
+/// (`last_ms = now`, `count += 1`) and resets `count` when the target is reached.
+pub fn msg_wake_due(last_ms: Option<u64>, count: u32, now_ms: u64) -> bool {
+    !last_ms.is_some_and(|t| now_ms < t.saturating_add(msg_wake_gap_ms(count)))
+}
+
 /// At most one `call` wake per device this often (PROVISIONAL: the caller redials every ~1 s, a
 /// wake should not repeat that fast).
 pub const CALL_WAKE_EVERY_MS: u64 = 10_000;
+
+/// A code wake (a stranger holding our contact ticket) is acted on at most [`CODE_WAKE_CAP`]
+/// times per tag within this window; more are ignored (PROVISIONAL, `docs/push.md` Open 6: the
+/// tag is shared by everyone holding that code, so the cap is for all of them together; a joiner
+/// wakes about once per 30 s at most and stops once its request is delivered).
+pub const CODE_WAKE_WINDOW_MS: u64 = 10 * 60_000;
+/// See [`CODE_WAKE_WINDOW_MS`] (PROVISIONAL).
+pub const CODE_WAKE_CAP: usize = 4;
+
+/// A relay token's text (base64url) as the raw bytes a contact ticket carries; `None` if it is
+/// not canonical base64url (then it cannot go into a ticket).
+pub fn token_bytes(token: &str) -> Option<Vec<u8>> {
+    let raw = wake_relay_core::b64::decode(token)?;
+    (wake_relay_core::b64::encode(&raw) == token).then_some(raw)
+}
+
+/// The token text for raw bytes from a ticket.
+pub fn token_text(bytes: &[u8]) -> String {
+    wake_relay_core::b64::encode(bytes)
+}
 
 /// The User-Agent for relay requests (osvauld.com's bot protection blocks generic agents).
 pub fn user_agent(version: &str) -> String {
@@ -56,6 +114,9 @@ pub struct Held {
     pub kinds: Kinds,
     pub last_wake_ms: Option<u64>,
     pub last_call_wake_ms: Option<u64>,
+    /// `msg` wakes since this contact was last reached, for [`msg_wake_due`].
+    #[serde(default)]
+    pub msg_wakes: u32,
 }
 
 /// `Held` with its key; lists rather than tuple-keyed maps so the state stays JSON-friendly.
@@ -72,6 +133,29 @@ pub struct IssuedEntry {
     pub issued: Issued,
 }
 
+/// A code wake token: issued for one contact ticket of ours (`nonce`, base64url as in the
+/// ticket's claim), `msg` only, expiring with the ticket. Kept so we can take it back
+/// (`reset_ticket`, a block, push turned off) and to recognise its wakes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CodeToken {
+    pub nonce: String,
+    pub tag: [u8; 16],
+    pub token: String,
+    pub exp_ms: u64,
+    /// When its recent wakes were acted on (unix ms), for the throttle.
+    #[serde(default)]
+    pub wakes: Vec<u64>,
+}
+
+/// What a code register request was built for; hand it back with the relay's answer.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PendingCode {
+    target: Target,
+    nonce: String,
+    tag: [u8; 16],
+    exp_ms: u64,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WakeState {
     /// Opens the hints in our pushes; chosen once, given to the relay with every register.
@@ -82,6 +166,9 @@ pub struct WakeState {
     pub held: Vec<HeldEntry>,
     /// Wake tokens the relay must be told are revoked, until it answers.
     pub revoke_outbox: Vec<String>,
+    /// Code wake tokens of our live contact tickets.
+    #[serde(default)]
+    pub codes: Vec<CodeToken>,
 }
 
 /// What a register request was built for; hand it back with the relay's answer.
@@ -110,6 +197,15 @@ pub enum WakeAction {
     DialBack { did: String },
     /// A `call` wake: ring for this contact now; the caller dials us, we do not dial.
     Ring { did: String },
+    /// A `msg` wake through one of our contact tickets: someone holding our code (not a contact
+    /// yet, so nobody to dial) wants to deliver a contact request. Start the node and stay
+    /// reachable for the usual window; the request arrives as an ordinary `ContactHello`.
+    CodeWake,
+}
+
+/// Whether `hint_key` opens `hint_text` (the account it belongs to is the one this push is for).
+pub fn hint_opens(hint_key: &[u8; 32], hint_text: &str) -> bool {
+    hint::open(hint_key, hint_text).is_ok()
 }
 
 /// `kinds` without `kind`; `None` when nothing is left.
@@ -132,6 +228,7 @@ impl WakeState {
             issued: Vec::new(),
             held: Vec::new(),
             revoke_outbox: Vec::new(),
+            codes: Vec::new(),
         }
     }
 
@@ -142,16 +239,111 @@ impl WakeState {
     pub fn set_target(&mut self, target: Target) {
         if self.target.as_ref() != Some(&target) {
             self.issued.clear();
+            self.codes.clear();
             self.target = Some(target);
         }
     }
 
-    /// The user went always-on: take every issued token back.
+    /// The user went always-on: take every issued token back, code tokens too.
     pub fn clear_target(&mut self) {
         self.target = None;
         for e in self.issued.drain(..) {
             self.revoke_outbox.push(e.issued.token);
         }
+        self.revoke_codes();
+    }
+
+    // ---- code wake tokens (receiving side, strangers holding our ticket) ----
+
+    /// The register request for the code wake token of a ticket we are about to sign: `msg`
+    /// only, expiring with the ticket (`exp_ms`). `None` without a target, or when the expiry is
+    /// past or beyond what the relay seals. `tag` must be fresh random bytes.
+    pub fn plan_code(
+        &self,
+        nonce: &str,
+        exp_ms: u64,
+        now_ms: u64,
+        tag: [u8; 16],
+    ) -> Option<(RegisterRequest, PendingCode)> {
+        let target = self.target.clone()?;
+        if exp_ms <= now_ms || exp_ms > now_ms.saturating_add(MAX_TOKEN_LIFE_MS) {
+            return None;
+        }
+        let req = RegisterRequest {
+            target: target.clone(),
+            hint_key: self.hint_key,
+            tags: vec![TagRequest {
+                tag,
+                kinds: Kinds::MSG,
+                exp_ms,
+            }],
+        };
+        Some((
+            req,
+            PendingCode {
+                target,
+                nonce: nonce.to_owned(),
+                tag,
+                exp_ms,
+            },
+        ))
+    }
+
+    /// Keeps the code token the relay sealed and returns it, for the ticket. `None` if the
+    /// answer lacks our tag or the target changed meanwhile (the token would be dead).
+    pub fn apply_code(&mut self, pending: PendingCode, resp: RegisterResponse) -> Option<String> {
+        if self.target.as_ref() != Some(&pending.target) {
+            return None;
+        }
+        let token = resp
+            .tokens
+            .into_iter()
+            .find(|t| t.tag == pending.tag)?
+            .token;
+        if let Some(old) = self.codes.iter().position(|c| c.nonce == pending.nonce) {
+            let old = self.codes.remove(old);
+            self.revoke_outbox.push(old.token);
+        }
+        self.codes.push(CodeToken {
+            nonce: pending.nonce,
+            tag: pending.tag,
+            token: token.clone(),
+            exp_ms: pending.exp_ms,
+            wakes: Vec::new(),
+        });
+        Some(token)
+    }
+
+    pub fn code_for(&self, nonce: &str) -> Option<&CodeToken> {
+        self.codes.iter().find(|c| c.nonce == nonce)
+    }
+
+    /// Every ticket of ours stopped working (`reset_ticket`, a block): take every code token
+    /// back at the relay.
+    pub fn revoke_codes(&mut self) {
+        for c in self.codes.drain(..) {
+            self.revoke_outbox.push(c.token);
+        }
+    }
+
+    /// Takes back the code tokens of tickets that no longer add contacts (`live` says which
+    /// nonces still do) and forgets expired ones (the relay refuses those by itself). Whether
+    /// anything changed.
+    pub fn retire_codes(&mut self, now_ms: u64, live: impl Fn(&str) -> bool) -> bool {
+        let before = (self.codes.len(), self.revoke_outbox.len());
+        let mut keep = Vec::new();
+        for c in self.codes.drain(..) {
+            if c.exp_ms <= now_ms {
+                continue;
+            }
+            if live(&c.nonce) {
+                keep.push(c);
+            } else {
+                self.revoke_outbox.push(c.token);
+            }
+        }
+        self.codes = keep;
+        (self.codes.len(), self.revoke_outbox.len()) != before
     }
 
     /// The register request that brings every contact's token up to date, if any needs it:
@@ -306,6 +498,7 @@ impl WakeState {
                     kinds,
                     last_wake_ms: None,
                     last_call_wake_ms: None,
+                    msg_wakes: 0,
                 },
             }),
         }
@@ -320,7 +513,8 @@ impl WakeState {
     }
 
     /// The token to POST to `/v1/wake` for this device, if we hold a live one that allows `kind`
-    /// and we have not woken it too recently. Records the wake when it returns a token.
+    /// and we have not woken it too recently (`msg`: [`msg_wake_due`]; `call`:
+    /// [`CALL_WAKE_EVERY_MS`]). Records the wake when it returns a token.
     pub fn wake_for(
         &mut self,
         did: &str,
@@ -332,15 +526,39 @@ impl WakeState {
         if h.exp_ms <= now_ms || !h.kinds.allows(kind) {
             return None;
         }
-        let (last, every) = match kind {
-            Kind::Msg => (&mut h.last_wake_ms, MSG_WAKE_EVERY_MS),
-            Kind::Call => (&mut h.last_call_wake_ms, CALL_WAKE_EVERY_MS),
-        };
-        if last.is_some_and(|t| now_ms < t.saturating_add(every)) {
-            return None;
+        match kind {
+            Kind::Msg => {
+                if !msg_wake_due(h.last_wake_ms, h.msg_wakes, now_ms) {
+                    return None;
+                }
+                h.last_wake_ms = Some(now_ms);
+                h.msg_wakes = h.msg_wakes.saturating_add(1);
+            }
+            Kind::Call => {
+                if h.last_call_wake_ms
+                    .is_some_and(|t| now_ms < t.saturating_add(CALL_WAKE_EVERY_MS))
+                {
+                    return None;
+                }
+                h.last_call_wake_ms = Some(now_ms);
+            }
         }
-        *last = Some(now_ms);
         Some(h.token.clone())
+    }
+
+    /// `did` was reached (a dial connected): its `msg` wake schedule starts over, so a later
+    /// silence wakes promptly again (the 30 s floor stays). Whether anything changed.
+    pub fn reached(&mut self, did: &str) -> bool {
+        let mut changed = false;
+        for e in self
+            .held
+            .iter_mut()
+            .filter(|e| e.did == did && e.held.msg_wakes != 0)
+        {
+            e.held.msg_wakes = 0;
+            changed = true;
+        }
+        changed
     }
 
     /// Learns from the relay's HTTP status for a wake: 410 the token is dead, drop it; 403 the
@@ -363,12 +581,19 @@ impl WakeState {
 
     // ---- being woken ----
 
+    /// Whether our hint key opens `hint_text`: the push is for this account, whatever it means.
+    pub fn opens(&self, hint_text: &str) -> bool {
+        hint_opens(&self.hint_key, hint_text)
+    }
+
     /// What a push means. The hint names a tag; the tag names the contact we issued that token
     /// to. Undecodable hints and tags we no longer issue (revoked, forgotten) are refused,
     /// blocked contacts too (a call as `IgnoreCall`, for CallKit), stale calls are not rung. A
-    /// `msg` wake is a dial-back (decided on; never to a blocked contact).
+    /// `msg` wake is a dial-back (decided on; never to a blocked contact). A tag of one of our
+    /// ticket's code tokens is a [`WakeAction::CodeWake`] while the code lives and its throttle
+    /// allows (the throttle is why this takes `&mut self`).
     pub fn on_wake(
-        &self,
+        &mut self,
         hint_text: &str,
         now_ms: u64,
         is_blocked: impl Fn(&str) -> bool,
@@ -380,6 +605,19 @@ impl WakeState {
             Kind::Msg => WakeAction::Ignore,
             Kind::Call => WakeAction::IgnoreCall,
         };
+        if let Some(c) = self.codes.iter_mut().find(|c| c.tag == hint.tag) {
+            // Message only; the sender is unknown, so there is no block to check.
+            if hint.kind != Kind::Msg || c.exp_ms <= now_ms {
+                return refuse;
+            }
+            c.wakes
+                .retain(|t| now_ms < t.saturating_add(CODE_WAKE_WINDOW_MS) && *t <= now_ms);
+            if c.wakes.len() >= CODE_WAKE_CAP {
+                return WakeAction::Ignore;
+            }
+            c.wakes.push(now_ms);
+            return WakeAction::CodeWake;
+        }
         let Some(e) = self.issued.iter().find(|e| e.issued.tag == hint.tag) else {
             return refuse;
         };

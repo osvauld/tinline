@@ -53,14 +53,14 @@ sink_adapter!(
 #[uniffi::export]
 impl Node {
     pub fn set_group_request_events(&self, events: Arc<dyn GroupRequestEvents>) {
-        *self.inner.group.req_events.lock() = Some(Arc::new(GroupRequestEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.group_request = Some(Arc::new(GroupRequestEventsAdapter(events))));
     }
 
     /// Asks member `did` of `group_id` for a 1:1 chat, through the group's hosts, sealed to them.
     /// Refused locally for ourselves, non-members, someone we block or who blocks us, and existing
     /// contacts. Asking again while a request is pending returns that request.
     pub fn group_chat_request(&self, group_id: String, did: String) -> Result<GroupChatRequest, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         let core = inner.group.member_core(&group_id)?;
         if did == core.did {
             return Err(Error::Rejected("that is you".into()));
@@ -100,18 +100,18 @@ impl Node {
 
     /// Requests other members sent us (blocked senders' are never listed), newest first.
     pub fn group_chat_requests_incoming(&self) -> Result<Vec<GroupChatRequest>, Error> {
-        Ok(self.inner.group.group_req_list(false)?)
+        Ok(self.open().group.group_req_list(false)?)
     }
 
     /// Requests we sent, newest first.
     pub fn group_chat_requests_outgoing(&self) -> Result<Vec<GroupChatRequest>, Error> {
-        Ok(self.inner.group.group_req_list(true)?)
+        Ok(self.open().group.group_req_list(true)?)
     }
 
     /// Accepts an incoming request: our private endpoint goes, sealed, to the requester only, as
     /// a one-time ticket; they add us (message only) and the chat runs directly.
     pub fn group_chat_accept(&self, request_id: String) -> Result<GroupChatRequest, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let core = inner.group.group_core()?;
             let mut row = inner.group.group_req_incoming_pending(&core, &request_id)?;
@@ -126,7 +126,7 @@ impl Node {
 
     /// Declines an incoming request; the requester sees "declined" (PROVISIONAL).
     pub fn group_chat_decline(&self, request_id: String) -> Result<GroupChatRequest, Error> {
-        let inner = self.inner.clone();
+        let inner = self.open();
         let core = inner.group.group_core()?;
         let mut row = inner.group.group_req_incoming_pending(&core, &request_id)?;
         let m = inner.group.group_seal(&core, &row.group, &row.peer, Letter::Decline { req: req_bytes(&row.req).ok_or(Error::NotFound)?, blocked: false })?;
@@ -142,12 +142,12 @@ impl Node {
 impl Node {
     /// Behave like a modified app that skips its own chat-request checks (block, contact).
     pub fn group_skip_request_checks_for_test(&self, skip: bool) {
-        self.inner.group.skip_request_checks.store(skip, std::sync::atomic::Ordering::SeqCst);
+        self.open().group.skip_request_checks.store(skip, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Host side: how many sealed mails this device holds for `group_id`.
     pub fn group_relayed_mail_count_for_test(&self, group_id: String) -> u32 {
-        self.inner.group.group_core().map(|c| c.store.mail(&group_id, None, 0).unwrap_or_default().len() as u32).unwrap_or(0)
+        self.open().group.group_core().map(|c| c.store.mail(&group_id, None, 0).unwrap_or_default().len() as u32).unwrap_or(0)
     }
 
     /// Host side: whether any mail this device holds for `group_id` contains the 32 bytes of
@@ -156,7 +156,7 @@ impl Node {
         let Ok(k) = endpoint_id.parse::<iroh::PublicKey>() else { return true };
         let needle = *k.as_bytes();
         let text = endpoint_id.as_bytes().to_vec();
-        self.inner.group
+        self.open().group
             .group_core()
             .map(|c| {
                 c.store.mail(&group_id, None, 0).unwrap_or_default().iter().any(|(_, b)| {

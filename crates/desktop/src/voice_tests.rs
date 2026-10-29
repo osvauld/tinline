@@ -28,3 +28,25 @@ fn upsampler_produces_the_ratio() {
     }
     assert!((n - 48_000).abs() <= 3, "{n}");
 }
+
+#[test]
+fn a_recording_goes_to_the_conversation_open_when_it_started() {
+    assert_eq!(RecTo::of(Some("did:key:sam"), None), Some(RecTo::Peer("did:key:sam".into())));
+    assert_eq!(RecTo::of(None, Some("g1")), Some(RecTo::Group("g1".into())));
+    // A 1:1 chat on screen wins (a group open behind it is not where the user is typing).
+    assert_eq!(RecTo::of(Some("did:key:sam"), Some("g1")), Some(RecTo::Peer("did:key:sam".into())));
+    assert_eq!(RecTo::of(None, None), None);
+}
+
+#[test]
+fn a_recording_stays_only_while_its_conversation_is_open() {
+    let g = RecTo::Group("g1".into());
+    assert!(g.is_open(None, Some("g1")));
+    assert!(!g.is_open(None, Some("g2")));
+    assert!(!g.is_open(Some("did:key:sam"), Some("g1")));
+    assert!(!g.is_open(None, None));
+    let p = RecTo::Peer("did:key:sam".into());
+    assert!(p.is_open(Some("did:key:sam"), None));
+    assert!(!p.is_open(Some("did:key:ana"), None));
+    assert!(!p.is_open(None, Some("g1")));
+}

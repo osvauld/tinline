@@ -353,14 +353,17 @@
     <string name="accounts_online_here">या फोनवर ऑनलाइन</string>
     <string name="accounts_on_this_phone">या फोनवर</string>
     <string name="accounts_locked_not_ringing">लॉक आहे · इथे रिंग होत नाही</string>
+    <string name="accounts_rings_here">इथे रिंग होते आणि सूचना येते</string>
     <string name="accounts_current_desc">सध्याचे खाते</string>
     <string name="accounts_create">नवीन खाते तयार करा</string>
     <string name="accounts_link">दुसऱ्या डिव्हाइसवरील खाते लिंक करा</string>
     <string name="accounts_restore">रिकव्हरी शब्दांनी परत मिळवा</string>
     <string name="accounts_one_online_hint">एका वेळी एकच खाते ऑनलाइन असते. लॉक असलेल्या खात्याचे कॉल फक्त तुमच्या इतर डिव्हाइसवर रिंग होतात.</string>
+    <string name="accounts_others_ring_hint">उघडे असलेले खाते ऑनलाइन राहते. तुमच्या इतर खात्यांचे कॉलही इथे रिंग होतात आणि नवीन संदेशांची सूचना येते.</string>
     <string name="accounts_finish_call_first">आधी तुमचा कॉल संपवा</string>
     <string name="accounts_switch_to">%1$s वर स्विच करायचे?</string>
     <string name="accounts_switch_lead">या फोनवर %1$s ऑफलाइन होईल. तुम्ही परत या खात्यावर येईपर्यंत %1$s चे कॉल फक्त तुमच्या इतर लिंक केलेल्या डिव्हाइसवर रिंग होतील.</string>
+    <string name="accounts_switch_lead_push">या फोनवर %1$s शांत राहील. तरीही %1$s चे कॉल इथे रिंग होतील आणि नवीन संदेशांची सूचना येईल.</string>
     <string name="accounts_passphrase_for">%1$s साठी पासफ्रेज</string>
     <string name="accounts_not_on_call">आत्ता कोणताही कॉल सुरू नाही. सुरू असता, तर खाते बदलल्याने तो संपला असता.</string>
     <string name="accounts_switching">बदलत आहे…</string>
@@ -951,6 +954,7 @@
     <string name="notif_wake_service_text">Tinline आपोआप पुन्हा विश्रांती घेईल.</string>
     <string name="notif_wake_notice_title">तुम्हाला नवीन संदेश आलेला असू शकतो</string>
     <string name="notif_wake_notice_text">काय आले ते पाहण्यासाठी Tinline उघडा आणि अनलॉक करा.</string>
+    <string name="notif_bg_message_text">नवीन संदेश</string>
     <string name="notif_return_to_call">कॉलवर परत जाण्यासाठी टॅप करा</string>
     <string name="notif_leave">बाहेर पडा</string>
     <string name="notif_end_call">कॉल संपवा</string>

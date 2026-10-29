@@ -2270,7 +2270,14 @@ text = "Neues Konto erstellen"
 text = "Konto von einem anderen Gerät verknüpfen"
 
 [unlock_one_online]
-text = "Es ist immer nur ein Konto online. Anrufe an ein gesperrtes Konto klingeln nur auf deinen anderen Geräten."
+text = "Das Konto, das du öffnest, ist online. Deine anderen Konten klingeln und benachrichtigen dich trotzdem, wenn Tinline sie wecken kann; bis dahin klingeln ihre Anrufe auf deinen anderen Geräten."
+
+[shell_account_unread]
+one = "{count} ungelesen"
+other = "{count} ungelesen"
+
+[shell_notice_account_message_body]
+text = "Neue Nachricht"
 
 [unlock_finish_call]
 text = "Beende zuerst deinen Anruf"
