@@ -13,6 +13,8 @@
 //!   original native ledger ops, `ReceiptAck`. Imports admit only this
 //!   conversation's two DIDs; post-commit, our affected outgoing messages get
 //!   `on_message_changed` so apps re-read `chat_message_receipts`.
+//! - Own devices (`own_receipts`): the same original ops cross `tinline/self/5` under the same
+//!   admission, so a device that never met the contact shows the contact's signed ticks.
 //!
 //! Never consulted: the contact's `Ack` VV (legacy tick), host/cache storage or
 //! our own unread cursor. Those are not recipient-signed evidence.
@@ -29,10 +31,10 @@ pub const MAX_READ_VERSIONS: usize = 4096;
 /// Provisional: days one `ReceiptHello` lists beyond the recent hello days.
 pub const MAX_RECEIPT_DAYS: usize = 64;
 /// Provisional per-frame native receipt budget (well under `MAX_FRAME`).
-const RECEIPT_BATCH: group_core::doc::batching::BatchLimits =
+pub(super) const RECEIPT_BATCH: group_core::doc::batching::BatchLimits =
     group_core::doc::batching::BatchLimits { bytes: 256 * 1024, operations: 64, writers: 4096 };
 /// Provisional: frames one send pass writes for a day; the rest follows the next trigger.
-const RECEIPT_FRAMES_PER_SEND: usize = 16;
+pub(super) const RECEIPT_FRAMES_PER_SEND: usize = 16;
 
 /// Provisional: closed days one mark-read step loads from their blobs (newest first).
 pub const MAX_CLOSED_READ_DAYS: usize = 64;
@@ -189,6 +191,9 @@ impl ChatRt {
                 for s in self.chat_sessions_of(&core, &did) {
                     let _ = s.tx.send(Cmd::Receipts(i.scope.day.clone()));
                 }
+                // Our own statements go to our other devices too (they relay them to the contact
+                // while this device sleeps, and their pump sees them as account coverage).
+                self.selfsync_dirty(&super::own_receipts::mark(pair, &i.scope.day));
             }
         }
     }
@@ -297,6 +302,8 @@ impl ChatRt {
         let vv = core.receipts.vv(&scope)?;
         writer.send(&ChatMsg::ReceiptAck { day: day.to_string(), vv: vv.encode() }).await?;
         if !fresh.is_empty() {
+            // Owed to our other devices: the original statements, relayed as they are.
+            self.selfsync_dirty(&super::own_receipts::mark(&pair, day));
             self.chat_receipts_changed(core, &me, &sess.did, &pair, day, &fresh).await;
         }
         Ok(())
@@ -319,7 +326,7 @@ impl ChatRt {
 
     /// After a committed import: our outgoing messages whose shown version the
     /// contact's new statements cover changed their receipt status.
-    async fn chat_receipts_changed(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, did: &str, pair: &str, day: &str, fresh: &[receipts_core::doc::Entry]) {
+    pub(super) async fn chat_receipts_changed(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, did: &str, pair: &str, day: &str, fresh: &[receipts_core::doc::Entry]) {
         let Some(ev) = self.ev() else { return };
         let covered: std::collections::BTreeSet<[u8; 32]> =
             fresh.iter().filter(|e| e.receipt.recipient == did).flat_map(|e| e.receipt.messages.iter().copied()).collect();

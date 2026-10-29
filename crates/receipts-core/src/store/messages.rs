@@ -396,10 +396,18 @@ impl MessageReceipts {
         Ok(out)
     }
 
-    /// Imports a DM receipt update from an authenticated contact session for
-    /// `session_did` (M4 entry point; NOT wired to a wire frame yet). Only the
-    /// session's own and our own account's statements are admitted; call
-    /// claims are refused. Returns the newly committed entries.
+    /// [`ReceiptStore::stored_vv`]: the persisted frontier without opening the ledger.
+    pub fn stored_vv(&self, scope: &Scope) -> Result<Option<loro::VersionVector>, ReceiptError> {
+        self.store.stored_vv(scope)
+    }
+
+    /// Imports a DM receipt update naming `session_did` as the conversation's
+    /// contact: from that contact's authenticated `tinline/chat/6` session, or
+    /// relayed by one of our own devices (`SelfMsg::DmReceipts`, the same rule:
+    /// a relay adds no authority). Only the contact's own and our own account's
+    /// statements are admitted, each proven by its issuer's DID signature under
+    /// the issuer's writer ID; call claims are refused. Returns the newly
+    /// committed entries.
     pub fn import_direct(
         &self,
         scope: &Scope,
@@ -512,3 +520,6 @@ impl MessageReceipts {
             .map_err(|e| ReceiptError::Store(e.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests;

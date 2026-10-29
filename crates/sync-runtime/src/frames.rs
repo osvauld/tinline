@@ -75,4 +75,13 @@ pub enum SelfMsg {
     // Appended; only after cap/group-receipts/v1 (and both content/history markers).
     GroupReceiptGet { request: u64, group: String, after: Option<String> },
     GroupReceiptPage { request: u64, group: String, after: Option<String>, proofs: Vec<(String, Vec<u8>)>, next: Option<String> },
+    // Appended; only after cap/dm-receipts/v1 (`engine::dm_receipts`). `doc` = `dm/{pair}/{day}`.
+    /// Our signed DM receipt-ledger frontier per held day, `(doc, VersionVector::encode)`.
+    DmReceiptHello { days: Vec<(String, Vec<u8>)> },
+    /// Original native receipt-ledger ops the peer lacks (the contact's and our account's
+    /// DID-signed statements, never re-signed); `vv` = the sender's whole frontier of that day.
+    DmReceipts { doc: String, vv: Vec<u8>, update: Vec<u8> },
+    /// What the receiver holds of that day's ledger now (authoritative; a refused frame is resent
+    /// on the next trigger).
+    DmReceiptAck { doc: String, vv: Vec<u8> },
 }
