@@ -93,10 +93,10 @@ private struct AddMembersScreen: View {
                 }.padding(20)
             }
             .groupsToasts(session)
-            .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
+            .keepsGroupOpen(session, id)
         } else {
             GroupsPage(title: tr("group_add_members_title")) { Spacer() }
-                .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
+                .keepsGroupOpen(session, id)
         }
     }
 

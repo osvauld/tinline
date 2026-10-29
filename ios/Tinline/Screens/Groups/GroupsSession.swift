@@ -104,3 +104,20 @@ struct GroupsSessionGate<Content: View>: View {
         if let node = app.node { content(GroupsSession.shared(for: node, app: app)) } else { Color.clear }
     }
 }
+
+/// Keeps group `id` open on the shared controller while this screen shows it. A screen pushed over the group's chat starts
+/// with the group already open, but the chat closes it as it goes off screen: opening only once left such a screen blank
+/// after it had rendered. The task also runs when the controller drops the group, and does nothing while it is open.
+private struct KeepGroupOpen: ViewModifier {
+    @ObservedObject var session: GroupsSession
+    let id: String
+    func body(content: Content) -> some View {
+        content.task(id: session.ctl.opened?.id == id) {
+            session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } }
+        }
+    }
+}
+
+extension View {
+    func keepsGroupOpen(_ session: GroupsSession, _ id: String) -> some View { modifier(KeepGroupOpen(session: session, id: id)) }
+}

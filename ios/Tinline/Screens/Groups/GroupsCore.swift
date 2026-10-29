@@ -587,7 +587,8 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
             loaded = OpenGroup(id: id, detail: d, messages: p.messages, older: p.older, receipts: receiptsOf(id, p.messages))
         } catch { loaded = nil }
         write {
-            _open = loaded
+            // A failed reload (a flaky link) keeps the group already on screen instead of blanking it.
+            _open = loaded ?? (_open?.id == id ? _open : nil)
             // A close() that ran meanwhile wins (it clears `shown` before it clears `_open`).
             if shown != id, _open?.id == id { _open = nil }
         }

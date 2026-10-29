@@ -35,7 +35,7 @@ private struct GroupInfoScreen: View {
             if let d = o?.detail { content(d) } else { InfoPage(title: tr("group_info_title"), onBack: { dismiss() }) { EmptyView() } }
         }
         .groupsToasts(session)
-        .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
+        .keepsGroupOpen(session, id)
     }
 
     /// The name of a DID, with "You" replaced by my profile name where the screen names me.
@@ -484,7 +484,7 @@ private struct RemovalScreen: View {
     var body: some View {
         let r = session.ctl.opened.flatMap { $0.id == id ? $0.detail.removal : nil }
         InfoPage(title: tr("group_info_removed_title"), onBack: { dismiss() }) { RemovalBody(session: session, removal: r) { dismiss() } }
-            .task(id: id) { session.background { if session.ctl.opened?.id != id { session.ctl.openGroup(id) } } }
+            .keepsGroupOpen(session, id)
     }
 }
 
