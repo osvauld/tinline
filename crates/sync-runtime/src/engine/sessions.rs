@@ -203,8 +203,10 @@ impl SyncRt {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
-        // Reached: its wake schedule starts over.
+        // Reached: its wake schedule starts over, and pictures waiting on a backoff are asked
+        // for at once (this device may be the only source while the contact is offline).
         self.ctx.own_reached(&remote);
+        self.chat.profile_retry_now();
         self.log(format!(
             "own-device sync with {} ({})",
             proto::device_to_text(&remote),

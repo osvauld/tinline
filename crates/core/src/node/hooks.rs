@@ -105,4 +105,8 @@ impl NodeHooks for Inner {
     fn profile_for_new_contact(self: Arc<Self>, did: &str) {
         chat_runtime::ChatRt::profile_for_new_contact(&self.chat, did);
     }
+
+    fn profile_retry_now(self: Arc<Self>) {
+        chat_runtime::ChatRt::profile_retry_now(&self.chat);
+    }
 }
