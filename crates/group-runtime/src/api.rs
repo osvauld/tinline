@@ -229,6 +229,7 @@ impl GroupRt {
             call_hosts,
             call_host_requests,
             call_host_requested_here,
+            call_host_offers: s.call_host_offers.iter().map(|(d, v)| host(d, v, None)).collect(),
             open: s.open,
             admins_only: s.admins_only,
         })

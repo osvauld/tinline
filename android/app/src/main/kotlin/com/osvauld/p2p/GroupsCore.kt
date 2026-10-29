@@ -163,8 +163,7 @@ sealed interface MemberAction {
     data object Message : MemberAction
     data object MakeAdmin : MemberAction
     data object RevokeAdmin : MemberAction
-    data class Appoint(val deviceId: String) : MemberAction
-    data class Revoke(val deviceId: String) : MemberAction
+    data class Hosting(val deviceId: String) : MemberAction
     data object Flag : MemberAction
 }
 
@@ -316,8 +315,8 @@ object GroupText {
 
     /** Who asked this device to host [d], or null when nobody did. */
     fun hostAsker(d: GroupDetail): String? {
-        if (!d.hostRequestedHere || !active(d.myRole)) return null
-        val by = d.hostRequests.firstOrNull { it.isMe }?.appointedBy
+        if (!(d.hostRequestedHere || d.callHostRequestedHere) || !active(d.myRole)) return null
+        val by = (d.hostRequests + d.callHostRequests).firstOrNull { it.isMe }?.appointedBy
         return by?.let { b -> d.members.firstOrNull { it.did == b }?.name }?.ifBlank { null } ?: appString(R.string.groupsc_an_admin)
     }
 
@@ -358,7 +357,7 @@ object GroupText {
         if (d.myRole == CoreRole.OWNER && !m.isOwner) out += if (m.isAdmin) MemberAction.RevokeAdmin else MemberAction.MakeAdmin
         if (isAdmin(d.myRole)) {
             m.deviceIds.forEach { dev ->
-                out += if (d.hosts.any { it.did == m.did && it.deviceId == dev }) MemberAction.Revoke(dev) else MemberAction.Appoint(dev)
+                out += MemberAction.Hosting(dev)
             }
             if (!m.isOwner) out += MemberAction.Flag
         }
@@ -596,23 +595,25 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun flag(id: String, did: String) = act({ appString(R.string.groupsc_flag_recorded) }) { api.flag(id, did) }
     fun setAdmin(id: String, did: String, admin: Boolean) = act({ if (admin) appString(R.string.groupsc_made_admin) else appString(R.string.groupsc_no_longer_admin) }) { api.setAdmin(id, did, admin) }
     fun leave(id: String) = act({ appString(R.string.groupsc_left_group) }) { api.leave(id) }
-    fun appoint(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_appointed) }) { api.appointHost(id, did, dev) }
-    fun revoke(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_host_revoked) }) { api.revokeHost(id, did, dev) }
-    fun acceptHost(id: String, accept: Boolean) = act({
-        if (accept) appString(R.string.groupsc_host_agreed) else appString(R.string.groupsc_host_stopped)
-    }) { api.acceptHost(id, accept) }
-
-    fun appointCall(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_call_host_asked) }) { api.appointCallHost(id, did, dev) }
-    fun revokeCall(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_call_host_revoked) }) { api.revokeCallHost(id, did, dev) }
-    fun acceptCallHost(id: String, accept: Boolean) = act({
-        if (accept) appString(R.string.groupsc_call_host_agreed) else appString(R.string.groupsc_call_host_declined)
-    }) { api.acceptCallHost(id, accept) }
-
-    /** This phone carries the group's calls: accept when an admin asked; otherwise an admin appoints this device and accepts, in one go. */
-    fun hostCallsHere(id: String, requested: Boolean) = act({ appString(R.string.groupsc_calls_here) }) {
-        if (!requested) api.appointCallHost(id, myDid, api.deviceId())
-        api.acceptCallHost(id, true)
+    /** One setup: admins grant capabilities; the local device accepts exactly the displayed selection. */
+    fun configureHosting(id: String, did: String, dev: String, local: Boolean, messages: Boolean, calls: Boolean) = act({ appString(R.string.group_hosting_saved) }) {
+        val d = api.detail(id)
+        fun has(hosts: List<uniffi.p2pcore.GroupHost>) = hosts.any { it.did == did && it.deviceId == dev }
+        if (GroupText.isAdmin(d.myRole)) {
+            if (messages != (has(d.hosts) || has(d.hostRequests))) {
+                if (messages) api.appointHost(id, did, dev) else api.revokeHost(id, did, dev)
+            }
+            if (calls != (has(d.callHosts) || has(d.callHostRequests))) {
+                if (calls) api.appointCallHost(id, did, dev) else api.revokeCallHost(id, did, dev)
+            }
+        }
+        if (local) {
+            if (messages != (d.amHost || has(d.hostOffers)) || (d.hostRequestedHere && !messages)) api.acceptHost(id, messages)
+            if (calls != (d.amCallHost || has(d.callHostOffers)) || (d.callHostRequestedHere && !calls)) api.acceptCallHost(id, calls)
+        }
     }
+
+    fun hostingDeviceId(): String = api.deviceId()
 
     // ---- public groups (docs/design/public-group.md §2–§3, §8)
 

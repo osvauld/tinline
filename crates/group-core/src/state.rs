@@ -156,6 +156,8 @@ pub struct GroupState {
     pub call_hosts: Vec<CallHostInfo>,
     /// Devices an admin allowed to host calls that have not accepted (yet).
     pub call_host_requests: Vec<CallHostInfo>,
+    /// Devices offering call hosting without an active permit.
+    pub call_host_offers: Vec<(String, [u8; 32])>,
     /// Anyone may join with `OpenJoin` (the admin `Open` record in force is active).
     pub open: bool,
     /// While open: the `(peer, counter)` of the `Open{active: true}` record in force. A new one

@@ -320,6 +320,7 @@ pub(super) enum LDialog {
     Request { did: String },
     /// This device starts (true) or stops hosting the open group.
     Host { accept: bool },
+    Hosting { did: String, dev: String, local: bool, messages: bool, calls: bool },
     /// Who is online in the open (public) group.
     Online,
     /// Open the group to anyone with the link (confirm first: receipts go off, an online list shows).
@@ -338,6 +339,7 @@ pub(super) enum Setting {
 /// Work that writes or waits on the network: run off the UI thread, its result comes back as an `Lm`.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum Job {
+    Hosting { gid: String, did: String, dev: String, local: bool, admin: bool, messages: bool, calls: bool },
     Create(String),
     Join(String),
     Invite(String),
@@ -361,14 +363,6 @@ pub(super) enum Job {
     Flag { gid: String, did: String },
     SetAdmin { gid: String, did: String, admin: bool },
     Leave(String),
-    Appoint { gid: String, did: String, dev: String },
-    Revoke { gid: String, did: String, dev: String },
-    AcceptHost { gid: String, accept: bool },
-    AppointCall { gid: String, did: String, dev: String },
-    RevokeCall { gid: String, did: String, dev: String },
-    AcceptCall { gid: String, accept: bool },
-    /// An admin makes this computer a call host: appoint my own device, then accept here.
-    HostCallsHere { gid: String, did: String },
     Request { gid: String, did: String },
     AcceptReq(String),
     DeclineReq(String),
@@ -385,6 +379,38 @@ impl Job {
     pub fn run(self, api: &dyn GroupApi) -> Lm {
         let did = |r: Result<(), Error>, ok: String| Lm::Did(r.map(|_| ok).map_err(gerr));
         match self {
+            Job::Hosting { gid, did: who, dev, local, admin, messages, calls } => {
+                // Reload before writing: only change permissions that differ, preserving existing consent.
+                let r = (|| {
+                    let d = api.group_detail(gid.clone())?;
+                    let has = |hs: &[p2pcore::GroupHost]| hs.iter().any(|h| h.did == who && h.device_id == dev);
+                    if admin {
+                        let granted_messages = has(&d.hosts) || has(&d.host_requests);
+                        let granted_calls = has(&d.call_hosts) || has(&d.call_host_requests);
+                        if messages != granted_messages {
+                            if messages { api.group_appoint_host(gid.clone(), who.clone(), dev.clone())?; }
+                            else { api.group_revoke_host(gid.clone(), who.clone(), dev.clone())?; }
+                        }
+                        if calls != granted_calls {
+                            if calls { api.group_appoint_call_host(gid.clone(), who.clone(), dev.clone())?; }
+                            else { api.group_revoke_call_host(gid.clone(), who.clone(), dev.clone())?; }
+                        }
+                    }
+                    if local {
+                        // Accept only the selection shown in this dialog. Unpermitted selections are offers.
+                        let accepted_messages = d.am_host || has(&d.host_offers);
+                        let accepted_calls = d.am_call_host || has(&d.call_host_offers);
+                        if messages != accepted_messages || (d.host_requested_here && !messages) {
+                            api.group_accept_host(gid.clone(), messages)?;
+                        }
+                        if calls != accepted_calls || (d.call_host_requested_here && !calls) {
+                            api.group_accept_call_host(gid.clone(), calls)?;
+                        }
+                    }
+                    Ok(())
+                })();
+                did(r, crate::i18n::tr("group_hosting_saved"))
+            }
             Job::Create(name) => Lm::Created(api.group_create(name).map_err(gerr)),
             Job::Join(token) => Lm::Joined(api.group_join(token).map_err(gerr)),
             Job::Invite(gid) => Lm::Token(api.group_invite(gid).map_err(gerr)),
@@ -417,24 +443,6 @@ impl Job {
                 if admin { crate::i18n::tr_str("group_made_admin").into() } else { crate::i18n::tr_str("group_no_longer_an_admin").into() },
             ),
             Job::Leave(gid) => did(api.group_leave(gid), crate::i18n::tr_str("group_you_left_the_group").into()),
-            Job::Appoint { gid, did: who, dev } => did(
-                api.group_appoint_host(gid, who, dev),
-                crate::i18n::tr_str("group_appointed_the_device_hosts").into(),
-            ),
-            Job::Revoke { gid, did: who, dev } => did(api.group_revoke_host(gid, who, dev), crate::i18n::tr_str("group_that_device_no_longer_hosts").into()),
-            Job::AppointCall { gid, did: who, dev } => did(
-                api.group_appoint_call_host(gid, who, dev),
-                crate::i18n::tr_str("group_asked_the_device_carries").into(),
-            ),
-            Job::RevokeCall { gid, did: who, dev } => did(api.group_revoke_call_host(gid, who, dev), crate::i18n::tr_str("group_that_device_no_longer").into()),
-            Job::AcceptCall { gid, accept } => did(
-                api.group_accept_call_host(gid, accept),
-                if accept { crate::i18n::tr_str("group_this_computer_carries_this").into() } else { crate::i18n::tr_str("group_this_computer_stopped_carrying").into() },
-            ),
-            Job::HostCallsHere { gid, did: me } => {
-                let r = api.group_device_id().and_then(|dev| api.group_appoint_call_host(gid.clone(), me, dev)).and_then(|_| api.group_accept_call_host(gid, true));
-                did(r, crate::i18n::tr_str("group_this_computer_carries_this").into())
-            }
             Job::Request { gid, did: who } => Lm::Requested(api.group_chat_request(gid, who).map_err(gerr)),
             Job::AcceptReq(id) => Lm::Answered(api.group_chat_accept(id).map_err(gerr)),
             Job::DeclineReq(id) => Lm::Answered(api.group_chat_decline(id).map_err(gerr)),
@@ -453,14 +461,7 @@ impl Job {
                 api.group_set_admins_only(gid, on),
                 if on { crate::i18n::tr_str("group_only_admins_post_now").into() } else { crate::i18n::tr_str("group_everyone_can_post_again").into() },
             ),
-            Job::AcceptHost { gid, accept } => did(
-                api.group_accept_host(gid, accept),
-                if accept {
-                    crate::i18n::tr_str("group_this_device_agreed_to").into()
-                } else {
-                    crate::i18n::tr_str("group_this_device_stopped_hosting").into()
-                },
-            ),
+
         }
     }
 }
@@ -509,17 +510,14 @@ pub(super) enum Lm {
     AskAdmin(String, bool),
     AskLeave,
     AskHost(bool),
+    Hosting(String, String),
+    HostingMessages(bool),
+    HostingCalls(bool),
     /// Answer an admin's request that this device host the open group.
     AnswerHost(bool),
     /// Settings › Hosting: open that group and ask to stop hosting it here.
     StopHostingOf(String),
     Removal,
-    Appoint(String, String),
-    Revoke(String, String),
-    AppointCall(String, String),
-    RevokeCall(String, String),
-    /// This computer: start (true) or stop (false) carrying the open group's calls.
-    CallsHere(bool),
     /// The call button in a group with no call host (true), or its explanation closed (false).
     CallNeedsHost(bool),
     Confirm,
@@ -650,16 +648,9 @@ pub(super) struct GroupsLive {
 pub(super) enum Action {
     /// Message privately: their chat if a contact, else a chat request.
     Message,
+    Hosting(String),
     MakeAdmin,
     RevokeAdmin,
-    /// Appoint this device of theirs.
-    Appoint(String),
-    /// Stop this device of theirs hosting.
-    Revoke(String),
-    /// Ask this device of theirs to carry group calls.
-    AppointCall(String),
-    /// Stop this device of theirs carrying calls.
-    RevokeCall(String),
     Flag,
 }
 
@@ -754,13 +745,7 @@ impl GroupsLive {
         }
         if self.is_admin() {
             for dev in &m.device_ids {
-                if d.hosts.iter().any(|h| h.did == m.did && &h.device_id == dev) {
-                    out.push(Action::Revoke(dev.clone()));
-                } else {
-                    out.push(Action::Appoint(dev.clone()));
-                }
-                let calls = d.call_hosts.iter().chain(d.call_host_requests.iter()).any(|h| h.did == m.did && &h.device_id == dev);
-                out.push(if calls { Action::RevokeCall(dev.clone()) } else { Action::AppointCall(dev.clone()) });
+                out.push(Action::Hosting(dev.clone()));
             }
             if !m.is_owner {
                 out.push(Action::Flag);
@@ -801,10 +786,10 @@ impl GroupsLive {
     /// An admin asked this device to host the open group: who asked (empty when no name is known).
     pub fn host_asked(&self) -> Option<String> {
         let d = self.detail.as_ref()?;
-        if !d.host_requested_here || !active(d.my_role) {
+        if !(d.host_requested_here || d.call_host_requested_here) || !active(d.my_role) {
             return None;
         }
-        let by = d.host_requests.iter().find(|h| h.is_me).and_then(|h| h.appointed_by.clone());
+        let by = d.host_requests.iter().chain(d.call_host_requests.iter()).find(|h| h.is_me).and_then(|h| h.appointed_by.clone());
         Some(by.map(|did| self.member(&did).map(|m| m.name.clone()).unwrap_or_default()).filter(|n| !n.trim().is_empty()).unwrap_or_default())
     }
 
@@ -1086,10 +1071,35 @@ impl GroupsLive {
                 self.show(LDialog::Admin { did, admin });
             }
             Lm::AskLeave => self.show(LDialog::Leave),
-            Lm::AskHost(accept) => self.show(LDialog::Host { accept }),
-            Lm::AnswerHost(accept) => {
-                if let Some(gid) = self.open.clone() {
-                    out.job = Some(Job::AcceptHost { gid, accept });
+            Lm::Hosting(who, dev) => {
+                self.menu = None;
+                if self.my_device.is_empty() {
+                    if let Ok(device) = api.group_device_id() { self.my_device = device; }
+                }
+                let dev = if who == self.me && dev.is_empty() { self.my_device.clone() } else { dev };
+                if let Some(d) = &self.detail {
+                    let local = who == self.me && dev == self.my_device;
+                    let has = |hs: &[p2pcore::GroupHost]| hs.iter().any(|h| h.did == who && h.device_id == dev);
+                    let messages = has(&d.hosts) || has(&d.host_requests) || has(&d.host_offers);
+                    let calls = has(&d.call_hosts) || has(&d.call_host_requests) || has(&d.call_host_offers);
+                    self.show(LDialog::Hosting { did: who, dev, local, messages, calls });
+                }
+            }
+            Lm::HostingMessages(on) => {
+                if !self.busy && let Some(LDialog::Hosting { messages, .. }) = &mut self.dialog { *messages = on; }
+            }
+            Lm::HostingCalls(on) => {
+                if !self.busy && let Some(LDialog::Hosting { calls, .. }) = &mut self.dialog { *calls = on; }
+            }
+            Lm::AskHost(true) => {
+                return self.step(api, Lm::Hosting(self.me.clone(), self.my_device.clone()));
+            }
+            Lm::AskHost(false) => self.show(LDialog::Host { accept: false }),
+            Lm::AnswerHost(true) => return self.step(api, Lm::Hosting(self.me.clone(), self.my_device.clone())),
+            Lm::AnswerHost(false) => {
+                if let (Some(gid), Some(d)) = (self.open.clone(), self.detail.as_ref()) {
+                    out.job = Some(Job::Hosting { gid, did: self.me.clone(), dev: self.my_device.clone(),
+                        local: true, admin: false, messages: d.am_host, calls: d.am_call_host });
                 }
             }
             Lm::StopHostingOf(gid) => {
@@ -1097,44 +1107,7 @@ impl GroupsLive {
                 self.show(LDialog::Host { accept: false });
             }
             Lm::Removal => self.show(LDialog::Removal),
-            Lm::Appoint(did, dev) => {
-                self.menu = None;
-                if let Some(gid) = self.open.clone() {
-                    out.job = Some(Job::Appoint { gid, did, dev });
-                }
-            }
-            Lm::Revoke(did, dev) => {
-                self.menu = None;
-                if let Some(gid) = self.open.clone() {
-                    out.job = Some(Job::Revoke { gid, did, dev });
-                }
-            }
-            Lm::AppointCall(did, dev) => {
-                self.menu = None;
-                if let Some(gid) = self.open.clone() {
-                    out.job = Some(Job::AppointCall { gid, did, dev });
-                }
-            }
-            Lm::RevokeCall(did, dev) => {
-                self.menu = None;
-                if let Some(gid) = self.open.clone() {
-                    out.job = Some(Job::RevokeCall { gid, did, dev });
-                }
-            }
             Lm::CallNeedsHost(on) => self.call_needs_host = on,
-            Lm::CallsHere(on) => {
-                self.call_needs_host = false;
-                if let (Some(gid), Some(d)) = (self.open.clone(), self.detail.as_ref()) {
-                    // Asked already (an admin appointed this device): just accept. Stopping: just decline.
-                    // Otherwise (an admin, nobody asked): appoint this computer and accept, in one go.
-                    out.job = Some(if !on || d.call_host_requested_here || d.am_call_host {
-                        Job::AcceptCall { gid, accept: on }
-                    } else {
-                        let me = d.members.iter().find(|m| m.is_me).map(|m| m.did.clone()).unwrap_or_default();
-                        Job::HostCallsHere { gid, did: me }
-                    });
-                }
-            }
             Lm::Dismiss if self.qr_full => self.qr_full = false,
             Lm::Dismiss => {
                 if !self.busy {
@@ -1325,7 +1298,13 @@ impl GroupsLive {
             LDialog::Flag { did } => Job::Flag { gid, did },
             LDialog::Admin { did, admin } => Job::SetAdmin { gid, did, admin },
             LDialog::Leave => Job::Leave(gid),
-            LDialog::Host { accept } => Job::AcceptHost { gid, accept },
+            LDialog::Hosting { did, dev, local, messages, calls } => Job::Hosting {
+                gid, did, dev, local, admin: self.is_admin(), messages, calls,
+            },
+            LDialog::Host { accept } => Job::Hosting {
+                gid, did: self.me.clone(), dev: self.my_device.clone(), local: true,
+                admin: false, messages: accept, calls: false,
+            },
             LDialog::Request { did } => Job::Request { gid, did },
             LDialog::OpenGroup => {
                 self.pending = Some((Setting::Open, true));
@@ -1793,4 +1772,16 @@ fn gid_for_receipts(open: &Option<String>) -> String {
 /// It sits in the slot of "Waiting for a host", so nothing moves when a post turns failed.
 pub(crate) fn failed_line(m: &GroupMessage) -> Option<&str> {
     if m.outgoing && m.delivery == GroupDelivery::Failed { m.failure.as_deref() } else { None }
+}
+
+/// Human-readable permission state for one device, shared by the list and the consent banner.
+pub(super) fn hosting_status(d: &GroupDetail, did: &str, dev: &str) -> String {
+    let has = |hs: &[p2pcore::GroupHost]| hs.iter().any(|h| h.did == did && h.device_id == dev);
+    let state = |active, pending, offered| crate::i18n::tr(if active { "group_hosting_active" }
+        else if pending { "group_hosting_waiting_device" } else if offered { "group_hosting_waiting_admin" }
+        else { "group_hosting_not_enabled" });
+    format!("{}: {} · {}: {}", crate::i18n::tr_str("group_hosting_messages"),
+        state(has(&d.hosts), has(&d.host_requests), has(&d.host_offers)),
+        crate::i18n::tr_str("group_hosting_calls"),
+        state(has(&d.call_hosts), has(&d.call_host_requests), has(&d.call_host_offers)))
 }

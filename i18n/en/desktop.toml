@@ -5147,3 +5147,71 @@ note = "Desktop, linking a device (in link_view.rs). Same as link_linked_to when
 text = "You blocked {name} · {when}"
 note = "Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\"."
 
+
+[group_hosting_permissions]
+text = "Hosting permissions"
+note = "Unified group hosting permissions."
+
+[group_hosting_this_device]
+text = "Host on this device"
+note = "Unified group hosting permissions."
+
+[group_hosting_messages]
+text = "Messages"
+note = "Unified group hosting permissions."
+
+[group_hosting_calls]
+text = "Calls"
+note = "Unified group hosting permissions."
+
+[group_hosting_save]
+text = "Save hosting permissions"
+note = "Unified group hosting permissions."
+
+[group_hosting_saved]
+text = "Hosting permissions updated. Requests need admin approval and device acceptance."
+note = "Unified group hosting permissions."
+
+[group_hosting_active]
+text = "Hosting"
+note = "Unified group hosting permissions."
+
+[group_hosting_waiting_device]
+text = "Waiting for device acceptance"
+note = "Unified group hosting permissions."
+
+[group_hosting_waiting_admin]
+text = "Waiting for admin approval"
+note = "Unified group hosting permissions."
+
+[group_hosting_not_enabled]
+text = "Not enabled"
+note = "Unified group hosting permissions."
+
+[group_hosting_note]
+text = "Hosts have permissions for messages, calls, or both. An admin grants permission and the device owner accepts it. A host stores messages or forwards call audio, so choose devices you trust."
+note = "Unified group hosting permissions."
+
+[group_hosting_consent]
+text = "Save to accept the selected permissions on this device. Permissions an admin has not granted will be requested. Messages store the group history; calls forward audio and can be heard by the host. Adding a permission requires your consent."
+note = "Unified group hosting permissions."
+
+[group_hosting_admin]
+text = "Choose which permissions to grant this device. The device owner must accept each new permission. Clearing a permission revokes it."
+note = "Unified group hosting permissions."
+
+[group_hosting_calls_missing]
+text = "No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin."
+note = "Unified group hosting permissions."
+
+[group_hosting_stop_note]
+text = "This device stops hosting messages and calls for this group. You remain a member."
+note = "Unified hosting stop confirmation."
+
+[group_hosting_edit]
+text = "Permissions"
+note = "Open one device hosting permissions."
+
+[group_hosting_calls_title]
+text = "No host has Calls enabled"
+note = "Call action explanation when no device has call permission and consent."

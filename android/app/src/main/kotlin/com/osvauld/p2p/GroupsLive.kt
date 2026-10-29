@@ -98,6 +98,55 @@ private fun rememberRunner(): (suspend () -> Result<String>, (Result<String>) ->
     return remember(scope) { { work, done -> scope.launch { done(withContext(Dispatchers.IO) { work() }) } } }
 }
 
+/** Permission state for one hosting device. */
+private fun hostingStatus(d: GroupDetail, did: String, dev: String): String {
+    fun has(hosts: List<uniffi.p2pcore.GroupHost>) = hosts.any { it.did == did && it.deviceId == dev }
+    fun state(active: Boolean, pending: Boolean, offered: Boolean) = appString(when {
+        active -> R.string.group_hosting_active
+        pending -> R.string.group_hosting_waiting_device
+        offered -> R.string.group_hosting_waiting_admin
+        else -> R.string.group_hosting_not_enabled
+    })
+    return "${appString(R.string.group_hosting_messages)}: ${state(has(d.hosts), has(d.hostRequests), has(d.hostOffers))} · " +
+        "${appString(R.string.group_hosting_calls)}: ${state(has(d.callHosts), has(d.callHostRequests), has(d.callHostOffers))}"
+}
+
+/** One permission editor, used by admins and by the device owner giving consent. */
+@Composable
+private fun HostingSheet(app: P2pApp, d: GroupDetail, did: String, dev: String, local: Boolean,
+    exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit, onDismiss: () -> Unit) {
+    fun has(hosts: List<uniffi.p2pcore.GroupHost>) = hosts.any { it.did == did && it.deviceId == dev }
+    var messages by remember(d.id, did, dev) { mutableStateOf(has(d.hosts) || has(d.hostRequests) || has(d.hostOffers)) }
+    var calls by remember(d.id, did, dev) { mutableStateOf(has(d.callHosts) || has(d.callHostRequests) || has(d.callHostOffers)) }
+    var busy by remember { mutableStateOf(false) }
+    GSheet(onDismiss, stringResource(R.string.group_hosting_permissions)) { close ->
+        GDialogBody(stringResource(R.string.group_hosting_permissions)) {
+            GPara("${nameOf(app, did, d.members.firstOrNull { it.did == did }?.name.orEmpty())} · ${GroupText.shortDev(dev)}", top = 4.dp)
+            Row(Modifier.fillMaxWidth().clickable(enabled = !busy, role = Role.Checkbox) { messages = !messages }
+                .semantics { toggleableState = ToggleableState(messages) }, verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(messages, null, enabled = !busy)
+                Text(stringResource(R.string.group_hosting_messages), color = Tin.c.ink)
+            }
+            Row(Modifier.fillMaxWidth().clickable(enabled = !busy, role = Role.Checkbox) { calls = !calls }
+                .semantics { toggleableState = ToggleableState(calls) }, verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(calls, null, enabled = !busy)
+                Text(stringResource(R.string.group_hosting_calls), color = Tin.c.ink)
+            }
+            GPara(stringResource(if (local) R.string.group_hosting_consent else R.string.group_hosting_admin))
+            if (local && calls) GPara(stringResource(R.string.groupsb_host_calls_phone_sub))
+            GActs {
+                GBtn(stringResource(R.string.common_cancel), { if (!busy) close() }, GBtnKind.Quiet, enabled = !busy)
+                GBtn(stringResource(R.string.group_hosting_save), {
+                    busy = true
+                    exec({ app.groups.configureHosting(d.id, did, dev, local, messages, calls) }) { result ->
+                        busy = false; done(result); if (result.isSuccess) close()
+                    }
+                }, GBtnKind.Primary, enabled = !busy)
+            }
+        }
+    }
+}
+
 /** "X asked this phone to host <group>": Host here / Decline (G2 `host_requested_here`). */
 @Composable
 private fun HostAskCard(app: P2pApp, d: GroupDetail, say: (String) -> Unit) {
@@ -106,13 +155,16 @@ private fun HostAskCard(app: P2pApp, d: GroupDetail, say: (String) -> Unit) {
     val c = Tin.c
     val cant = stringResource(R.string.groups_cant_do)
     val declined = stringResource(R.string.groups_host_declined)
+    var review by remember(d.id) { mutableStateOf(false) }
+    if (review) HostingSheet(app, d, app.groups.myDid, app.groups.hostingDeviceId(), true, exec,
+        { r -> say(r.fold({ it }, { it.message ?: cant })) }, { review = false })
     NoticeCard(c.warn, c.onWarn, stringResource(R.string.groups_host_ask_title, firstName(by), d.name),
-        stringResource(R.string.groups_host_ask_body),
+        hostingStatus(d, app.groups.myDid, app.groups.hostingDeviceId()),
         Modifier.padding(horizontal = 16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TinButton(stringResource(R.string.groups_host_here), { exec({ app.groups.acceptHost(d.id, true) }) { r -> say(r.fold({ it }, { it.message ?: cant })) } },
+            TinButton(stringResource(R.string.groups_host_here), { review = true },
                 Modifier.weight(1f), style = BtnStyle.Filled, height = 44.dp)
-            TinButton(stringResource(R.string.common_decline), { exec({ app.groups.acceptHost(d.id, false).map { declined } }) { r -> say(r.fold({ it }, { it.message ?: cant })) } },
+            TinButton(stringResource(R.string.common_decline), { exec({ app.groups.configureHosting(d.id, app.groups.myDid, app.groups.hostingDeviceId(), true, d.amHost, d.amCallHost).map { declined } }) { r -> say(r.fold({ it }, { it.message ?: cant })) } },
                 Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp)
         }
     }
@@ -464,7 +516,6 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     val cantSend = stringResource(R.string.groups_chat_cant_send)
     val cantReadPicture = stringResource(R.string.groups_chat_cant_read_picture)
     val noPicker = stringResource(R.string.groups_chat_no_picker)
-    val noCallHost = stringResource(R.string.groups_chat_no_call_host)
     val voiceFailed = stringResource(R.string.conv_voice_send_failed)
     // The thread: posts and this group's call log (MessageRow `.callrec`) merged by time, oldest first.
     val rows = remember(o.messages, groupLog, id) {
@@ -536,7 +587,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                 val noHost = d.callHosts.isEmpty() && !running
                 Box(Modifier.alpha(if (noHost) .45f else 1f).then(if (running) Modifier.clip(CircleShape).background(c.accentSoft) else Modifier)) {
                     PgIconBtn(Pg.Phone, if (gs.gid == d.id && gs.active) stringResource(R.string.groups_chat_call_return) else if (running) stringResource(R.string.groups_chat_call_join) else stringResource(R.string.groups_chat_call_start),
-                        { if (noHost) say(noCallHost) else app.groupCallUi.call(d.id, say) })
+                        { if (noHost) { say(appString(R.string.group_hosting_calls_missing)); onInfo() } else app.groupCallUi.call(d.id, say) })
                 }
             }
             PgIconBtn(Pg.Info, stringResource(R.string.groups_chat_info), onInfo)
@@ -886,6 +937,7 @@ private fun groupReceiptLines(r: uniffi.p2pcore.GroupReceiptStatus): List<String
 // ------------------------------------------------------------------ group info (playground screens/groups/GroupInfo.svelte)
 
 private sealed interface InfoSheet {
+    data class Hosting(val did: String, val dev: String, val local: Boolean) : InfoSheet
     data class Member(val did: String) : InfoSheet
     data object Invite : InfoSheet
     data object Leave : InfoSheet
@@ -900,7 +952,7 @@ private enum class PubSetting { Open, AdminsOnly, Link }
 private fun plural(n: Int, one: String, many: String = one + "s") = "$n ${if (n == 1) one else many}"
 
 /**
- * Group info: header, flags on me, invites (admins), hosts, call hosts, members, leave. What I can do depends on my role; the
+ * Group info: header, flags on me, invites (admins), hosting permissions, members, leave. What I can do depends on my role; the
  * owner can't leave. A removed group shows the removal view instead.
  */
 @Composable
@@ -975,10 +1027,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                     PublicGroupSection(app, d, pending, { pending = it }, exec, done, say) { sheet = InfoSheet.OpenGroup }
                 }
                 item(key = "hosts") {
-                    HostsSection(app, d, admin, name, exec, done)
-                }
-                item(key = "callhosts") {
-                    CallHostsSection(app, d, admin, name, exec, done)
+                    HostsSection(app, d, admin, name) { did, dev, local -> sheet = InfoSheet.Hosting(did, dev, local) }
                 }
                 item(key = "members") {
                     val order = { m: CoreMember -> if (m.isOwner) 0 else if (m.isAdmin) 1 else 2 }
@@ -1001,8 +1050,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                                 val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
                                 val desc = stringResource(R.string.groupsb_member_desc, listText(listOfNotNull(nameYou,
                                     if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc),
-                                    if (m.isHost) stringResource(R.string.groupsb_role_host_lc) else null,
-                                    if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_role_callhost_lc) else null)))
+                                    if (m.isHost || d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_role_host_lc) else null)))
                                 MRow(onClick = { sheet = InfoSheet.Member(m.did) }, desc = desc) {
                                     Avatar(n, m.did, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -1016,8 +1064,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         if (m.isOwner) GPill(stringResource(R.string.groupsb_pill_owner), GTone.Owner) else if (m.isAdmin) GPill(stringResource(R.string.groupsb_pill_admin), GTone.Admin)
-                                        if (m.isHost) GMark(GIcons.Server, stringResource(R.string.groupsb_host))
-                                        if (d.callHosts.any { it.did == m.did }) GMark(GIcons.Phone, stringResource(R.string.groupsb_call_host), call = true)
+                                        if (m.isHost || d.callHosts.any { it.did == m.did }) GMark(GIcons.Server, stringResource(R.string.groupsb_host))
                                     }
                                 }
                             }
@@ -1041,6 +1088,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
             MemberSheet(app, d, m, name(m.did, m.name), outgoing.filter { it.peerDid == m.did }.maxByOrNull { it.at }, blocks.blockedByMe(m.did),
                 exec, done, onChat, onDismiss = { sheet = null })
         } ?: run { sheet = null }
+        is InfoSheet.Hosting -> HostingSheet(app, d, k.did, k.dev, k.local, exec, done) { sheet = null }
         InfoSheet.Invite -> InviteSheet(app, d, sent, exec, say, onDismiss = { sheet = null })
         InfoSheet.Leave -> GSheet({ sheet = null }, stringResource(R.string.groupsb_leave_group)) { close ->
             GDialogBody(stringResource(R.string.groupsb_leave_title, d.name)) {
@@ -1129,13 +1177,13 @@ private fun MRow(onClick: (() -> Unit)? = null, desc: String? = null, content: @
 }
 
 @Composable
-private fun RowScope.TwoLine(title: String, sub: String, subColor: Color = Tin.c.ink2, dot: Boolean? = null) {
+private fun RowScope.TwoLine(title: String, sub: String, subColor: Color = Tin.c.ink2, dot: Boolean? = null, subLines: Int = 1) {
     val c = Tin.c
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(title, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (dot != null) { GDot(dot); Spacer(Modifier.width(6.dp)) }
-            Text(sub, style = GType.sub, color = subColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(sub, style = GType.sub, color = subColor, maxLines = subLines, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -1222,104 +1270,25 @@ private fun SwitchRow(icon: androidx.compose.ui.graphics.vector.ImageVector, tit
 /** Hosts: the status line, the hosts with pending asks and offers, then what a host is. */
 @Composable
 private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
-                         exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
-    val noHost = d.hosts.isEmpty()
-    val up = d.amHost || d.hosts.any { it.online }
-    val online = d.hosts.count { it.online || it.isMe }
-    val line = if (noHost) 0 else if (up) 1 else 2
-    val thisDevice = stringResource(R.string.groupsb_this_device)
-    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) thisDevice else name(h.did, h.name) + if (d.members.firstOrNull { it.did == h.did }?.deviceIds?.size ?: 1 > 1) " · ${GroupText.shortDev(h.deviceId)}" else "" }
+    edit: (String, String, Boolean) -> Unit) {
+    val devices = (d.hosts + d.callHosts + d.hostRequests + d.callHostRequests + d.hostOffers + d.callHostOffers)
+        .distinctBy { it.did to it.deviceId }
     InfoSec(stringResource(R.string.groupsb_hosts_sec)) {
-        StatusLine(listOf(
-            stringResource(R.string.groupsb_hosts_none),
-            pluralStringResource(R.plurals.groupsb_hosts_online, online.coerceAtLeast(1), online.coerceAtLeast(1)),
-            stringResource(R.string.groupsb_hosts_offline),
-        ), line, line == 1)
-        d.hosts.forEach { h ->
-            key("h" + h.did + h.deviceId) {
+        if (devices.isEmpty()) GNote(stringResource(R.string.groupsb_hosts_none))
+        devices.forEach { h ->
+            key(h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
-                    val on = h.isMe || h.online
-                    TwoLine(dev(h), (if (on) stringResource(R.string.groupsb_host_online) else stringResource(R.string.groupsb_host_offline)) + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · " + stringResource(R.string.groupsb_also_hosts_calls) else "", dot = on)
-                    if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_host_desc, dev(h))) { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
+                    TwoLine((if (h.isMe) stringResource(R.string.groupsb_this_device) else name(h.did, h.name)) + " · " + GroupText.shortDev(h.deviceId),
+                        (if (h.online || h.isMe) stringResource(R.string.groupsb_host_online) else stringResource(R.string.groupsb_host_offline)) + " · " + hostingStatus(d, h.did, h.deviceId), subLines = Int.MAX_VALUE)
+                    if (admin || h.isMe) TrailBtn(stringResource(R.string.group_hosting_edit), stringResource(R.string.group_hosting_permissions)) { edit(h.did, h.deviceId, h.isMe) }
                 }
             }
         }
-        d.hostRequests.forEach { h ->
-            key("q" + h.did + h.deviceId) {
-                MRow {
-                    Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), stringResource(R.string.groupsb_waiting_accept))
-                    if (h.isMe && d.hostRequestedHere) {
-                        GBtn(stringResource(R.string.common_decline), { exec({ app.groups.acceptHost(d.id, false) }, done) }, GBtnKind.Quiet)
-                        GBtn(stringResource(R.string.common_accept), { exec({ app.groups.acceptHost(d.id, true) }, done) }, GBtnKind.Primary)
-                    } else if (admin) TrailBtn(stringResource(R.string.common_cancel), stringResource(R.string.groupsb_cancel_host_desc, dev(h))) { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
-                }
-            }
+        if (devices.none { it.isMe }) {
+            ActRow(GIcons.Server, stringResource(R.string.group_hosting_this_device)) { edit(app.groups.myDid, app.groups.hostingDeviceId(), true) }
         }
-        d.hostOffers.forEach { h ->
-            key("o" + h.did + h.deviceId) {
-                MRow {
-                    Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), stringResource(R.string.groupsb_offered_host))
-                    if (admin) GBtn(stringResource(R.string.groupsb_appoint), { exec({ app.groups.appoint(d.id, h.did, h.deviceId) }, done) }, GBtnKind.Primary)
-                }
-            }
-        }
-        GNote(stringResource(R.string.groupsb_hosts_note) +
-            if (admin) " " + stringResource(R.string.groupsb_hosts_note_admin) else "",
-            Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
-    }
-}
-
-/** Call hosts: a separate permit from chat hosting (the core's call_hosts / call_host_requests). */
-@Composable
-private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
-                             exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
-    val ready = d.callHosts.count { it.online || it.isMe }
-    // This phone is said in words, not listed as a row: "Stop hosting calls on this phone" below stands for it.
-    val onlyMe = d.amCallHost && d.callHosts.size == 1
-    val line = if (d.callHosts.isEmpty()) 0 else if (onlyMe) 3 else if (ready > 0) 1 else 2
-    val thisDevice = stringResource(R.string.groupsb_this_device)
-    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) thisDevice else name(h.did, h.name) }
-    InfoSec(stringResource(R.string.groupsb_callhosts_sec)) {
-        StatusLine(listOf(
-            stringResource(R.string.groupsb_callhosts_none),
-            pluralStringResource(R.plurals.groupsb_callhosts_ready, ready.coerceAtLeast(1), ready.coerceAtLeast(1)),
-            stringResource(R.string.groupsb_callhosts_offline),
-            stringResource(R.string.groupsb_callhosts_me),
-        ), line, line == 1 || line == 3)
-        d.callHosts.filter { !it.isMe }.forEach { h ->
-            key("c" + h.did + h.deviceId) {
-                MRow {
-                    Avatar(name(h.did, h.name), h.did, 40.dp)
-                    val on = h.isMe || h.online
-                    TwoLine(dev(h), if (on) stringResource(R.string.groupsb_host_online) else stringResource(R.string.groupsb_host_offline), dot = on)
-                    if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_callhost_desc, dev(h))) { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
-                }
-            }
-        }
-        d.callHostRequests.forEach { h ->
-            key("cq" + h.did + h.deviceId) {
-                MRow {
-                    Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), stringResource(R.string.groupsb_waiting_accept))
-                    if (h.isMe && d.callHostRequestedHere) {
-                        GBtn(stringResource(R.string.common_decline), { exec({ app.groups.acceptCallHost(d.id, false) }, done) }, GBtnKind.Quiet)
-                        GBtn(stringResource(R.string.common_accept), { exec({ app.groups.acceptCallHost(d.id, true) }, done) }, GBtnKind.Primary)
-                    } else if (admin) TrailBtn(stringResource(R.string.common_cancel), stringResource(R.string.groupsb_cancel_callhost_desc, dev(h))) { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
-                }
-            }
-        }
-        // This phone: carry the calls it starts (admin: appoint + accept in one go; asked: the Accept above; already: stop).
-        if (d.amCallHost) ActRow(GIcons.Phone, stringResource(R.string.groupsb_stop_calls_phone)) { exec({ app.groups.acceptCallHost(d.id, false) }, done) }
-        else if (admin && !d.callHostRequestedHere && GroupText.active(d.myRole))
-            ActRow(GIcons.Phone, stringResource(R.string.groupsb_host_calls_phone), stringResource(R.string.groupsb_host_calls_phone_sub)) {
-                exec({ app.groups.hostCallsHere(d.id, requested = false) }, done)
-            }
-        GNote(stringResource(R.string.groupsb_callhosts_note) +
-            if (admin) " " + stringResource(R.string.groupsb_callhosts_note_admin) else "",
-            Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
+        GNote(stringResource(R.string.group_hosting_note), Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
     }
 }
 
@@ -1453,6 +1422,10 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
     val acts = GroupText.actions(d, m)
     val several = m.deviceIds.size > 1
     val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
+    var hostingDev by remember(d.id, m.did) { mutableStateOf<String?>(null) }
+    hostingDev?.let { dev ->
+        HostingSheet(app, d, m.did, dev, m.isMe, exec, done) { hostingDev = null }
+    }
     GSheet(onDismiss, if (m.isMe) stringResource(R.string.groupsb_member_sheet_me) else stringResource(R.string.groupsb_member_in_group, n, d.name)) { close ->
         androidx.compose.animation.Crossfade(view, animationSpec = tween(GMotion.CROSSFADE, easing = GMotion.EaseOut), label = "view") { v ->
             when (v) {
@@ -1467,8 +1440,7 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             GPill(if (m.isOwner) stringResource(R.string.groupsb_pill_owner) else if (m.isAdmin) stringResource(R.string.groupsb_pill_admin) else stringResource(R.string.groupsb_pill_member), if (m.isOwner) GTone.Owner else if (m.isAdmin) GTone.Admin else GTone.Muted)
-                            if (m.isHost) GPill(stringResource(R.string.groupsb_host), GTone.Host)
-                            if (d.callHosts.any { it.did == m.did }) GPill(stringResource(R.string.groupsb_call_host), GTone.Call)
+                            if (m.isHost || d.callHosts.any { it.did == m.did }) GPill(stringResource(R.string.groupsb_host), GTone.Host)
                         }
                     }
                     if (admin && !m.isMe && !m.isOwner) Text(pluralStringResource(R.plurals.groupsb_flags_of, GroupText.FLAGS_TO_REMOVE, m.flags.toInt(), GroupText.FLAGS_TO_REMOVE), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
@@ -1484,32 +1456,16 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                         }
                         acts.forEach { a ->
                             when (a) {
+                                is MemberAction.Hosting -> MItem(GIcons.Server,
+                                    stringResource(R.string.group_hosting_permissions) + if (several) " · ${GroupText.shortDev(a.deviceId)}" else "",
+                                    hostingStatus(d, m.did, a.deviceId)) { hostingDev = a.deviceId }
                                 MemberAction.MakeAdmin -> MItem(GIcons.Shield, stringResource(R.string.groupsb_make_admin)) { exec({ app.groups.setAdmin(d.id, m.did, true) }, done); close() }
                                 MemberAction.RevokeAdmin -> MItem(GIcons.Shield, stringResource(R.string.groupsb_remove_admin)) { exec({ app.groups.setAdmin(d.id, m.did, false) }, done); close() }
-                                is MemberAction.Appoint -> MItem(GIcons.Server, if (several) stringResource(R.string.groupsb_make_device_host, GroupText.shortDev(a.deviceId)) else stringResource(R.string.groupsb_make_host),
-                                    stringResource(R.string.groupsb_asks_host, fn)) { exec({ app.groups.appoint(d.id, m.did, a.deviceId) }, done); close() }
-                                is MemberAction.Revoke -> MItem(GIcons.Server, if (several) stringResource(R.string.groupsb_stop_device_host, GroupText.shortDev(a.deviceId)) else stringResource(R.string.groupsb_remove_as_host)) {
-                                    exec({ app.groups.revoke(d.id, m.did, a.deviceId) }, done); close()
-                                }
                                 else -> {}
                             }
                         }
-                        if (admin && !m.isMe) m.deviceIds.forEach { dev ->
-                            val isCh = d.callHosts.any { it.did == m.did && it.deviceId == dev }
-                            val pend = d.callHostRequests.any { it.did == m.did && it.deviceId == dev }
-                            val suffix = if (several) " · ${GroupText.shortDev(dev)}" else ""
-                            when {
-                                pend -> MItem(GIcons.Phone, stringResource(R.string.groupsb_cancel_callhost_request) + suffix, stringResource(R.string.groupsb_waiting_device, fn)) { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
-                                isCh -> MItem(GIcons.Phone, stringResource(R.string.groupsb_remove_as_callhost) + suffix) { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
-                                else -> MItem(GIcons.Phone, stringResource(R.string.groupsb_make_callhost) + suffix, stringResource(R.string.groupsb_asks_callhost, fn)) { exec({ app.groups.appointCall(d.id, m.did, dev) }, done); close() }
-                            }
-                        }
                         if (m.isMe && GroupText.active(d.myRole)) {
-                            if (d.amHost) MItem(GIcons.Server, stringResource(R.string.groupsb_stop_hosting_device)) { exec({ app.groups.acceptHost(d.id, false) }, done); close() }
-                            else if (d.hostOffers.none { it.isMe }) MItem(GIcons.Server, stringResource(R.string.groupsb_host_device), stringResource(R.string.groupsb_host_device_sub)) {
-                                exec({ app.groups.acceptHost(d.id, true) }, done); close()
-                            }
-                            if (d.amCallHost) MItem(GIcons.Phone, stringResource(R.string.groupsb_stop_calls_device)) { exec({ app.groups.acceptCallHost(d.id, false) }, done); close() }
+                            MItem(GIcons.Server, stringResource(R.string.group_hosting_this_device)) { hostingDev = app.groups.hostingDeviceId() }
                         }
                         if (MemberAction.Flag in acts) MItem(GIcons.Flag, stringResource(R.string.groupsb_flag_removal), pluralStringResource(R.plurals.groupsb_flag_removal_sub, GroupText.FLAGS_TO_REMOVE, GroupText.FLAGS_TO_REMOVE, fn), danger = true) { view = MView.Flag }
                         else if (m.isOwner && !m.isMe) MItem(GIcons.Flag, stringResource(R.string.groupsb_owner_cant_flag), off = true)
