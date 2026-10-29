@@ -71,6 +71,7 @@ impl ChatRt {
         };
         let m = self.chat_api_message(&core, &me, did, &pair, &day, &rec);
         self.chat_after_local_write(&core, did, &day);
+        self.chat_wake_others(&core, did);
         if let Some(ev) = self.ev() {
             ev.on_message_added(m.clone());
             if let Some(c) = self.chat_api_chat(&core, &me, &conv) {

@@ -435,6 +435,27 @@ impl NodeCtx {
         any
     }
 
+    /// A message went to `did` over a session with only `reached` of their devices (often a
+    /// computer that stays on): wake their other devices we hold a `msg` token for, with the
+    /// usual throttle, so a sleeping phone still tells them. Detached.
+    pub fn wake_others(self: &Arc<Self>, did: &str, reached: &[[u8; 32]]) {
+        let devices: Vec<[u8; 32]> = {
+            let s = self.shared.lock();
+            let Some(c) = s.state.contacts.iter().find(|c| c.did == did) else { return };
+            c.devices.iter().map(|d| d.device).filter(|d| !reached.contains(d)).collect()
+        };
+        let devices: Vec<[u8; 32]> = devices.into_iter().filter(|d| self.can_wake(did, d, Kind::Msg)).collect();
+        if devices.is_empty() {
+            return;
+        }
+        let (this, did) = (self.clone(), did.to_string());
+        self.handle.spawn(async move {
+            for device in devices {
+                this.wake_device(&did, device, Kind::Msg).await;
+            }
+        });
+    }
+
     /// Call when a chat dial of `did` starts; drop the returned guard as soon as the dial ends.
     /// While it is alive, from [`MSG_EARLY_WAKE_MS`] on, the first time `pending` says there is
     /// something to deliver (it may appear mid-dial: typing dials before the send), every device

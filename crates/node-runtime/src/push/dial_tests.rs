@@ -269,6 +269,23 @@ async fn wake_w9_every_unreached_device_is_woken() {
     .await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_others_wakes_the_devices_the_session_does_not_reach() {
+    let lookup = MemoryLookup::new();
+    let (a, b1, b2) = pair_of_devices(&lookup).await;
+    set_target(&b1, Some(fcm(1)));
+    set_target(&b2, Some(fcm(2)));
+    eventually("A holds a token of each device", || a.state(|st| st.wake.as_ref().is_some_and(|w| w.held.len() == 2))).await;
+    let t2 = b2.issued_to(&a).unwrap().token;
+    // A session with b1 (the computer that stays on) carried the message; b2 (the phone) sleeps.
+    a.ctx.wake_others(&b1.did(), &[b1.me.device]);
+    eventually("the phone is woken", || !a.relay.wakes.lock().is_empty()).await;
+    assert_eq!(*a.relay.wakes.lock(), vec![(t2, Kind::Msg)], "only the device the session missed");
+    a.ctx.wake_others(&b1.did(), &[b1.me.device]);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(a.relay.wakes.lock().len(), 1, "the throttle holds a second message back");
+}
+
 /// `eventually` polls a sync closure; a dial is async. Blocks on it on the test's own runtime.
 fn futures_lite_block(f: impl std::future::Future<Output = bool>) -> bool {
     tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(f))
