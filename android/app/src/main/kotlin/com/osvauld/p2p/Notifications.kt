@@ -197,7 +197,7 @@ object Notifications {
         // A call to a background account names it ("Asha → Work"); answering switches to it (the core does).
         ring(c, AccountLabels.ringName(call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.account?.name), call.video,
             answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
-            decline = service(c, CoreService.ACTION_DECLINE, 22))
+            decline = service(c, CoreService.ACTION_DECLINE, 22), face = NotifFaces.cached(call.peerDid))
     }
 
     /**
@@ -225,7 +225,8 @@ object Notifications {
         try { nm(c).notify(ID_WAKE_NOTICE, n) } catch (e: SecurityException) { }
     }
 
-    private fun ring(c: Context, name: String, video: Boolean, answer: PendingIntent, decline: PendingIntent) {
+    /** [face]: the caller's picture when it is already in memory ([NotifFaces.cached]); a ring never waits to read one. */
+    private fun ring(c: Context, name: String, video: Boolean, answer: PendingIntent, decline: PendingIntent, face: android.graphics.Bitmap? = null) {
         val full = activity(c, IncomingCallActivity::class.java, 20)
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
@@ -237,7 +238,7 @@ object Notifications {
             // Never ring forever (matches CallController.RING_TIMEOUT_MS).
             .setTimeoutAfter(CallController.RING_TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) {
-            val p = Person.Builder().setName(name).setImportant(true).build()
+            val p = Person.Builder().setName(name).setImportant(true).setIcon(face?.let { Icon.createWithBitmap(it) }).build()
             b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(video)
         } else {
             b.setContentTitle(name).setContentText(if (video) c.getString(R.string.notif_incoming_video) else c.getString(R.string.notif_incoming))

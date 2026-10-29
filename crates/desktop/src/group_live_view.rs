@@ -1233,7 +1233,7 @@ impl App {
                     if let Some(sub) = sub {
                         info = info.push(tx(sub, 12.0, t.ink2));
                     }
-                    let mut line = row![avatar(t, &r.name, &r.did, 32.0), info.width(Fill)].spacing(10).align_y(Alignment::Center);
+                    let mut line = row![self.profile_avatar(t, &r.name, &r.did, 32.0), info.width(Fill)].spacing(10).align_y(Alignment::Center);
                     if r.why.is_none() {
                         line = line.push(ui::icon(if on { Icon::Check } else { Icon::UserPlus }, 18.0, if on { t.primary } else { t.ink2 }));
                     }
@@ -1292,7 +1292,7 @@ impl App {
                 let first = first_name(&name).to_string();
                 column![
                     row![
-                        avatar(t, &name, did, 40.0),
+                        self.profile_avatar(t, &name, did, 40.0),
                         column![title(crate::i18n::tr_args("group_ask_for_a_private", &[("name", &(first).to_string())])), tx(crate::i18n::tr_args("group_member_of", &[("gname", &(gname).to_string())]), 13.0, t.ink2)].spacing(2),
                     ]
                     .spacing(12)
@@ -1371,7 +1371,7 @@ impl App {
                         sub += &crate::i18n::tr_args("group_flag", &[("n", &n.to_string())]);
                     }
                     c = c.push(
-                        row![avatar(t, &who, &f.by_did, 32.0), column![semi(who.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1)]
+                        row![self.profile_avatar(t, &who, &f.by_did, 32.0), column![semi(who.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1)]
                             .spacing(10)
                             .align_y(Alignment::Center),
                     );

@@ -43,7 +43,7 @@ python3 scripts/build_android.py --install --abis x86_64        # emulator build
 ```
 
 Gradle builds the core for `arm64-v8a` only unless told otherwise: pass `-Pabis=x86_64` for an emulator,
-or `-Pabis=x86_64,arm64-v8a` for Play (CI's release and `build_android.py --bundle` do).
+or `-Pabis=x86_64,arm64-v8a` for a bundle with both (`build_android.py --bundle` does; CI's release is arm64 only).
 
 Heavy builds queue through `scripts/buildlock.py` (one at a time on this machine).
 
