@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import uniffi.p2pcore.AttachmentKind
 import uniffi.p2pcore.Message
 import java.util.concurrent.ConcurrentHashMap
@@ -56,7 +57,11 @@ object ChatNotifier {
         if (!AlertPrefs.messages(app)) return   // Settings › Notifications › Messages
         val text = previewOf(m).ifBlank { return }
         lines.getOrPut(m.peerDid) { mutableListOf() }.let { synchronized(it) { it.add(Line(text, m.at.toLong(), false)); while (it.size > KEEP) it.removeAt(0) } }
-        post(app, m.peerDid, alert = true)
+        // The sender's picture is read on a worker (never on this core callback), then the notification goes up.
+        app.scope.launch {
+            NotifFaces.load(app, m.peerDid)
+            if (OpenChat.peer != m.peerDid && lines.containsKey(m.peerDid)) post(app, m.peerDid, alert = true)
+        }
     }
 
     private fun nameOf(app: P2pApp, peer: String): String =
@@ -66,7 +71,7 @@ object ChatNotifier {
     private fun post(c: Context, peer: String, alert: Boolean) {
         val app = P2pApp.get(c)
         val name = nameOf(app, peer)
-        val them = Person.Builder().setName(name).setKey(peer).build()
+        val them = Person.Builder().setName(name).setKey(peer).setIcon(NotifFaces.icon(NotifFaces.cached(peer))).build()
         val me = Person.Builder().setName(c.getString(R.string.common_you)).build()
         val style = NotificationCompat.MessagingStyle(me)
         lines[peer]?.let { synchronized(it) { it.forEach { l -> style.addMessage(l.text, l.at, if (l.mine) me else them) } } }
