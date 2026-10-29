@@ -154,6 +154,17 @@ placement = "nixos"
 timeout_secs = 3600
 
 [[suites.core-it.steps]]
+# The long-running group simulation (crates/core/tests/it/group_longrun.rs); `GROUP_LONGRUN_DAYS`
+# (default 30) sets its length. `--nocapture` keeps its `LONGRUN ...` measurement lines in the log.
+name = "group_longrun"
+command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "group_longrun::", "--nocapture"]
+after = ["build"]
+placement = "nixos"
+timeout_secs = 3600
+long = true
+retry_alone = true
+
+[[suites.core-it.steps]]
 name = "group_shards"
 command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "group_shards::"]
 after = ["build"]
