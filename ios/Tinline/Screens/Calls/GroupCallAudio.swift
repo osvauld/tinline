@@ -22,7 +22,7 @@ final class GroupCallAudio: ObservableObject, GroupCallEvents {
     private let core: @Sendable () -> CallCore?
     private let platform: CallPlatform
     private let provider: CallProvider?
-    private lazy var audio: CallAudioEngine = CallAudioEngine(core: core, onMicUnavailable: { [weak self] in
+    private lazy var audio: CallAudioEngine = CallAudioEngine(core: core, device: AVCallAudioDevice(), onMicUnavailable: { [weak self] in
         Task { @MainActor in self?.micUnavailable() }
     })
 

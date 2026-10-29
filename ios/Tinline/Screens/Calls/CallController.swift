@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import UIKit
 
 /**
  * Single place that reacts to 1:1 call events: UI state, ringing, alerts, audio. Each call is also registered with the
@@ -11,7 +12,8 @@ import Foundation
  */
 @MainActor
 final class CallController: ObservableObject {
-    @Published private(set) var ui: CallUi?
+    /** While a call is up the screen stays on: the auto-lock would background the app and the call would drop. */
+    @Published private(set) var ui: CallUi? { didSet { UIApplication.shared.isIdleTimerDisabled = ui != nil } }
     /** Set when a call ends (after [ui] goes nil); cleared when the next call starts. */
     @Published private(set) var ended: EndedUi?
     /** A second call that arrived during an active one: it rings quietly over the call screen. */
@@ -36,7 +38,7 @@ final class CallController: ObservableObject {
     private let provider: CallProvider?
     /** The current call's video; set by [CallsEnv] (they refer to each other). */
     weak var video: CallVideo?
-    private lazy var audio: CallAudioEngine = CallAudioEngine(core: core, onMicUnavailable: { [weak self] in
+    private lazy var audio: CallAudioEngine = CallAudioEngine(core: core, device: AVCallAudioDevice(), onMicUnavailable: { [weak self] in
         Task { @MainActor in self?.micUnavailable() }
     })
 

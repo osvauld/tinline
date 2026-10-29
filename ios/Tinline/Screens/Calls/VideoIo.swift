@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreGraphics
 import Foundation
 import QuartzCore
@@ -55,6 +56,105 @@ final class CallCameraStub: CallCamera {
     var previewLayer: CALayer? { nil }
 }
 
+/**
+ * The real camera: an AVCaptureSession at `.vga640x480` (SD) or `.hd1280x720` (HD), NV12 full range, late frames
+ * discarded. The core turns the picture upright from `rotation`, so buffers are not rotated here; the preview layer
+ * mirrors the front camera by itself, the frames sent are not mirrored.
+ */
+@MainActor
+final class AVCallCamera: CallCamera {
+    private var session: AVCaptureSession?
+    private var preview: AVCaptureVideoPreviewLayer?
+    private var sink: CameraSink?
+    private var orientationObserver: NSObjectProtocol?
+    private let queue = DispatchQueue(label: "tl-camera", qos: .userInteractive)
+
+    var previewLayer: CALayer? { preview }
+
+    func start(front: Bool, preference: CapturePreference, onFrame: @escaping @Sendable (CameraFrame) -> Void) throws {
+        stop()
+        let preset: AVCaptureSession.Preset = preference == .hd ? .hd1280x720 : .vga640x480
+        let s = AVCaptureSession()
+        guard s.canSetSessionPreset(preset) else { throw CaptureUnsupported(message: "preset \(preference.width)x\(preference.height) refused") }
+        guard let dev = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: front ? .front : .back),
+              let input = try? AVCaptureDeviceInput(device: dev), s.canAddInput(input) else { throw CameraUnavailable() }
+        s.beginConfiguration()
+        s.sessionPreset = preset
+        s.addInput(input)
+        let out = AVCaptureVideoDataOutput()
+        out.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+        out.alwaysDiscardsLateVideoFrames = true
+        guard s.canAddOutput(out) else { s.commitConfiguration(); throw CameraUnavailable() }
+        s.addOutput(out)
+        s.commitConfiguration()
+
+        let sink = CameraSink(front: front, orientation: UIDevice.current.orientation, onFrame: onFrame)
+        out.setSampleBufferDelegate(sink, queue: queue)
+        let layer = AVCaptureVideoPreviewLayer(session: s)
+        layer.videoGravity = .resizeAspectFill
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        orientationObserver = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
+            sink.setOrientation(UIDevice.current.orientation)
+        }
+        session = s; preview = layer; self.sink = sink
+        queue.async { s.startRunning() }
+    }
+
+    func stop() {
+        sink?.stop()
+        sink = nil
+        if let o = orientationObserver {
+            NotificationCenter.default.removeObserver(o)
+            UIDevice.current.endGeneratingDeviceOrientationNotifications()
+        }
+        orientationObserver = nil
+        preview?.removeFromSuperlayer()
+        preview = nil
+        if let s = session { session = nil; queue.async { s.stopRunning() } }
+    }
+}
+
+/** Receives the camera's buffers on its queue and copies each into a [CameraFrame]. */
+private final class CameraSink: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+    private let front: Bool
+    private let onFrame: @Sendable (CameraFrame) -> Void
+    private let lock = NSLock()
+    private var orientation: UIDeviceOrientation
+    private var live = true
+
+    init(front: Bool, orientation: UIDeviceOrientation, onFrame: @escaping @Sendable (CameraFrame) -> Void) {
+        self.front = front; self.orientation = orientation; self.onFrame = onFrame
+    }
+
+    func setOrientation(_ o: UIDeviceOrientation) { lock.lock(); if o.isValidInterfaceOrientation { orientation = o }; lock.unlock() }
+    func stop() { lock.lock(); live = false; lock.unlock() }
+
+    /** Clockwise degrees to turn the sensor's landscape buffer upright (both cameras deliver landscape-right natively). */
+    private func rotation() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        switch orientation {
+        case .portraitUpsideDown: return 270
+        case .landscapeLeft: return 0      // home button on the right: the sensor's own orientation
+        case .landscapeRight: return 180
+        default: return 90                 // portrait
+        }
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        lock.lock(); let go = live; lock.unlock()
+        guard go, let pb = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        CVPixelBufferLockBaseAddress(pb, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pb, .readOnly) }
+        guard CVPixelBufferGetPlaneCount(pb) == 2,
+              let yBase = CVPixelBufferGetBaseAddressOfPlane(pb, 0), let uvBase = CVPixelBufferGetBaseAddressOfPlane(pb, 1) else { return }
+        let yStride = CVPixelBufferGetBytesPerRowOfPlane(pb, 0), uvStride = CVPixelBufferGetBytesPerRowOfPlane(pb, 1)
+        let h = CVPixelBufferGetHeightOfPlane(pb, 0), uvH = CVPixelBufferGetHeightOfPlane(pb, 1)
+        onFrame(CameraFrame(width: CVPixelBufferGetWidthOfPlane(pb, 0), height: h, rotation: rotation(),
+                            y: Data(bytes: yBase, count: yStride * h), yRowStride: yStride,
+                            u: Data(bytes: uvBase, count: uvStride * uvH), v: Data(), uvRowStride: uvStride, uvPixelStride: 2))
+    }
+}
+
 final class VideoIo: @unchecked Sendable {
     private let core: @Sendable () -> CallCore?
     private let lock = NSLock()
@@ -83,7 +183,8 @@ final class VideoIo: @unchecked Sendable {
         return ok
     }
 
-    // ---- out: render thread only
+    // ---- out: one render at a time (the call screen and the strip's tile each have a RemoteRenderer on this VideoIo)
+    private let pullLock = NSLock()
     private var bgra: [UInt32] = []
     /** Average time of a pull that returned a frame / of its conversion, ns. */
     private(set) var pullNs: Int64 = 0
@@ -91,6 +192,7 @@ final class VideoIo: @unchecked Sendable {
 
     /** The newest decoded frame as an image, or nil if none arrived since the last call. */
     func pull() -> CGImage? {
+        pullLock.lock(); defer { pullLock.unlock() }
         guard let core = core() else { return nil }
         let tp = DispatchTime.now().uptimeNanoseconds
         guard let f = core.pullVideoFrame() else { return nil }

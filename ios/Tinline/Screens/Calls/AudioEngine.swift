@@ -44,6 +44,213 @@ final class CallAudioDeviceStub: CallAudioDevice, @unchecked Sendable {
     func openSpeaker() -> CallSpeakerOutput? { nil }
 }
 
+/** A little queue between the audio tap thread and the 20 ms mic loop; keeps the newest 200 ms. */
+private final class MicRing: @unchecked Sendable {
+    private let cond = NSCondition()
+    private var data = Data()
+    private static let cap = 19_200
+
+    func append(_ p: UnsafeBufferPointer<Int16>) {
+        cond.lock(); defer { cond.unlock() }
+        data.append(UnsafeBufferPointer(start: UnsafeRawPointer(p.baseAddress!).assumingMemoryBound(to: UInt8.self), count: p.count * 2))
+        if data.count > Self.cap { data.removeSubrange(0..<(data.count - Self.cap)) }
+        cond.signal()
+    }
+
+    /** Waits up to `timeout` seconds for data, then copies what there is (0 if none). */
+    func read(into buf: UnsafeMutableRawBufferPointer, timeout: TimeInterval) -> Int {
+        cond.lock(); defer { cond.unlock() }
+        if data.isEmpty { _ = cond.wait(until: Date(timeIntervalSinceNow: timeout)) }
+        let n = min(data.count, buf.count)
+        if n > 0, let base = buf.baseAddress {
+            data.withUnsafeBytes { base.copyMemory(from: $0.baseAddress!, byteCount: n) }
+            data.removeSubrange(0..<n)
+        }
+        return n
+    }
+
+    func reset() { cond.lock(); data.removeAll(); cond.unlock() }
+}
+
+/**
+ * Real call audio: one AVAudioEngine with the voice-processing unit (echo cancel, noise suppression) shared by the mic
+ * and the speaker of a call, 48 kHz mono PCM16 both ways. The audio session is set up by the routing ([takeRouting]) but
+ * is also requested here, so the engine never starts on the wrong category. A fresh engine per call: it is created by
+ * the first open and dropped with the last release.
+ */
+final class AVCallAudioDevice: CallAudioDevice, @unchecked Sendable {
+    fileprivate static let micFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: Double(CallAudioEngine.rate), channels: 1, interleaved: true)!
+    fileprivate static let playFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Double(CallAudioEngine.rate), channels: 1, interleaved: false)!
+
+    private let lock = NSLock()
+    private let ring = MicRing()
+    private var engine: AVAudioEngine?
+    private var player: AVAudioPlayerNode?
+    private var users = 0
+    private var micOpen = false
+    private var observer: NSObjectProtocol?
+
+    func openMic() -> CallMicInput? {
+        lock.lock(); defer { lock.unlock() }
+        guard acquire(), let engine else { return nil }
+        guard installTap(engine) else { drop(); return nil }
+        micOpen = true
+        return AVCallMic(device: self, ring: ring)
+    }
+
+    func openSpeaker() -> CallSpeakerOutput? {
+        lock.lock(); defer { lock.unlock() }
+        guard acquire(), let player else { return nil }
+        return AVCallSpeaker(device: self, player: player)
+    }
+
+    fileprivate func releaseMic() {
+        lock.lock(); defer { lock.unlock() }
+        if micOpen { micOpen = false; engine?.inputNode.removeTap(onBus: 0) }
+        ring.reset()
+        drop()
+    }
+
+    fileprivate func releaseSpeaker() {
+        lock.lock(); defer { lock.unlock() }
+        player?.stop()
+        drop()
+    }
+
+    /** Lock held. Creates and starts the engine on the first user. */
+    private func acquire() -> Bool {
+        if engine != nil { users += 1; return true }
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth])
+            try session.setActive(true)
+        } catch { CallLog.warn("audio session: \(error)"); return false }
+        let e = AVAudioEngine()
+        // Voice processing first, before the engine touches its I/O nodes; it applies to input and output together.
+        do { try e.inputNode.setVoiceProcessingEnabled(true) } catch { CallLog.warn("voice processing: \(error)") }
+        let p = AVAudioPlayerNode()
+        e.attach(p)
+        e.connect(p, to: e.mainMixerNode, format: Self.playFormat)
+        do { try e.start() } catch { CallLog.warn("audio engine start: \(error)"); return false }
+        engine = e; player = p; users = 1
+        observer = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: e, queue: nil) { [weak self] _ in
+            self?.configurationChanged()
+        }
+        return true
+    }
+
+    /** Lock held. Drops one user; the last one stops the engine. */
+    private func drop() {
+        users -= 1
+        guard users <= 0 else { return }
+        users = 0
+        if let o = observer { NotificationCenter.default.removeObserver(o) }
+        observer = nil
+        engine?.stop()
+        engine = nil; player = nil; micOpen = false
+    }
+
+    /** Lock held. Taps the mic in the engine's current input format and converts to 48 kHz mono PCM16. */
+    private func installTap(_ engine: AVAudioEngine) -> Bool {
+        let input = engine.inputNode
+        let inFormat = input.outputFormat(forBus: 0)
+        let outFormat = Self.micFormat
+        guard inFormat.sampleRate > 0, let converter = AVAudioConverter(from: inFormat, to: outFormat) else {
+            CallLog.warn("mic format unusable: \(inFormat)"); return false
+        }
+        let ring = self.ring
+        input.installTap(onBus: 0, bufferSize: 1024, format: inFormat) { buffer, _ in
+            let capacity = AVAudioFrameCount(Double(buffer.frameLength) * outFormat.sampleRate / inFormat.sampleRate) + 32
+            guard let out = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: capacity) else { return }
+            var fed = false
+            var error: NSError?
+            converter.convert(to: out, error: &error) { _, status in
+                if fed { status.pointee = .noDataNow; return nil }
+                fed = true; status.pointee = .haveData; return buffer
+            }
+            if error == nil, out.frameLength > 0, let p = out.int16ChannelData {
+                ring.append(UnsafeBufferPointer(start: p[0], count: Int(out.frameLength)))
+            }
+        }
+        return true
+    }
+
+    /** A route or format change (headset, speaker toggle, interruption) stops the engine: tap again and restart. */
+    private func configurationChanged() {
+        lock.lock(); defer { lock.unlock() }
+        guard let engine else { return }
+        if micOpen { engine.inputNode.removeTap(onBus: 0); _ = installTap(engine) }
+        // The hardware format can change with the route: remake the player's connections so the output matches it.
+        if let player {
+            engine.disconnectNodeOutput(player)
+            engine.connect(player, to: engine.mainMixerNode, format: Self.playFormat)
+            engine.connect(engine.mainMixerNode, to: engine.outputNode, format: engine.outputNode.inputFormat(forBus: 0))
+        }
+        if !engine.isRunning { do { try engine.start() } catch { CallLog.warn("audio engine restart: \(error)") } }
+        if let player, !player.isPlaying { player.play() }
+    }
+}
+
+private final class AVCallMic: CallMicInput {
+    private let device: AVCallAudioDevice
+    private let ring: MicRing
+    private var released = false
+    init(device: AVCallAudioDevice, ring: MicRing) { self.device = device; self.ring = ring }
+
+    func read(into buf: UnsafeMutableRawBufferPointer) -> Int { ring.read(into: buf, timeout: 0.02) }
+
+    func release() {
+        if released { return }
+        released = true
+        device.releaseMic()
+    }
+}
+
+private final class AVCallSpeaker: CallSpeakerOutput {
+    private static let depth = 5
+    private let device: AVCallAudioDevice
+    private let player: AVAudioPlayerNode
+    private let cond = NSCondition()
+    private var inFlight = 0
+    private var released = false
+    init(device: AVCallAudioDevice, player: AVAudioPlayerNode) { self.device = device; self.player = player }
+
+    /** Schedules one frame. Blocks while five frames are queued, which paces the speaker loop; a stuck player drops it. */
+    func write(_ pcm: Data) -> Int {
+        let frames = pcm.count / 2
+        guard frames > 0 else { return 0 }
+        guard let buf = AVAudioPCMBuffer(pcmFormat: AVCallAudioDevice.playFormat, frameCapacity: AVAudioFrameCount(frames)),
+              let ch = buf.floatChannelData else { return -1 }
+        buf.frameLength = AVAudioFrameCount(frames)
+        pcm.withUnsafeBytes { raw in
+            let s = raw.bindMemory(to: Int16.self)
+            for i in 0..<frames { ch[0][i] = Float(s[i]) / 32768 }
+        }
+        cond.lock()
+        let deadline = Date(timeIntervalSinceNow: 0.1)
+        while inFlight >= Self.depth && !released {
+            if !cond.wait(until: deadline) { cond.unlock(); return pcm.count }
+        }
+        if released { cond.unlock(); return -1 }
+        inFlight += 1
+        cond.unlock()
+        player.scheduleBuffer(buf) { [weak self] in
+            guard let self else { return }
+            self.cond.lock(); self.inFlight = max(0, self.inFlight - 1); self.cond.signal(); self.cond.unlock()
+        }
+        if !player.isPlaying { player.play() }
+        return pcm.count
+    }
+
+    func release() {
+        cond.lock()
+        if released { cond.unlock(); return }
+        released = true
+        cond.broadcast(); cond.unlock()
+        device.releaseSpeaker()
+    }
+}
+
 /** The in-app routing used only when CallKit does not own the call (AudioEngine.kt fallback). */
 protocol CallAudioRouting: AnyObject {
     /** Take the audio session for a voice call; route changes are reported through `onChange`. */

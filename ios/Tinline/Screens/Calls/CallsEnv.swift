@@ -28,7 +28,7 @@ final class CallsEnv: ObservableObject {
         let platform = platform ?? CallPlatformIOS()
         let alerts = alerts ?? CallAlertsStub()
         let directory = directory ?? CallDirectoryStub()
-        let camera = camera ?? CallCameraStub()
+        let camera = camera ?? AVCallCamera()
         let readings = readings ?? DeviceHostReadings()
         let box = CoreBox()
         let core: @Sendable () -> CallCore? = { box.get() }
