@@ -70,6 +70,9 @@ fun SettingsLanding(
     extra: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Tin.c
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // As the account switcher: with wake pushes the other accounts still ring here (docs/multi-online.md).
+    val wakes = remember { PushMode.pushOn(ctx) }
     val me by store.self.collectAsState()
     val view = rememberProfileView(me)
     val name = view?.text("name")?.takeIf { it.isNotBlank() } ?: fallbackName
@@ -103,11 +106,11 @@ fun SettingsLanding(
                     }
                 }
                 accounts.filter { !it.current }.forEach { a ->
-                    act { PfAct(a.name, onClick = { onSwitch(a.did) }, leading = { PgAvatar(a.name, avatarHue(a.did), 36.dp) }, sub = stringResource(R.string.settings_account_paused)) }
+                    act { PfAct(a.name, onClick = { onSwitch(a.did) }, leading = { PgAvatar(a.name, avatarHue(a.did), 36.dp) }, sub = stringResource(if (wakes && UnlockStore.exists(ctx, a.did)) R.string.settings_account_rings else R.string.settings_account_paused)) }
                 }
                 act { PfAct(stringResource(R.string.settings_add_account), onClick = onAdd, icon = PgIcons.Plus, chevron = true) }
             }
-            Text(stringResource(R.string.settings_accounts_note),
+            Text(stringResource(if (wakes) R.string.accounts_others_ring_hint else R.string.settings_accounts_note),
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), style = PgType.sub, color = c.ink2)
         }
         // Appearance (Settings.svelte LOOKS, 2026-10-14): the same choice the sign-up switch makes; switches at once.
@@ -190,7 +193,7 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
             val cardRows3 = listOf(
                     Triple(Need.Notifications, PgIcons.Bell, Triple(stringResource(R.string.settings_notifications), stringResource(R.string.notif_perm_allowed), stringResource(R.string.notif_perm_off))),
                     Triple(Need.Mic, PgIcons.Mic, Triple(stringResource(R.string.notif_perm_mic), stringResource(R.string.notif_perm_allowed), stringResource(R.string.notif_perm_mic_asked))),
-                    Triple(Need.Battery, PgIcons.Battery, Triple(stringResource(R.string.notif_perm_battery), stringResource(R.string.notif_perm_unrestricted), stringResource(R.string.notif_perm_restricted))),
+                    Triple(Need.Battery, PgIcons.Battery, stringResource(Perms.batteryState(ctx)).let { Triple(stringResource(R.string.notif_perm_battery), it, it) }),
                 )
             PfCard {
                 cardRows3.forEach { (need, icon, t) ->

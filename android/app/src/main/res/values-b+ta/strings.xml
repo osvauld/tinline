@@ -25,7 +25,6 @@
     <string name="groups_cant_do">அதைச் செய்ய முடியவில்லை</string>
     <string name="groups_waiting_host">ஹோஸ்ட்டுக்காகக் காத்திருக்கிறது</string>
     <string name="groups_host_ask_title">%2$s குழுவை ஹோஸ்ட் செய்யும்படி %1$s இந்த ஃபோனைக் கேட்டுள்ளார்</string>
-    <string name="groups_host_ask_body">ஹோஸ்ட் என்பது குழுவின் முழு நகலை வைத்திருக்கும், உறுப்பினர்களின் ஃபோன்கள் உறங்கும்போது செய்திகளைக் கடத்தும், உறுப்பினர்களின் குழு முகவரிகளை அறிந்துகொள்ளும். அது ஆன்லைனில் இருக்க வேண்டும், பேட்டரியையும் பயன்படுத்தும்: எப்போதும் இயங்கும் கணினி சிறந்த ஹோஸ்ட். ஹோஸ்ட் செய்வதால் நீங்கள் நிர்வாகி ஆகமாட்டீர்கள்.</string>
     <string name="groups_host_here">இங்கே ஹோஸ்ட் செய்</string>
     <string name="groups_host_declined">நிராகரிக்கப்பட்டது. இந்த ஃபோனிடமிருந்து பதில் வரவில்லை என்றே நிர்வாகிகளுக்குத் தெரியும்.</string>
     <string name="groups_list_new_title">புதிய குழு</string>
@@ -69,7 +68,6 @@
     <string name="groups_chat_call_return">குழு அழைப்புக்குத் திரும்பு</string>
     <string name="groups_chat_call_join">குழு அழைப்பில் சேர்</string>
     <string name="groups_chat_call_start">குழு அழைப்பைத் தொடங்கு</string>
-    <string name="groups_chat_no_call_host">இன்னும் அழைப்பு ஹோஸ்ட் இல்லை: குழுத் தகவலில் நிர்வாகி ஒருவரை நியமிக்கலாம்</string>
     <string name="groups_chat_info">குழுத் தகவல்</string>
     <string name="groups_chat_earlier">முந்தைய செய்திகளைக் காட்டு</string>
     <string name="groups_chat_no_messages">இன்னும் செய்திகள் இல்லை</string>
@@ -143,7 +141,7 @@
     <string name="groupsb_invite_contacts">தொடர்புகளை அழை</string>
     <string name="groupsb_invite_contacts_sub">ஒவ்வொருவருக்கும் தனிப்பட்ட அழைப்பிதழ்</string>
     <string name="groupsb_create_link">அழைப்பிதழ் இணைப்பை உருவாக்கு</string>
-    <string name="groupsb_create_link_nohost">முதலில் ஒரு ஹோஸ்ட்டை நியமியுங்கள். ஓர் இணைப்பு ஒரு ஹோஸ்ட்டைக் குறிப்பிடும்.</string>
+    <string name="groupsb_create_link_nohost">முதலில் ஒரு ஹோஸ்டை அமைத்துக்கொள்ளுங்கள். ஒரு இணைப்பு ஒரே ஒரு ஹோஸ்டைக் குறிக்கும்.</string>
     <string name="groupsb_create_link_valid">7 நாட்களுக்குச் செல்லும்</string>
     <string name="groupsb_members_sec">உறுப்பினர்கள்</string>
     <string name="groupsb_req_pending">அரட்டைக் கோரிக்கை அனுப்பப்பட்டது</string>
@@ -165,7 +163,6 @@
     <string name="groupsb_pill_admin">நிர்வாகி</string>
     <string name="groupsb_pill_member">உறுப்பினர்</string>
     <string name="groupsb_host">ஹோஸ்ட்</string>
-    <string name="groupsb_call_host">அழைப்பு ஹோஸ்ட்</string>
     <string name="groupsb_leave_group">குழுவிலிருந்து வெளியேறு</string>
     <string name="groupsb_owner_cant_leave">உரிமையாளர் இப்போதைக்கு வெளியேற முடியாது</string>
     <string name="groupsb_leave_title">%1$s குழுவிலிருந்து வெளியேறவா?</string>
@@ -195,34 +192,7 @@
     <string name="groupsb_hosts_sec">ஹோஸ்ட்கள்</string>
     <string name="groupsb_this_device">இந்தச் சாதனம்</string>
     <string name="groupsb_hosts_none">இந்தக் குழுவுக்கு ஹோஸ்ட் இல்லை. ஒரு ஹோஸ்ட் நியமிக்கப்படும் வரை இடுகைகள் காத்திருக்கும்.</string>
-    <plurals name="groupsb_hosts_online">
-        <item quantity="one">%1$d ஹோஸ்ட் ஆன்லைனில் உள்ளது. இடுகைகள் உடனே செல்லும்.</item>
-        <item quantity="other">%1$d ஹோஸ்ட்கள் ஆன்லைனில் உள்ளன. இடுகைகள் உடனே செல்லும்.</item>
-    </plurals>
-    <string name="groupsb_hosts_offline">எந்த ஹோஸ்ட்டும் ஆன்லைனில் இல்லை. உங்கள் இடுகைகள் சேமிக்கப்பட்டுள்ளன, ஒன்று வந்ததும் அனுப்பப்படும்.</string>
-    <string name="groupsb_also_hosts_calls">அழைப்புகளையும் ஹோஸ்ட் செய்கிறது</string>
-    <string name="groupsb_remove_host_desc">ஹோஸ்ட் பொறுப்பிலிருந்து %1$s சாதனத்தை அகற்று</string>
-    <string name="groupsb_cancel_host_desc">%1$s சாதனத்துக்கான ஹோஸ்ட் கோரிக்கையை ரத்துசெய்</string>
-    <string name="groupsb_waiting_accept">ஏற்பதற்குக் காத்திருக்கிறது</string>
-    <string name="groupsb_offered_host">ஹோஸ்ட் செய்ய முன்வந்துள்ளது · நிர்வாகி தேவை</string>
-    <string name="groupsb_appoint">நியமி</string>
-    <string name="groupsb_hosts_note">மற்றவர்கள் ஆஃப்லைனில் இருக்கும்போது, ஹோஸ்ட்கள் குழுவைச் சேமித்து இடுகைகளைக் கடத்தும். அவர்கள் நீங்கள் நம்பும் உறுப்பினர்கள்: இந்தக் குழுவில் இடப்படும் அனைத்தையும் ஒரு ஹோஸ்ட் படிக்க முடியும்.</string>
-    <string name="groupsb_hosts_note_admin">உறுப்பினரின் மெனுவிலிருந்து ஒரு ஹோஸ்ட்டை நியமியுங்கள்; அவர் ஏற்க வேண்டும். ஒரு ஹோஸ்ட்டை அகற்றினால், 2 நாட்களுக்குள் குழுவின் முகவரி மாறும், அதனால் அந்தச் சாதனம் இனி குழுவை அடைய முடியாது.</string>
-    <string name="groupsb_callhosts_sec">அழைப்பு ஹோஸ்ட்கள்</string>
-    <string name="groupsb_callhosts_none">இந்தக் குழுவுக்கு அழைப்பு ஹோஸ்ட் இல்லை. ஒரு நிர்வாகி அதை நியமிக்கும் வரை யாரும் அழைப்பைத் தொடங்க முடியாது.</string>
-    <plurals name="groupsb_callhosts_ready">
-        <item quantity="one">%1$d அழைப்பு ஹோஸ்ட் தயாராக உள்ளது. அழைப்புகள் அதன் வழியாகத் தொடங்கும்.</item>
-        <item quantity="other">%1$d அழைப்பு ஹோஸ்ட்கள் தயாராக உள்ளன. அழைப்புகள் அவற்றின் வழியாகத் தொடங்கும்.</item>
-    </plurals>
-    <string name="groupsb_callhosts_offline">இப்போது எந்த அழைப்பு ஹோஸ்ட்டும் கிடைக்கவில்லை. ஒன்று திரும்பி வந்ததும் அழைப்பைத் தொடங்கலாம்.</string>
-    <string name="groupsb_callhosts_me">நீங்கள் தொடங்கும் அழைப்புகளை இந்த ஃபோன் நடத்தும்.</string>
-    <string name="groupsb_remove_callhost_desc">அழைப்பு ஹோஸ்ட் பொறுப்பிலிருந்து %1$s சாதனத்தை அகற்று</string>
-    <string name="groupsb_cancel_callhost_desc">%1$s சாதனத்துக்கான அழைப்பு ஹோஸ்ட் கோரிக்கையை ரத்துசெய்</string>
-    <string name="groupsb_stop_calls_phone">இந்த ஃபோனில் அழைப்புகளை ஹோஸ்ட் செய்வதை நிறுத்து</string>
-    <string name="groupsb_host_calls_phone">இந்த ஃபோனில் அழைப்புகளை ஹோஸ்ட் செய்</string>
     <string name="groupsb_host_calls_phone_sub">நீங்கள் இங்கே தொடங்கும் அழைப்புகளை நடத்தும். எப்போதும் இயங்கும் கணினி அனைவரின் அழைப்புகளையும் நடத்தலாம்.</string>
-    <string name="groupsb_callhosts_note">அழைப்பு ஹோஸ்ட் அழைப்பை நடத்துகிறது. அழைப்பில் உள்ள அனைவரும் அதனுடன் இணைகிறார்கள், அது ஒலியைக் கடத்துகிறது, எனவே அதனால் அழைப்பைக் கேட்க முடியும். இது குழு ஹோஸ்டிங்கிலிருந்து தனி: ஒரு குழு ஹோஸ்ட்டை அழைப்பு ஹோஸ்ட்டாகவும் நீங்கள் நியமித்தால் மட்டுமே அது அழைப்பு ஹோஸ்ட் ஆகும். அழைப்பு ஹோஸ்ட்கள் நீங்கள் நம்பும் உறுப்பினர்கள், ஒவ்வொருவரும் ஏற்பதா என்பதைத் தாங்களே முடிவு செய்கிறார்கள்.</string>
-    <string name="groupsb_callhosts_note_admin">உறுப்பினரின் மெனுவிலிருந்து ஒன்றை நியமியுங்கள், அல்லது இந்த ஃபோனிலேயே அழைப்புகளை ஹோஸ்ட் செய்யுங்கள். ஒரு ஃபோன் அதன் உரிமையாளர் தொடங்கும் அழைப்புகளை மட்டுமே ஹோஸ்ட் செய்யும்.</string>
     <string name="groupsb_flags_on_you">உங்கள் மீதான கொடிகள்</string>
     <plurals name="groupsb_flags_left_note">
         <item quantity="one">எந்த நிர்வாகியிடமிருந்தும் இன்னும் ஒரு கொடி வந்தால், நீங்கள் குழுவிலிருந்து நீக்கப்படுவீர்கள். கொடிகளைத் திரும்பப் பெற முடியாது. அதுவரை நீங்கள் படிக்கவும் இடுகையிடவும் முடியும்.</item>
@@ -265,20 +235,6 @@
     <string name="groupsb_sends_request">குழுவின் ஹோஸ்ட் வழியாக அரட்டைக் கோரிக்கையை அனுப்பும்</string>
     <string name="groupsb_make_admin">நிர்வாகி ஆக்கு</string>
     <string name="groupsb_remove_admin">நிர்வாகிப் பொறுப்பை நீக்கு</string>
-    <string name="groupsb_make_device_host">%1$s சாதனத்தை ஹோஸ்ட் ஆக்கு</string>
-    <string name="groupsb_make_host">ஹோஸ்ட் ஆக்கு</string>
-    <string name="groupsb_asks_host">ஹோஸ்ட் செய்யும்படி %1$s அவர்களிடம் கேட்கும். அவர் ஏற்க வேண்டும்.</string>
-    <string name="groupsb_stop_device_host">%1$s சாதனத்தின் ஹோஸ்டிங்கை நிறுத்து</string>
-    <string name="groupsb_remove_as_host">ஹோஸ்ட் பொறுப்பிலிருந்து அகற்று</string>
-    <string name="groupsb_cancel_callhost_request">அழைப்பு ஹோஸ்ட் கோரிக்கையை ரத்துசெய்</string>
-    <string name="groupsb_waiting_device">%1$s அவர்களின் சாதனம் ஏற்பதற்குக் காத்திருக்கிறது</string>
-    <string name="groupsb_remove_as_callhost">அழைப்பு ஹோஸ்ட் பொறுப்பிலிருந்து அகற்று</string>
-    <string name="groupsb_make_callhost">அழைப்பு ஹோஸ்ட் ஆக்கு</string>
-    <string name="groupsb_asks_callhost">குழு அழைப்புகளை நடத்தும்படி %1$s அவர்களிடம் கேட்கும். அவர் ஏற்க வேண்டும்.</string>
-    <string name="groupsb_stop_hosting_device">இந்தச் சாதனத்தில் ஹோஸ்ட் செய்வதை நிறுத்து</string>
-    <string name="groupsb_host_device">இந்தச் சாதனத்தில் ஹோஸ்ட் செய்</string>
-    <string name="groupsb_host_device_sub">ஒரு நிர்வாகியும் இதை நியமிக்க வேண்டும். எப்போதும் இயங்கும் கணினி சிறந்த ஹோஸ்ட்.</string>
-    <string name="groupsb_stop_calls_device">இந்தச் சாதனத்தில் அழைப்புகளை ஹோஸ்ட் செய்வதை நிறுத்து</string>
     <string name="groupsb_flag_removal">நீக்கக் கொடியிடு</string>
     <plurals name="groupsb_flag_removal_sub">
         <item quantity="one">%1$d கொடி வந்தால் %2$s குழுவிலிருந்து நீக்கப்படுவார்</item>
@@ -295,7 +251,7 @@
     <string name="groupsb_send_request">கோரிக்கையை அனுப்பு</string>
     <string name="groupsb_new_group">புதிய குழு</string>
     <string name="groupsb_group_name">குழுவின் பெயர்</string>
-    <string name="groupsb_new_group_host_note">தொடக்கத்தில் இந்த ஃபோன் குழுவை ஹோஸ்ட் செய்யும்: அது குழுவை வைத்திருந்து செய்திகளைக் கடத்தும். எப்போதும் இயங்கும் கணினி சிறந்த ஹோஸ்ட் — அது சேர்ந்ததும் குழுத் தகவலிலிருந்து அதை நியமியுங்கள்.</string>
+    <string name="groupsb_new_group_host_note">முதலில் இந்த ஃபோனே குழுவை ஹோஸ்ட் செய்யும்: குழுவைத் தன்னிடம் வைத்து, செய்திகளை மற்றவர்களுக்கு அனுப்பும். எப்போதும் இயங்கும் கணினி இன்னும் நல்ல ஹோஸ்ட். அது குழுவில் சேர்ந்ததும், குழுத் தகவலில் ஹோஸ்டிங் அனுமதிகளில் ஒன்றை அமைக்கலாம்.</string>
     <string name="groupsb_new_group_own">குழு உங்களுடையதாக இருக்கும். குழுத் தகவலிலிருந்து மக்களை அழையுங்கள்.</string>
     <string name="groupsb_making">உருவாக்குகிறது…</string>
     <string name="groupsb_create_group">குழுவை உருவாக்கு</string>
@@ -547,8 +503,8 @@
     <string name="onboarding_done_add_contact">என் முதல் தொடர்பைச் சேர்</string>
     <string name="onboarding_tip_devices_title">ஒன்றை விட இரண்டு சாதனங்கள் நல்லது</string>
     <string name="onboarding_tip_devices_body">முடிந்தபோது இன்னொரு சாதனத்தை இணையுங்கள்; அப்போது ஒன்று தொலைந்தாலும் உங்கள் கணக்கு உங்களிடமே இருக்கும்.</string>
-    <string name="onboarding_tip_groups_title">குழுக்கள் கணினியில் ஹோஸ்ட் செய்யப்படும்</string>
-    <string name="onboarding_tip_groups_body">குழுவைத் தொடங்க, எப்போதும் இயங்கக்கூடிய கணினியில் Tinline-ஐ நிறுவுங்கள்.</string>
+    <string name="onboarding_tip_groups_title">கணினி நல்ல ஹோஸ்ட் ஆகும்</string>
+    <string name="onboarding_tip_groups_body">இந்த ஃபோனில் குழுவைத் தொடங்கலாம். எப்போதும் இயங்கும் கணினி இருந்தால், உங்கள் ஃபோன் உறங்கும்போதும் குழுவை அடைய முடியும்.</string>
     <string name="onboarding_name_title">மற்றவர்கள் உங்களை எப்படி அழைக்க வேண்டும்?</string>
     <string name="onboarding_name_lead">நீங்கள் சேர்க்கும் நபர்கள் மட்டுமே இதைப் பார்ப்பார்கள்.</string>
     <string name="onboarding_name_hint">இதை எப்போது வேண்டுமானாலும் அமைப்புகளில் மாற்றலாம்.</string>
@@ -586,6 +542,7 @@
     <string name="onboarding_device_hint">இதைப் பிறகு மறுபெயரிடலாம்.</string>
     <string name="onboarding_restored_title_adding">%1$s இந்த ஃபோனில் சேர்க்கப்பட்டது</string>
     <string name="onboarding_restored_lead_adding">நீங்கள் தேர்ந்தெடுக்கும் கணக்கு மட்டுமே ஒரே நேரத்தில் ஆன்லைனில் இருக்கும், எனவே இப்போது %1$s ஆன்லைனில் உள்ளது, உங்கள் மற்றொரு கணக்கு இடைநிறுத்தப்பட்டுள்ளது. அமைப்புகளில் மாறலாம்.</string>
+    <string name="onboarding_restored_lead_adding_push">இப்போது %1$s இந்த ஃபோனில் திறந்துள்ளது. உங்கள் மற்றொரு கணக்கு இங்கே இன்னும் ஒலிக்கும், புதிய செய்திகளையும் தெரிவிக்கும். அமைப்புகளில் மாறலாம்.</string>
     <string name="onboarding_restored_lead">உங்கள் கணக்கு இந்த ஃபோனுக்குத் திரும்பிவிட்டது. உங்கள் தொடர்புகள், அரட்டைகள், அழைப்பு வரலாறு ஆகியவை சர்வரில் அல்ல, உங்கள் மற்ற சாதனங்களில் வைக்கப்பட்டுள்ளன. இந்த ஃபோன் காலியான தொடர்புப் பட்டியலுடன் தொடங்கும்.</string>
     <string name="onboarding_open_tinline">Tinline-ஐத் திற</string>
     <string name="onboarding_linked_title">%1$s உடன் இணைக்கப்பட்டது</string>
@@ -594,7 +551,7 @@
     <string name="onboarding_sync_calls">அழைப்பு வரலாறு</string>
     <string name="onboarding_sync_waiting">காத்திருக்கிறது</string>
     <string name="onboarding_sync_slow">இன்னும் எதுவும் வரவில்லை. மற்றச் சாதனம் ஆஃப்லைனில் இருக்கலாம்: அடுத்த முறை இரண்டும் ஆன்லைனில் இருக்கும்போது விட்ட இடத்திலிருந்து தொடரும்.</string>
-    <string name="onboarding_sync_keep_online">இரண்டு சாதனங்களையும் ஆன்லைனில் வைத்திருங்கள். ஒத்திசைவு பின்னணியில் தொடரும்.</string>
+    <string name="onboarding_sync_keep_online">இது முடியும் வரை இரண்டு சாதனங்களையும் திறந்து, ஆன்லைனில் வைத்திருங்கள்.</string>
     <string name="onboarding_savefail_title">உங்கள் கணக்கைச் சேமிக்க முடியவில்லை</string>
     <string name="onboarding_savefail_lead">உங்கள் கணக்கைத் திறக்கும் விசையை Tinline-ஆல் இந்த ஃபோனில் சேமிக்க முடியவில்லை, எனவே உங்கள் கணக்கு இன்னும் சேமிக்கப்படவில்லை.</string>
     <string name="onboarding_savefail_trying">முயல்கிறது…</string>
@@ -643,6 +600,7 @@
     <string name="settings_see_details">விவரங்களைப் பார்</string>
     <string name="settings_account_selected">தேர்ந்தெடுக்கப்பட்டது · ஆன்லைன்</string>
     <string name="settings_account_paused">இடைநிறுத்தப்பட்டது · மாறத் தட்டவும்</string>
+    <string name="settings_account_rings">இங்கே ஒலிக்கும் · மாறத் தட்டவும்</string>
     <string name="settings_add_account">இன்னொரு கணக்கைச் சேர்</string>
     <string name="settings_accounts_note">தேர்ந்தெடுத்த கணக்கு மட்டுமே இந்த ஃபோனில் ஆன்லைனில் இருக்கும். மாறினால் மற்றது இடைநிறுத்தப்படும்: மீண்டும் அதைத் தேர்ந்தெடுக்கும் வரை அதற்கு அழைப்புகள் வராது.</string>
     <string name="settings_appearance">தோற்றம்</string>
@@ -686,6 +644,7 @@
     <string name="notif_perm_battery">பேட்டரி உபயோகம்</string>
     <string name="notif_perm_unrestricted">கட்டுப்பாடற்றது</string>
     <string name="notif_perm_restricted">கட்டுப்படுத்தப்பட்டது</string>
+    <string name="notif_perm_optimized">மேம்படுத்தப்பட்டது</string>
     <string name="notif_fix">சரிசெய்</string>
     <string name="notif_ring_lock">பூட்டுத் திரையின் மேல் ஒலிக்கும்</string>
     <string name="notif_system_note">இவை Tinline-ஆல் அல்ல, உங்கள் சிஸ்டத்தால் அமைக்கப்படுகின்றன. தேவைப்படும்போது மட்டுமே Tinline கேட்கும்.</string>
@@ -763,6 +722,7 @@
     <string name="settings_calls_allowed_note">நீங்கள் அனுமதித்தவர் உங்களை அழைக்கலாம்; செய்திகள் மட்டும் உள்ளவர் எழுதலாம். நீங்கள் தடுத்தவர்களால் இரண்டும் முடியாது.</string>
     <string name="settings_battery_title">பின்னணி &amp; பேட்டரி</string>
     <string name="settings_battery_keep">என் லைனைத் திறந்து வை</string>
+    <string name="settings_battery_keep_push">Tinline என்னை எப்படி அடைகிறது</string>
     <string name="settings_battery_hint">சாதாரண ஃபோன் போல அழைப்புகள் ஒலிக்க, Tinline பின்னணியில் இணைப்பில் இருக்கும். இது சிறிது பேட்டரியைப் பயன்படுத்தும். அதை அனுமதிக்க Android-க்குத் தேவையானவை கீழே உள்ள சரிபார்ப்புப் பட்டியலில் உள்ளன.</string>
     <string name="settings_battery_hint_push">யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு ஒரு சிறிய தட்டல் அதை எழுப்பும்; அதனால் பேட்டரி விலக்கு தேவையில்லை. அழைப்பு ஒலிக்க Android-க்குத் தேவையானவை கீழே உள்ள பட்டியலில் உள்ளன.</string>
     <string name="settings_stay_connected">எப்போதும் இணைப்பில் இரு</string>
@@ -1148,7 +1108,7 @@
     <string name="card_nothing_to_share">பகிர ஆப் எதுவும் இல்லை</string>
     <string name="card_qr_desc">உங்கள் தொடர்பு அட்டையின் QR குறியீடு</string>
     <string name="card_preparing">உங்கள் குறியீட்டைத் தயார் செய்கிறது…</string>
-    <string name="card_works_once">ஒருமுறை மட்டுமே செயல்படும். புதிய குறியீட்டை உருவாக்கினால் இது ரத்தாகும்.</string>
+    <string name="card_works_once">7 நாட்களுக்குச் செல்லும், நீங்கள் யாருக்குக் கொடுத்தாலும். ஒவ்வொருவரும் முதலில் உங்களிடம் கேட்பார்கள். புதிய குறியீடு உருவாக்கினால் இது செல்லாததாகிவிடும்.</string>
     <string name="card_new_code">புதிய குறியீடு</string>
     <string name="card_none_found">அந்தச் செய்தியில் Tinline தொடர்பு அட்டை இல்லை</string>
     <string name="card_chat_with">%1$s அவர்களுடன் அரட்டையடிக்கவா?</string>
@@ -1194,15 +1154,6 @@
     <string name="groupsc_made_admin">நிர்வாகி ஆக்கப்பட்டார்.</string>
     <string name="groupsc_no_longer_admin">இனி நிர்வாகி அல்ல.</string>
     <string name="groupsc_left_group">நீங்கள் குழுவிலிருந்து வெளியேறிவிட்டீர்கள். அதன் செய்திகள் இங்கேயே இருக்கும்.</string>
-    <string name="groupsc_appointed">நியமிக்கப்பட்டது. சாதனம் ஒப்புக்கொண்டதும் ஹோஸ்ட் செய்யும்.</string>
-    <string name="groupsc_host_revoked">அந்தச் சாதனம் இனி குழுவை ஹோஸ்ட் செய்யாது.</string>
-    <string name="groupsc_host_agreed">இந்த ஃபோன் ஹோஸ்ட் செய்ய ஒப்புக்கொண்டது. ஒரு நிர்வாகி நியமித்தவுடன் ஹோஸ்ட் செய்யும்.</string>
-    <string name="groupsc_host_stopped">இந்த ஃபோன் குழுவை ஹோஸ்ட் செய்வதை நிறுத்தியது.</string>
-    <string name="groupsc_call_host_asked">கேட்கப்பட்டது. சாதனம் ஏற்றதும் அழைப்புகளை நடத்தும்.</string>
-    <string name="groupsc_call_host_revoked">அந்தச் சாதனம் இனி குழுவின் அழைப்புகளை ஹோஸ்ட் செய்யாது.</string>
-    <string name="groupsc_call_host_agreed">இந்தச் சாதனம் இப்போது குழுவின் அழைப்புகளை ஹோஸ்ட் செய்கிறது.</string>
-    <string name="groupsc_call_host_declined">இந்தச் சாதனம் குழுவின் அழைப்புகளை ஹோஸ்ட் செய்யாது.</string>
-    <string name="groupsc_calls_here">இந்தக் குழுவில் இந்த ஃபோன் தான் தொடங்கும் அழைப்புகளை இனி நடத்தும்.</string>
     <string name="groupsc_admins_only_on">இனி நிர்வாகிகள் மட்டுமே இடுகையிடுவார்கள். அனைவரும் தொடர்ந்து படிக்கலாம்.</string>
     <string name="groupsc_admins_only_off">அனைவரும் மீண்டும் இடுகையிடலாம்.</string>
     <string name="groupsc_req_declined">நிராகரிக்கப்பட்டது. %1$s அவர்களுக்கு “நிராகரிக்கப்பட்டது” எனத் தெரிவிக்கப்படும்.</string>
@@ -1297,9 +1248,9 @@
     <string name="addcontact_why_known">%1$s ஏற்கெனவே உங்கள் தொடர்புகளில் இருக்கிறார்.</string>
     <string name="addcontact_why_added">%1$s அவர்களுடனான உங்கள் லைன் திறந்திருக்கிறது. வணக்கம் சொல்லுங்கள்.</string>
     <string name="addcontact_why_requested">கோரிக்கை அனுப்பப்பட்டது. %1$s ஏற்றுக்கொண்டதும் உங்கள் லைன் திறக்கும்.</string>
-    <string name="addcontact_why_slow">இன்னும் முயல்கிறது. இதற்கு %1$s அவர்களின் Tinline திறந்து ஆன்லைனில் இருக்க வேண்டும்.</string>
+    <string name="addcontact_why_slow">இன்னும் முயல்கிறது. %1$s அவர்களின் ஃபோன் உறக்கத்தில் இருந்தால், Tinline அதை எழுப்புகிறது.</string>
     <string name="addcontact_why_reaching">%1$s அவர்களின் Tinline-ஐ அடைகிறது…</string>
-    <string name="addcontact_why_timeout">%1$s அவர்களின் Tinline-ஐ அடைய முடியவில்லை. அது திறந்து ஆன்லைனில் இருக்க வேண்டும், எனவே %1$s இருக்கும்போது மீண்டும் முயலுங்கள்.</string>
+    <string name="addcontact_why_timeout">%1$s அவர்களின் Tinline-ஐ அடைய முடியவில்லை. சிறிது நேரம் கழித்து, அல்லது %1$s கிடைக்கும்போது மீண்டும் முயலுங்கள்.</string>
     <string name="addcontact_why_refused">%1$s அவர்களின் குறியீடு இனி செல்லாது. அவர்கள் புதியதை உருவாக்கியிருக்கலாம், எனவே %1$s அவர்களிடம் சமீபத்திய குறியீட்டைக் கேளுங்கள்.</string>
     <string name="addcontact_why_blocked_them">இப்போது %1$s அவர்களைச் சேர்க்க முடியாது. இங்கே தொடர்பில் இருக்க வேண்டாம் என்று அவர்கள் தேர்ந்தெடுத்துள்ளனர்.</string>
     <string name="addcontact_why_offline">நீங்கள் ஆஃப்லைனில் இருக்கிறீர்கள். இணைந்ததும் மீண்டும் முயலுங்கள்.</string>
@@ -1537,7 +1488,7 @@
     <string name="home_first_title">உங்கள் முதல் தொடர்பைச் சேருங்கள்</string>
     <string name="home_first_lead">உங்கள் குறியீட்டை நண்பருக்குக் காட்டுங்கள், அல்லது நகலெடுத்து அனுப்புங்கள். அல்லது அவர்களுடையதை ஸ்கேன் செய்யுங்கள்.</string>
     <string name="home_first_scan">அவர்களின் குறியீட்டை ஸ்கேன் செய்</string>
-    <string name="home_first_paste">அவர்களின் அட்டையை ஒட்டு</string>
+    <string name="home_first_paste">அவர்களின் குறியீட்டை ஒட்டு</string>
     <string name="home_first_waiting">அவர்கள் ஸ்கேன் செய்யக் காத்திருக்கிறது — இதைத் திறந்தே வையுங்கள்.</string>
     <string name="chats_filter_all">அனைத்தும்</string>
     <string name="chats_filter_unread">படிக்காதவை</string>
@@ -1687,6 +1638,7 @@
     <string name="onboarding_linked_title_unnamed">உங்கள் மற்றொரு சாதனத்துடன் இணைக்கப்பட்டது</string>
     <string name="onboarding_restored_title_adding_unnamed">உங்கள் கணக்கு இந்த ஃபோனில் சேர்க்கப்பட்டது</string>
     <string name="onboarding_restored_lead_adding_unnamed">நீங்கள் தேர்ந்தெடுக்கும் கணக்கு மட்டுமே ஒரே நேரத்தில் ஆன்லைனில் இருக்கும், எனவே இப்போது இந்தக் கணக்கு ஆன்லைனில் உள்ளது, உங்கள் மற்றொரு கணக்கு இடைநிறுத்தப்பட்டுள்ளது. அமைப்புகளில் மாறலாம்.</string>
+    <string name="onboarding_restored_lead_adding_push_unnamed">இப்போது இந்தக் கணக்கு இந்த ஃபோனில் திறந்துள்ளது. உங்கள் மற்றொரு கணக்கு இங்கே இன்னும் ஒலிக்கும், புதிய செய்திகளையும் தெரிவிக்கும். அமைப்புகளில் மாறலாம்.</string>
     <string name="devices_syncing_unnamed">சாதனத்துடன் ஒத்திசைக்கிறது…</string>
     <string name="devices_confirm_unlink_title_unnamed">இந்தச் சாதனத்தின் இணைப்பை நீக்கவா?</string>
     <string name="devices_unlinked_msg_unnamed">சாதனத்தின் இணைப்பு நீக்கப்பட்டது</string>
@@ -1728,7 +1680,6 @@
     <string name="common_list_separator">, </string>
     <string name="groupsb_member_desc">%1$s. செயல்களைத் திற</string>
     <string name="groupsb_role_host_lc">ஹோஸ்ட்</string>
-    <string name="groupsb_role_callhost_lc">அழைப்பு ஹோஸ்ட்</string>
     <string name="avail_note_unnamed">நீங்கள் இல்லாதபோது, அழைப்பவர்கள் உங்களை அடைய முடியவில்லை என்று பார்ப்பார்கள். எதுவும் வரிசையில் வைக்கப்படாது, காரணமும் யாருக்கும் சொல்லப்படாது.</string>
     <string name="onboarding_linked_lead_unnamed">உங்கள் தொடர்புகளும் அரட்டைகளும் உங்கள் மற்றொரு சாதனத்திலிருந்து வந்துகொண்டிருக்கின்றன, இரண்டிலும் ஒத்திசைவாக இருக்கும்.</string>
     <string name="gcall_is_calling_group_unnamed">யாரோ ஒருவர் குழுவை அழைக்கிறார்</string>

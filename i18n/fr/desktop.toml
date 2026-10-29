@@ -693,9 +693,6 @@ text = "Envoi impossible : {error}"
 [chat_could_not_show_this]
 text = "Affichage impossible : {error}"
 
-[chat_couldnt_download_tap_to]
-text = "{value} · téléchargement interrompu — touchez pour réessayer"
-
 [chat_delete]
 text = "Supprimer"
 
@@ -758,9 +755,6 @@ text = "Charger les messages précédents"
 
 [chat_message_deleted]
 text = "Message supprimé"
-
-[chat_messages_go_straight_to]
-text = "Les messages vont directement sur ses appareils."
 
 [chat_new_messages]
 one = "{count} nouveau message"
@@ -826,9 +820,6 @@ text = "Signé par {name} · {value}"
 
 [chat_signed_by_2]
 text = "Signé par {value}"
-
-[chat_tap_to_retry]
-text = "Touchez pour réessayer"
 
 [chat_that_is_everything_has]
 text = "C’est tout l’historique dont dispose {name}."
@@ -944,9 +935,6 @@ text = "Réessayer"
 [gate_the_system_keyring_did]
 text = "Le trousseau du système n’a pas accepté la clé."
 
-[gate_these_24_words_are]
-text = "Ces {words} mots sont le seul moyen de restaurer votre identité sur un autre appareil."
-
 [gate_this_computer_no_longer]
 text = "Cet ordinateur n’a plus la clé qui l’ouvre, et son entrée dans le trousseau a disparu. Dès que vous restaurez, vos appels arrivent à nouveau."
 
@@ -959,9 +947,6 @@ text = "Nouvel essai…"
 [gate_turn_on]
 text = "Activer"
 
-[gate_you_didnt_set_a]
-text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
-
 [gate_your_calls_come_through]
 text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
 
@@ -973,9 +958,6 @@ text = "Vous êtes indisponible"
 
 [gate_youre_offline]
 text = "Vous êtes hors ligne"
-
-[gcall_a_call_host_is]
-text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du groupe. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
 
 [gcall_battery_is_low_or]
 text = "La batterie est faible ou l’ordinateur chauffe. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
@@ -1024,34 +1006,13 @@ text = "Vous êtes déjà en appel."
 [gcall_youre_the_call_host]
 text = "Vous êtes l’hôte d’appel"
 
-[group_a_call_host_carries]
-text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
-
-[group_a_call_host_is]
-text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui héberge l’appel. Un admin peut en désigner un dans Infos du groupe."
-
-[group_a_call_host_is_a]
-text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui héberge l’appel. Vous pouvez héberger les appels sur cet ordinateur, ou désigner un membre dans Infos du groupe."
-
-[group_a_call_needs_a]
-text = "Un appel a besoin d’un hôte d’appel"
-
 [group_a_flag_is_signed]
 text = "Un signalement est signé par vous et ne peut pas être annulé. {name} peut voir qui a fait chaque signalement, et quand. Les messages écrits par {name} avant le retrait restent visibles, marqués."
-
-[group_a_host_keeps_a]
-text = "Un hôte garde une copie complète d’un groupe et transmet les messages pendant que les téléphones des membres sont en veille. Les membres se connectent aux hôtes, pas entre eux ; seuls les hôtes connaissent les adresses de groupe des membres. Tinline continue d’héberger quand la fenêtre est fermée (il reste dans la zone de notification)."
-
-[group_a_host_keeps_a_full]
-text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en marche. Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
 
 [group_a_host_lists_up]
 one = "Un hôte affiche jusqu’à {count} personne à la fois, il peut donc y en avoir d’autres."
 many = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
 other = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
-
-[group_a_host_stays_on]
-text = "Un hôte reste allumé et transmet les publications quand les autres sont hors ligne"
 
 [group_a_link_that_doesnt]
 text = "Un lien qui n’expire pas"
@@ -1083,12 +1044,6 @@ text = "Déjà membre"
 [group_also_confirmed]
 text = "Ont aussi confirmé : {value}"
 
-[group_also_hosts_calls]
-text = "Héberge aussi les appels"
-
-[group_an_admin_asked_this]
-text = "Un admin a demandé à cet ordinateur d’héberger les appels du groupe"
-
 [group_anyone_holding_the_link]
 text = "Toute personne qui a le lien peut rejoindre, sans invitation ni date limite. Partagez-le là où vous aimeriez qu’on trouve le groupe."
 
@@ -1098,29 +1053,14 @@ text = "Toute personne qui a le lien peut rejoindre"
 [group_anyone_with_this_link]
 text = "Toute personne qui a ce lien ou ce QR code peut rejoindre pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
 
-[group_appoint]
-text = "Désigner"
-
-[group_appoint_a_host_first]
-text = "Désignez d’abord un hôte. Un lien indique un seul hôte."
-
-[group_appointed_the_device_hosts]
-text = "Désigné. L’appareil héberge dès qu’il accepte (Héberger depuis cet appareil)."
-
 [group_as_a_host_this]
 text = "En tant qu’hôte, cet ordinateur va :"
 
 [group_ask_for_a_private]
 text = "Proposer une discussion privée à {name}"
 
-[group_asked_the_device_carries]
-text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
-
 [group_asked_this_computer_to]
 text = "{name} demande à cet ordinateur d’héberger {group}"
-
-[group_asks_to_carry_group]
-text = "Demande à {name} d’héberger les appels de groupe sur cet appareil ; il faut son accord"
 
 [group_block]
 text = "Bloquer {name}"
@@ -1134,22 +1074,8 @@ text = "Bloqué {value}"
 [group_blocked_you]
 text = "Vous a bloqué"
 
-[group_call_hosts]
-text = "Hôtes d’appel"
-
-[group_call_hosts_ready]
-one = "{count} hôte d’appel prêt. Les appels passent par lui."
-many = "{count} hôtes d’appel prêts. Les appels passent par eux."
-other = "{count} hôtes d’appel prêts. Les appels passent par eux."
-
-[group_calls_go_through_the]
-text = "Les appels passent par les autres hôtes d’appel"
-
 [group_can_invite_flag_members]
 text = "Peut inviter, signaler des membres et désigner des hôtes"
-
-[group_carries_the_groups_calls]
-text = "Héberge les appels du groupe ; un ordinateur qui reste allumé est idéal"
 
 [group_checking_with_the_groups]
 text = "Vérification auprès de l’hôte du groupe…"
@@ -1228,17 +1154,11 @@ text = "Les groupes que vous créez ou rejoignez apparaissent ici."
 [group_has_no_other_host]
 text = "{gname} n’a pas d’autre hôte : les messages attendront sur les appareils des membres jusqu’à ce qu’un autre l’héberge."
 
-[group_host_calls_on_this]
-text = "Héberger les appels sur cet ordinateur"
-
 [group_host_here]
 text = "Héberger ici"
 
 [group_host_on_this_computer]
 text = "Héberger {gname} sur cet ordinateur ?"
-
-[group_host_this_group_on]
-text = "Héberger ce groupe sur cet ordinateur"
 
 [group_hosts]
 text = "Hôtes"
@@ -1247,17 +1167,6 @@ text = "Hôtes"
 one = "{count} hôte"
 many = "{count} hôtes"
 other = "{count} hôtes"
-
-[group_hosts_once_agrees_on]
-text = "Héberge dès que {name} accepte sur cet appareil ; un ordinateur qui reste allumé est idéal"
-
-[group_hosts_online]
-one = "{count} hôte en ligne. Les publications passent tout de suite."
-many = "{count} hôtes en ligne. Les publications passent tout de suite."
-other = "{count} hôtes en ligne. Les publications passent tout de suite."
-
-[group_hosts_store_the_group]
-text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe."
 
 [group_if_accepts_you_can]
 text = "Si {name} accepte, vous pourrez vous écrire directement. Les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
@@ -1300,9 +1209,6 @@ text = "Invité · en attente de réponse"
 [group_invites]
 text = "Invitations"
 
-[group_it_starts_hosting_once]
-text = "Il commence à héberger dès qu’un admin le désigne (immédiatement si c’est déjà fait). Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
-
 [group_join_a_group]
 text = "Rejoindre un groupe"
 
@@ -1342,18 +1248,6 @@ text = "Nommer admin"
 [group_make_an_admin]
 text = "Nommer {name} admin ?"
 
-[group_make_call_host]
-text = "Nommer hôte d’appel"
-
-[group_make_device_a_call]
-text = "Faire de l’appareil {value} un hôte d’appel"
-
-[group_make_device_a_host]
-text = "Faire de l’appareil {value} un hôte"
-
-[group_make_host]
-text = "Nommer hôte"
-
 [group_making_it]
 text = "Création…"
 
@@ -1386,9 +1280,6 @@ other = "{count} membres"
 [group_members_see_that_you]
 text = "Les membres voient que vous êtes parti. Les messages restent sur cet ordinateur, en lecture seule. Pour revenir, un admin doit vous inviter à nouveau."
 
-[group_members_stop_going_through]
-text = "Les membres ne passent plus par lui"
-
 [group_message_from_whom_you]
 text = "Message de {name} (contact bloqué)"
 
@@ -1404,9 +1295,6 @@ text = "Aucun groupe ne correspond."
 [group_no_host_answered_in]
 text = "Aucun hôte n’a répondu à temps. Réessayez quand un hôte sera en ligne."
 
-[group_no_host_is_online]
-text = "Aucun hôte n’est en ligne. Vos publications sont gardées et partiront dès qu’il y en aura un."
-
 [group_no_longer_an_admin]
 text = "N’est plus admin."
 
@@ -1418,9 +1306,6 @@ text = "Personne n’est bloqué. Pour bloquer quelqu’un, ouvrez sa fiche dans
 
 [group_not_yet]
 text = "Pas encore"
-
-[group_offered_to_host]
-text = "Propose d’héberger"
 
 [group_on_their_device]
 text = "Sur leur appareil"
@@ -1535,35 +1420,14 @@ text = "{name} reste membre"
 [group_stays_in_the_group]
 text = "{name} reste dans le groupe en tant que membre. Les signalements déjà faits par cette personne comptent toujours."
 
-[group_stop_device_carrying_calls]
-text = "Arrêter l’hébergement des appels sur l’appareil {value}"
-
-[group_stop_device_hosting]
-text = "Arrêter l’hébergement sur l’appareil {value}"
-
 [group_stop_hosting]
 text = "Arrêter d’héberger"
-
-[group_stop_hosting_calls]
-text = "Arrêter d’héberger les appels"
-
-[group_stop_hosting_calls_on]
-text = "Arrêter d’héberger les appels sur cet ordinateur"
 
 [group_stop_hosting_here]
 text = "Arrêter d’héberger {gname} ici ?"
 
-[group_stop_hosting_on_this]
-text = "Arrêter d’héberger sur cet ordinateur"
-
 [group_text]
 text = "{label} : {value}"
-
-[group_that_device_no_longer]
-text = "Cet appareil n’héberge plus les appels de ce groupe."
-
-[group_that_device_no_longer_hosts]
-text = "Cet appareil n’héberge plus le groupe."
 
 [group_that_group_isnt_on]
 text = "Ce groupe n’est pas sur cet ordinateur."
@@ -1592,35 +1456,8 @@ text = "Invitez ensuite des personnes depuis le panneau des membres."
 [group_they_blocked_you_so]
 text = "Cette personne vous a bloqué, vous ne pouvez donc pas lui proposer de discussion."
 
-[group_this_computer_carries_the]
-text = "Cet ordinateur héberge les appels."
-
-[group_this_computer_carries_this]
-text = "Cet ordinateur héberge désormais les appels de ce groupe."
-
 [group_this_computer_doesnt_host]
 text = "Cet ordinateur n’héberge aucun groupe. Pour en héberger un, ouvrez-le et choisissez Héberger depuis cet ordinateur dans le panneau des membres."
-
-[group_this_computer_hosts_the]
-text = "Cet ordinateur héberge le groupe. Les publications passent tout de suite."
-
-[group_this_computer_stopped_carrying]
-text = "Cet ordinateur n’héberge plus les appels de ce groupe."
-
-[group_this_computer_stops_passing]
-text = "Cet ordinateur cesse de transmettre les messages du groupe. Vous restez membre."
-
-[group_this_device_agreed_to]
-text = "Cet appareil a accepté d’héberger. Il héberge dès qu’un admin l’a désigné."
-
-[group_this_device_stopped_hosting]
-text = "Cet appareil n’héberge plus le groupe."
-
-[group_this_group_has_no]
-text = "Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’appel tant qu’un admin n’en a pas désigné un."
-
-[group_this_group_has_no_host]
-text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné."
 
 [group_turn_on_open_link]
 text = "Activez Lien public pour le partager"
@@ -1639,9 +1476,6 @@ text = "En attente d’un hôte"
 
 [group_waiting_for_a_host_no]
 text = "En attente d’un hôte. Aucun hôte du groupe n’est en ligne ; vos publications sont gardées et partiront dès qu’il y en aura un."
-
-[group_waiting_to_accept]
-text = "En attente d’acceptation"
 
 [group_while_its_open_no]
 text = "Tant qu’il est ouvert, aucune confirmation de lecture n’est envoyée dans ce groupe, et les membres voient qui est en ligne. Chacun peut se masquer dans ses paramètres."
@@ -1662,9 +1496,6 @@ text = "Pourquoi vous avez été retiré"
 one = "{name} pourra inviter des personnes, signaler des membres ({count} signalement retire quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 many = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 other = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
-
-[group_withdraw_the_offer_to]
-text = "Retirer la proposition d’hébergement"
 
 [group_working]
 text = "En cours…"
@@ -2362,9 +2193,6 @@ text = "Désactivé signifie messages uniquement"
 [profile_on_this_computer]
 text = "Sur cet ordinateur"
 
-[profile_on_wi_fi_and]
-text = "En Wi-Fi et en données mobiles"
-
 [profile_online_now]
 text = "En ligne"
 
@@ -2928,9 +2756,6 @@ text = "Copier mes mots"
 [signup_couldnt_make_a_new]
 text = "Impossible de créer un nouveau code pour le moment. Réessayez dans un instant."
 
-[signup_couldnt_reach_s_tinline]
-text = "Impossible de joindre le Tinline de {name}. Il doit être ouvert et en ligne, alors réessayez quand {name} sera disponible."
-
 [signup_couldnt_read_the_clipboard]
 text = "Impossible de lire le presse-papiers. Collez plutôt dans la première case."
 
@@ -3117,9 +2942,6 @@ text = "Passer pour l’instant"
 [signup_start_a_chat]
 text = "Lancer une discussion"
 
-[signup_still_trying_s_tinline]
-text = "Nouvel essai en cours. Le Tinline de {name} doit être ouvert et en ligne pour cela."
-
 [signup_strong]
 text = "Solide"
 
@@ -3134,9 +2956,6 @@ text = "Conditions d’utilisation"
 
 [signup_that_code_from_has]
 text = "Ce code de {value} a expiré. Les codes durent 7 jours : demandez-en un nouveau."
-
-[signup_that_doesnt_look_like]
-text = "Cela ne ressemble pas à un code Tinline. Pourrait-on vous le recopier ?"
 
 [signup_that_key_has_a]
 text = "Cette clé contient une faute de frappe ou est incomplète. Collez-la à nouveau depuis l’endroit où vous l’avez enregistrée."
@@ -3573,17 +3392,6 @@ text = "En ligne"
 [group_host_offline]
 text = "Hors ligne"
 
-[group_hosts_online_here]
-one = "{count} hôte en ligne, cet ordinateur compris. Les publications passent tout de suite."
-many = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
-other = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
-
-[group_hosts_store_the_group_admin]
-text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe. Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre."
-
-[group_a_call_host_carries_admin]
-text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter. Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur cet ordinateur."
-
 [group_asked_this_computer_to_unnamed]
 text = "Un admin demande à cet ordinateur d’héberger {group}"
 
@@ -3839,3 +3647,52 @@ text = "Associé à votre compte"
 
 [chat_you_blocked_on]
 text = "Vous avez bloqué {name} · {when}"
+
+[accounts_tap_to_switch]
+text = "Cliquez pour changer"
+
+[accounts_new_tap_to_switch]
+one = "{count} nouveau message · cliquez pour changer"
+other = "{count} nouveaux messages · cliquez pour changer"
+
+[chat_couldnt_download_tap_to]
+text = "{value} · téléchargement impossible — cliquez pour réessayer"
+
+[chat_messages_go_straight_to]
+text = "Les messages vont directement vers leurs appareils, sans serveur entre les deux. Ils arrivent quand vous êtes tous les deux en ligne."
+
+[chat_tap_to_retry]
+text = "Cliquez pour réessayer"
+
+[gate_these_24_words_are]
+text = "Ces {words} mots ramènent votre compte sur n’importe quel appareil. Gardez-les en lieu sûr."
+
+[gate_you_didnt_set_a]
+text = "Vous n’avez pas défini de phrase secrète. Vos {words} mots de récupération sont donc le moyen de revenir, sauf si un autre appareil associé a encore votre compte. Vos contacts restent."
+
+[gcall_a_call_host_is]
+text = "Un hôte d’appel est un appareil qu’un admin a autorisé à porter les appels, et qui a accepté. Les admins changent cela dans Autorisations d’hébergement, dans Infos du groupe."
+
+[group_a_host_keeps_a]
+text = "Un hôte garde une copie complète d’un groupe et transmet les messages pendant que les téléphones des membres sont en veille. Les membres se connectent aux hôtes, pas entre eux ; seuls les hôtes connaissent les adresses de groupe des membres. Tinline continue d’héberger tant qu’il tourne, même fenêtre fermée (il reste dans la zone de notification)."
+
+[group_appoint_a_host_first]
+text = "Désignez d’abord un hôte. Un lien désigne un seul hôte."
+
+[group_it_starts_hosting_once]
+text = "L’hébergement commence dès qu’un admin l’autorise (tout de suite si c’est déjà fait). Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
+
+[group_this_group_has_no_host]
+text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un admin en autorise un."
+
+[profile_on_wi_fi_and]
+text = "Chaque image se télécharge dès son arrivée"
+
+[signup_couldnt_reach_s_tinline]
+text = "Impossible de joindre le Tinline de {name}. Réessayez dans un moment, ou quand {name} sera disponible."
+
+[signup_still_trying_s_tinline]
+text = "Nouvel essai en cours. Si le téléphone de {name} est en veille, Tinline le réveille."
+
+[signup_that_doesnt_look_like]
+text = "Cela ne ressemble pas à un code Tinline. Les codes des anciennes versions ne fonctionnent pas : demandez-en un nouveau à cette personne."

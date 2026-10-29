@@ -25,7 +25,6 @@
     <string name="groups_cant_do">Cette action n’a pas abouti</string>
     <string name="groups_waiting_host">En attente d’un hôte</string>
     <string name="groups_host_ask_title">%1$s demande à ce téléphone d’héberger %2$s</string>
-    <string name="groups_host_ask_body">Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en ligne et consomme de la batterie : un ordinateur qui reste allumé est un meilleur hôte. Héberger ne fait pas de vous un admin.</string>
     <string name="groups_host_here">Héberger ici</string>
     <string name="groups_host_declined">Refusé. Les admins ne voient aucune réponse de ce téléphone.</string>
     <string name="groups_list_new_title">Nouveau groupe</string>
@@ -69,7 +68,6 @@
     <string name="groups_chat_call_return">Revenir à l’appel de groupe</string>
     <string name="groups_chat_call_join">Rejoindre l’appel de groupe</string>
     <string name="groups_chat_call_start">Lancer un appel de groupe</string>
-    <string name="groups_chat_no_call_host">Pas encore d’hôte d’appel : un admin peut en désigner un dans Infos du groupe</string>
     <string name="groups_chat_info">Infos du groupe</string>
     <string name="groups_chat_earlier">Afficher les messages précédents</string>
     <string name="groups_chat_no_messages">Pas encore de message</string>
@@ -148,7 +146,7 @@
     <string name="groupsb_invite_contacts">Inviter des contacts</string>
     <string name="groupsb_invite_contacts_sub">Une invitation privée pour chaque personne</string>
     <string name="groupsb_create_link">Créer un lien d’invitation</string>
-    <string name="groupsb_create_link_nohost">Désignez d’abord un hôte. Un lien indique un seul hôte.</string>
+    <string name="groupsb_create_link_nohost">Désignez d’abord un hôte. Un lien désigne un seul hôte.</string>
     <string name="groupsb_create_link_valid">Valable 7 jours</string>
     <string name="groupsb_members_sec">Membres</string>
     <string name="groupsb_req_pending">Demande de discussion envoyée</string>
@@ -171,7 +169,6 @@
     <string name="groupsb_pill_admin">Admin</string>
     <string name="groupsb_pill_member">Membre</string>
     <string name="groupsb_host">Hôte</string>
-    <string name="groupsb_call_host">Hôte d’appel</string>
     <string name="groupsb_leave_group">Quitter le groupe</string>
     <string name="groupsb_owner_cant_leave">Le propriétaire ne peut pas encore partir</string>
     <string name="groupsb_leave_title">Quitter %1$s ?</string>
@@ -201,36 +198,7 @@
     <string name="groupsb_hosts_sec">Hôtes</string>
     <string name="groupsb_this_device">Cet appareil</string>
     <string name="groupsb_hosts_none">Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné.</string>
-    <plurals name="groupsb_hosts_online">
-        <item quantity="one">%1$d hôte en ligne. Les publications passent tout de suite.</item>
-        <item quantity="many">%1$d hôtes en ligne. Les publications passent tout de suite.</item>
-        <item quantity="other">%1$d hôtes en ligne. Les publications passent tout de suite.</item>
-    </plurals>
-    <string name="groupsb_hosts_offline">Aucun hôte n’est en ligne. Vos publications sont gardées et partiront dès qu’il y en aura un.</string>
-    <string name="groupsb_also_hosts_calls">héberge aussi les appels</string>
-    <string name="groupsb_remove_host_desc">Retirer %1$s comme hôte</string>
-    <string name="groupsb_cancel_host_desc">Annuler la demande d’hébergement à %1$s</string>
-    <string name="groupsb_waiting_accept">En attente d’acceptation</string>
-    <string name="groupsb_offered_host">Propose d’héberger · un admin doit valider</string>
-    <string name="groupsb_appoint">Désigner</string>
-    <string name="groupsb_hosts_note">Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe.</string>
-    <string name="groupsb_hosts_note_admin">Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre.</string>
-    <string name="groupsb_callhosts_sec">Hôtes d’appel</string>
-    <string name="groupsb_callhosts_none">Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’appel tant qu’un admin n’en a pas désigné un.</string>
-    <plurals name="groupsb_callhosts_ready">
-        <item quantity="one">%1$d hôte d’appel prêt. Les appels passent par lui.</item>
-        <item quantity="many">%1$d hôtes d’appel prêts. Les appels passent par eux.</item>
-        <item quantity="other">%1$d hôtes d’appel prêts. Les appels passent par eux.</item>
-    </plurals>
-    <string name="groupsb_callhosts_offline">Aucun hôte d’appel n’est disponible pour le moment. Un appel pourra démarrer dès que l’un d’eux sera de retour.</string>
-    <string name="groupsb_callhosts_me">Ce téléphone héberge les appels que vous lancez.</string>
-    <string name="groupsb_remove_callhost_desc">Retirer %1$s comme hôte d’appel</string>
-    <string name="groupsb_cancel_callhost_desc">Annuler la demande d’hôte d’appel à %1$s</string>
-    <string name="groupsb_stop_calls_phone">Ne plus héberger les appels sur ce téléphone</string>
-    <string name="groupsb_host_calls_phone">Héberger les appels sur ce téléphone</string>
     <string name="groupsb_host_calls_phone_sub">Héberge les appels que vous lancez ici. Un ordinateur qui reste allumé peut héberger ceux de tout le monde.</string>
-    <string name="groupsb_callhosts_note">Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter.</string>
-    <string name="groupsb_callhosts_note_admin">Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur ce téléphone. Un téléphone n’héberge que les appels lancés par son propriétaire.</string>
     <string name="groupsb_flags_on_you">Signalements vous concernant</string>
     <plurals name="groupsb_flags_left_note">
         <item quantity="one">Encore %1$d signalement de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier.</item>
@@ -276,20 +244,6 @@
     <string name="groupsb_sends_request">Envoie une demande de discussion via l’hôte du groupe</string>
     <string name="groupsb_make_admin">Nommer admin</string>
     <string name="groupsb_remove_admin">Retirer le rôle d’admin</string>
-    <string name="groupsb_make_device_host">Faire de l’appareil %1$s un hôte</string>
-    <string name="groupsb_make_host">Nommer hôte</string>
-    <string name="groupsb_asks_host">Demande à %1$s d’héberger. Il faut son accord.</string>
-    <string name="groupsb_stop_device_host">Arrêter l’hébergement sur l’appareil %1$s</string>
-    <string name="groupsb_remove_as_host">Retirer comme hôte</string>
-    <string name="groupsb_cancel_callhost_request">Annuler la demande d’hôte d’appel</string>
-    <string name="groupsb_waiting_device">En attente de l’acceptation de l’appareil de %1$s</string>
-    <string name="groupsb_remove_as_callhost">Retirer comme hôte d’appel</string>
-    <string name="groupsb_make_callhost">Nommer hôte d’appel</string>
-    <string name="groupsb_asks_callhost">Demande à %1$s d’héberger les appels de groupe. Il faut son accord.</string>
-    <string name="groupsb_stop_hosting_device">Arrêter d’héberger sur cet appareil</string>
-    <string name="groupsb_host_device">Héberger sur cet appareil</string>
-    <string name="groupsb_host_device_sub">Un admin doit aussi le désigner. Un ordinateur qui reste allumé est un meilleur hôte.</string>
-    <string name="groupsb_stop_calls_device">Arrêter d’héberger les appels sur cet appareil</string>
     <string name="groupsb_flag_removal">Signaler pour retrait</string>
     <plurals name="groupsb_flag_removal_sub">
         <item quantity="one">%1$d signalement retire %2$s du groupe</item>
@@ -307,7 +261,7 @@
     <string name="groupsb_send_request">Envoyer la demande</string>
     <string name="groupsb_new_group">Nouveau groupe</string>
     <string name="groupsb_group_name">Nom du groupe</string>
-    <string name="groupsb_new_group_host_note">Ce téléphone héberge le groupe au début : il le conserve et transmet les messages. Un ordinateur qui reste allumé est un meilleur hôte — désignez-en un depuis Infos du groupe une fois qu’il a rejoint.</string>
+    <string name="groupsb_new_group_host_note">Ce téléphone héberge le groupe au départ : il garde le groupe et transmet les messages. Un ordinateur qui reste allumé est un meilleur hôte. Configurez-en un dans Autorisations d’hébergement, dans Infos du groupe, une fois qu’il a rejoint le groupe.</string>
     <string name="groupsb_new_group_own">Vous serez propriétaire du groupe. Invitez des personnes depuis Infos du groupe.</string>
     <string name="groupsb_making">Création…</string>
     <string name="groupsb_create_group">Créer le groupe</string>
@@ -562,8 +516,8 @@
     <string name="onboarding_done_add_contact">Ajouter mon premier contact</string>
     <string name="onboarding_tip_devices_title">Deux appareils valent mieux qu’un</string>
     <string name="onboarding_tip_devices_body">Associez un autre appareil quand vous pouvez : si vous en perdez un, vous gardez l’accès à votre compte.</string>
-    <string name="onboarding_tip_groups_title">Les groupes sont hébergés sur un ordinateur</string>
-    <string name="onboarding_tip_groups_body">Pour créer un groupe, installez Tinline sur un ordinateur qui peut rester allumé.</string>
+    <string name="onboarding_tip_groups_title">Un ordinateur fait un bon hôte</string>
+    <string name="onboarding_tip_groups_body">Vous pouvez créer un groupe sur ce téléphone. Un ordinateur qui reste allumé le garde joignable quand votre téléphone est en veille.</string>
     <string name="onboarding_name_title">Comment voulez-vous qu’on vous appelle ?</string>
     <string name="onboarding_name_lead">Seules les personnes que vous ajoutez le verront.</string>
     <string name="onboarding_name_hint">Vous pouvez le changer à tout moment dans Paramètres.</string>
@@ -601,6 +555,7 @@
     <string name="onboarding_device_hint">Vous pourrez le renommer plus tard.</string>
     <string name="onboarding_restored_title_adding">%1$s est maintenant sur ce téléphone</string>
     <string name="onboarding_restored_lead_adding">Seul le compte sélectionné est en ligne à la fois : %1$s est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres.</string>
+    <string name="onboarding_restored_lead_adding_push">%1$s est maintenant ouvert sur ce téléphone. Votre autre compte sonne quand même ici et vous signale les nouveaux messages. Vous pouvez changer dans Paramètres.</string>
     <string name="onboarding_restored_lead">Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide.</string>
     <string name="onboarding_open_tinline">Ouvrir Tinline</string>
     <string name="onboarding_linked_title">Associé à %1$s</string>
@@ -609,7 +564,7 @@
     <string name="onboarding_sync_calls">Historique des appels</string>
     <string name="onboarding_sync_waiting">En attente</string>
     <string name="onboarding_sync_slow">Rien pour l’instant. L’autre appareil est peut-être hors ligne : il reprendra là où il s’était arrêté la prochaine fois que les deux seront en ligne.</string>
-    <string name="onboarding_sync_keep_online">Gardez les deux appareils en ligne. La synchronisation continue en arrière-plan.</string>
+    <string name="onboarding_sync_keep_online">Gardez les deux appareils ouverts et en ligne jusqu’à la fin.</string>
     <string name="onboarding_savefail_title">Impossible d’enregistrer votre compte</string>
     <string name="onboarding_savefail_lead">Tinline n’a pas pu stocker la clé qui ouvre votre compte sur ce téléphone, votre compte n’est donc pas encore enregistré.</string>
     <string name="onboarding_savefail_trying">Nouvel essai…</string>
@@ -658,6 +613,7 @@
     <string name="settings_see_details">Voir les détails</string>
     <string name="settings_account_selected">Sélectionné · en ligne</string>
     <string name="settings_account_paused">En pause · touchez pour changer</string>
+    <string name="settings_account_rings">Sonne ici · touchez pour changer</string>
     <string name="settings_add_account">Ajouter un autre compte</string>
     <string name="settings_accounts_note">Seul le compte sélectionné est en ligne sur ce téléphone. Changer met l’autre en pause : il ne reçoit aucun appel jusqu’à ce que vous le sélectionniez à nouveau.</string>
     <string name="settings_appearance">Apparence</string>
@@ -701,6 +657,7 @@
     <string name="notif_perm_battery">Utilisation de la batterie</string>
     <string name="notif_perm_unrestricted">Non restreinte</string>
     <string name="notif_perm_restricted">Restreinte</string>
+    <string name="notif_perm_optimized">Optimisée</string>
     <string name="notif_fix">Régler</string>
     <string name="notif_ring_lock">Sonner sur l’écran verrouillé</string>
     <string name="notif_system_note">Ces autorisations sont gérées par votre système, pas par Tinline. Tinline ne les demande que lorsqu’il en a besoin.</string>
@@ -780,6 +737,7 @@
     <string name="settings_calls_allowed_note">Une personne autorisée peut vous appeler ; une personne en messages uniquement peut toujours écrire. Les personnes bloquées ne peuvent faire ni l’un ni l’autre.</string>
     <string name="settings_battery_title">Arrière-plan et batterie</string>
     <string name="settings_battery_keep">Garder ma ligne ouverte</string>
+    <string name="settings_battery_keep_push">Comment Tinline me joint</string>
     <string name="settings_battery_hint">Tinline reste connecté en arrière-plan pour que les appels sonnent comme sur un téléphone normal. Cela consomme un peu de batterie. La liste ci-dessous indique ce dont Android a besoin pour le permettre.</string>
     <string name="settings_battery_hint_push">Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille : il n’a donc pas besoin d’exception pour la batterie. La liste ci-dessous indique ce dont Android a besoin pour sonner.</string>
     <string name="settings_stay_connected">Rester connecté en permanence</string>
@@ -1166,7 +1124,7 @@
     <string name="card_nothing_to_share">Aucune app pour partager</string>
     <string name="card_qr_desc">QR code de votre carte de contact</string>
     <string name="card_preparing">Préparation de votre code…</string>
-    <string name="card_works_once">Fonctionne une fois. Créer un nouveau code annule celui-ci.</string>
+    <string name="card_works_once">Valable 7 jours, pour toute personne à qui vous le donnez. Chacune vous demande d’abord. Créer un nouveau code annule celui-ci.</string>
     <string name="card_new_code">Nouveau code</string>
     <string name="card_none_found">Aucune carte de contact Tinline dans ce message</string>
     <string name="card_chat_with">Discuter avec %1$s ?</string>
@@ -1214,15 +1172,6 @@
     <string name="groupsc_made_admin">Nommé admin.</string>
     <string name="groupsc_no_longer_admin">N’est plus admin.</string>
     <string name="groupsc_left_group">Vous avez quitté le groupe. Ses messages restent ici.</string>
-    <string name="groupsc_appointed">Désigné. L’appareil héberge dès qu’il accepte.</string>
-    <string name="groupsc_host_revoked">Cet appareil n’héberge plus le groupe.</string>
-    <string name="groupsc_host_agreed">Ce téléphone a accepté d’héberger. Il héberge dès qu’un admin l’a désigné.</string>
-    <string name="groupsc_host_stopped">Ce téléphone n’héberge plus le groupe.</string>
-    <string name="groupsc_call_host_asked">Demande envoyée. L’appareil héberge les appels dès qu’il accepte.</string>
-    <string name="groupsc_call_host_revoked">Cet appareil n’héberge plus les appels du groupe.</string>
-    <string name="groupsc_call_host_agreed">Cet appareil héberge maintenant les appels du groupe.</string>
-    <string name="groupsc_call_host_declined">Cet appareil n’hébergera pas les appels du groupe.</string>
-    <string name="groupsc_calls_here">Ce téléphone héberge désormais les appels qu’il lance dans ce groupe.</string>
     <string name="groupsc_admins_only_on">Seuls les admins publient désormais. Tout le monde peut toujours lire.</string>
     <string name="groupsc_admins_only_off">Tout le monde peut à nouveau publier.</string>
     <string name="groupsc_req_declined">Refusé. %1$s verra « refusé ».</string>
@@ -1321,9 +1270,9 @@
     <string name="addcontact_why_known">%1$s est déjà dans vos contacts.</string>
     <string name="addcontact_why_added">Votre ligne avec %1$s est ouverte. Dites bonjour.</string>
     <string name="addcontact_why_requested">Demande envoyée. Votre ligne s’ouvre quand %1$s accepte.</string>
-    <string name="addcontact_why_slow">Nouvel essai en cours. Le Tinline de %1$s doit être ouvert et en ligne pour cela.</string>
+    <string name="addcontact_why_slow">Nouvel essai en cours. Si le téléphone de %1$s est en veille, Tinline le réveille.</string>
     <string name="addcontact_why_reaching">Connexion au Tinline de %1$s…</string>
-    <string name="addcontact_why_timeout">Impossible de joindre le Tinline de %1$s. Il doit être ouvert et en ligne, alors réessayez quand %1$s sera disponible.</string>
+    <string name="addcontact_why_timeout">Impossible de joindre le Tinline de %1$s. Réessayez dans un moment, ou quand %1$s sera disponible.</string>
     <string name="addcontact_why_refused">Le code de %1$s n’est plus valable. Un nouveau a peut-être été créé : demandez à %1$s son code le plus récent.</string>
     <string name="addcontact_why_blocked_them">Vous ne pouvez pas ajouter %1$s pour le moment. Cette personne a choisi de ne pas être en contact ici.</string>
     <string name="addcontact_why_offline">Vous êtes hors ligne. Une fois connecté, réessayez.</string>
@@ -1563,7 +1512,7 @@
     <string name="home_first_title">Ajoutez votre premier contact</string>
     <string name="home_first_lead">Montrez votre code à un ami, ou copiez-le et envoyez-le. Ou scannez le sien.</string>
     <string name="home_first_scan">Scanner son code</string>
-    <string name="home_first_paste">Coller sa carte</string>
+    <string name="home_first_paste">Coller son code</string>
     <string name="home_first_waiting">En attente du scan — gardez ceci ouvert.</string>
     <string name="chats_filter_all">Toutes</string>
     <string name="chats_filter_unread">Non lues</string>
@@ -1719,6 +1668,7 @@
     <string name="onboarding_linked_title_unnamed">Associé à votre autre appareil</string>
     <string name="onboarding_restored_title_adding_unnamed">Votre compte est maintenant sur ce téléphone</string>
     <string name="onboarding_restored_lead_adding_unnamed">Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres.</string>
+    <string name="onboarding_restored_lead_adding_push_unnamed">Ce compte est maintenant ouvert sur ce téléphone. Votre autre compte sonne quand même ici et vous signale les nouveaux messages. Vous pouvez changer dans Paramètres.</string>
     <string name="devices_syncing_unnamed">Synchronisation avec l’appareil…</string>
     <string name="devices_confirm_unlink_title_unnamed">Dissocier cet appareil ?</string>
     <string name="devices_unlinked_msg_unnamed">Appareil dissocié</string>
@@ -1760,7 +1710,6 @@
     <string name="common_list_separator">, </string>
     <string name="groupsb_member_desc">%1$s. Ouvrir les actions</string>
     <string name="groupsb_role_host_lc">hôte</string>
-    <string name="groupsb_role_callhost_lc">hôte d’appel</string>
     <string name="avail_note_unnamed">Pendant votre absence, les personnes qui appellent voient qu’elles n’ont pas pu vous joindre. Rien n’est mis en attente et personne n’est informé de la raison.</string>
     <string name="onboarding_linked_lead_unnamed">Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux.</string>
     <string name="gcall_is_calling_group_unnamed">Quelqu’un appelle le groupe</string>
