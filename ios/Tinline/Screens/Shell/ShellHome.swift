@@ -239,7 +239,9 @@ struct ShellRingHeadRow: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: .infinity)
+                // Bounded, not .infinity: in the app bar a flexible height makes the bar take half the screen, and the faded-out
+                // last ring (kept for the crossfade) would keep it that tall after the call.
+                .frame(minHeight: 44)
             }
             .buttonStyle(ShellPressStyle()).accessibilityLabel(r.waiting ? tr("shell_ring_a11y_waiting", r.name) : tr("shell_ring_a11y", r.sub, r.name))
             .accessibilityHint(tr("shell_ring_a11y_hint", r.name))
