@@ -10,6 +10,7 @@ mod accounts;
 mod blocking_acceptance;
 mod call_tokens_acceptance;
 mod calls;
+mod chat_longrun;
 mod chat_shards;
 mod contact_requests;
 mod device_list_characterization;
