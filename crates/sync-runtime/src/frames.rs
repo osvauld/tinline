@@ -4,7 +4,7 @@ use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::Error;
-use node_runtime::frames::{FrameBuf, send_frame};
+use node_runtime::frames::{FIRST_FRAME, FrameBuf, send_frame};
 
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 
@@ -20,6 +20,12 @@ impl FrameReader {
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
         self.0.recv(MAX_FRAME, "").await
+    }
+
+    /// The session's first frame (`Auth`), before the peer is authenticated: capped at
+    /// `FIRST_FRAME` rather than `MAX_FRAME`.
+    pub async fn recv_first<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
+        self.0.recv(FIRST_FRAME, "").await
     }
 }
 

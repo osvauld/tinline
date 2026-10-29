@@ -867,4 +867,4 @@ mod live_tests;
 #[cfg(test)]
 mod ring_tests;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

@@ -158,7 +158,7 @@ impl SyncRt {
         if dialer {
             writer.send(&my_auth).await?;
         }
-        let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+        let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
             .await
             .map_err(|_| Error::Timeout)??
             .ok_or_else(|| Error::eof("peer closed before auth"))?;

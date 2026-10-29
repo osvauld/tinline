@@ -154,7 +154,7 @@ impl NodeCtx {
         // One deadline for the whole way to the hello.
         let (conn, remote, mut ctrl, first) = tokio::time::timeout(HELLO_TIMEOUT.saturating_sub(started.elapsed()), async {
             let remote = *conn.remote_id().as_bytes();
-            if reserved && !self.is_contact_device(&remote) {
+            if reserved && !self.reserved_slot_for(&remote) {
                 // A stranger in a contact's slot: it may stay only if the general pool has room.
                 match self.pending.clone().try_acquire_owned() {
                     Ok(p) => permit = p,
@@ -293,6 +293,15 @@ impl NodeCtx {
         self.shared.lock().state.contacts.iter().any(|c| c.has_device(device))
     }
 
+    /// Whether `device` may hold one of the `RESERVED_HELLOS` slots: a device of a contact we do
+    /// not block. A blocked contact stays a contact (U19), but its devices are refused like a
+    /// stranger's once the general pool is full; it has nothing to say that we would take.
+    pub fn reserved_slot_for(&self, device: &[u8; 32]) -> bool {
+        let s = self.shared.lock();
+        let st = &s.state;
+        st.contacts.iter().any(|c| c.has_device(device) && !st.blocked.contains(&c.did))
+    }
+
     pub fn live_calls_with(&self, did: &str) -> Vec<Arc<Call>> {
         let live = self.live.lock();
         live.call.iter().chain(live.waiting.iter()).filter(|c| c.info.peer_did == did).cloned().collect()
@@ -312,3 +321,6 @@ impl NodeCtx {
         }
     }
 }
+
+#[cfg(test)]
+mod slot_tests;

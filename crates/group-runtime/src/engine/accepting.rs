@@ -10,6 +10,14 @@ impl GroupRt {
             if core.closed() {
                 break;
             }
+            // Bounded like the private endpoint: a flood of strangers is refused at accept
+            // instead of costing a task and a hello's buffer each. The slot is held until the
+            // peer has shown who it is (`group_host_session`, `group_blob_incoming`) or the
+            // connection is handed to the group-call service, which checks its own first frame.
+            let Ok(permit) = self.hello_slots.clone().try_acquire_owned() else {
+                incoming.refuse();
+                continue;
+            };
             let (this, core) = (self.clone(), core.clone());
             tokio::spawn(async move {
                 let Ok(mut accepting) = incoming.accept() else {
@@ -21,6 +29,7 @@ impl GroupRt {
                 };
                 // Group calls (G6) run on the group endpoint (U2/U7): `gcall_core::net`.
                 if alpn.as_slice() == proto::gcall::GCALL_ALPN {
+                    drop(permit);
                     if let Err(e) = this.gcall.incoming(accepting).await.map_err(super::super::calls::from_gcall) {
                         tracing::debug!("incoming gcall: {e}");
                     }
@@ -32,22 +41,25 @@ impl GroupRt {
                 let Ok(conn) = conn else { return };
                 // Image blobs of posts (public group §5): gated in `images.rs`.
                 if alpn.as_slice() == iroh_blobs::ALPN {
-                    if let Err(e) = this.group_blob_incoming(core, conn).await {
+                    if let Err(e) = this.group_blob_incoming(core, conn, permit).await {
                         tracing::debug!("group blob incoming: {e}");
                     }
                     return;
                 }
-                if let Err(e) = this.group_host_session(core, conn).await {
+                if let Err(e) = this.group_host_session(core, conn, permit).await {
                     tracing::debug!("group incoming: {e}");
                 }
             });
         }
     }
 
+    /// `permit`: the accept slot, released once the hello has been judged (or the session
+    /// turned out to be a fetch or a move, which carry no proof and end at once).
     pub(super) async fn group_host_session(
         self: Arc<Self>,
         core: Arc<GroupCore>,
         conn: Connection,
+        permit: tokio::sync::OwnedSemaphorePermit,
     ) -> Result<(), Error> {
         let remote = *conn.remote_id().as_bytes();
         let (send, recv) = tokio::time::timeout(HELLO_TIMEOUT, conn.accept_bi())
@@ -56,7 +68,7 @@ impl GroupRt {
             .map_err(Error::net)?;
         let mut writer = Writer(send);
         let mut reader = Reader::new(recv);
-        let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv())
+        let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv_hello())
             .await
             .map_err(|_| Error::Timeout)??;
         let (auth, group, vv, days, invite, hosts, relay, show) = match hello {
@@ -93,6 +105,7 @@ impl GroupRt {
         let Some(auth) = verify_endpoint(&auth, &remote) else {
             return Err(Error::Protocol("endpoint proof does not verify".into()));
         };
+        drop(permit);
         enum Verdict {
             Refuse(&'static str),
             Removed(Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>),

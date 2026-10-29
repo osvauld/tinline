@@ -229,7 +229,7 @@ UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `durati
 ~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
 
 ### Wire (`tinline/chat/4`)
-One bidirectional stream, opened by the dialer; frames are u32 BE length + postcard via `cryptography::codec` (cap 16 MiB).
+One bidirectional stream, opened by the dialer; frames are u32 BE length + postcard via `cryptography::codec` (cap 16 MiB; the first frame, before `Auth` is checked, 64 KiB).
 `Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
 id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
 Then `Hello{shards:[(day, vv)]}` (last 7 days + days with unacknowledged ops; also acts as an
