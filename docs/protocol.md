@@ -388,6 +388,16 @@ frame, the peer's `Auth`, is capped at 64 KiB, `node_runtime::frames::FIRST_FRAM
   `network_changed` and endpoint rotation (`sync_kick`) owe every device. Per device exponential
   backoff 20 s..300 s, cleared by a kick. A device with a change dials the others, so devices in
   sync stay unconnected; `last_seen` in the registry therefore means "last synced".
+- **Own devices wake each other (2026-10-29, `docs/push.md` "Own devices").** `OwnWake { token,
+  exp_ms }` (appended `SelfMsg` variant) carries the sender's `msg` wake token for the receiver
+  (`token: None`: it has none, drop the one held). It is sent only when both `Hello`s list the
+  marker `cap/own-wake/v1` (empty version vector, like the group caps), after `Hello` and again
+  when the token changes; an older device never lists the marker and never gets the message (it
+  would end the session). The catalog keeps four marker slots, so `Hello` stays within an older
+  peer's `MAX_OWN_DOCS + 4`. Kept only from a live (not removed, not rotated) device of our
+  registry. A dial of an owed device that fails (generation above what it is known to hold;
+  not a bare start) sends that device one content-free `msg` wake on the contact schedule
+  (`wake::msg_wake_due`); the woken device dials its own devices (`sync_kick`).
 
 What syncs: one Loro doc `account` (peer id = `BLAKE3("tinline-loro-peer-v1" || device || "account")`),
 sealed in `account.redb` under `sync/account`, with maps:

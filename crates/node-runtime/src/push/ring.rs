@@ -106,6 +106,13 @@ impl NodeCtx {
             }
         };
         match &action {
+            WakeAction::DialBack { did } if super::own_key_device(did).is_some() => {
+                // One of our own devices has a change for us (`own.rs`): sync with them. The app
+                // sees an ordinary dial-back, under our own DID.
+                tracing::info!("wake received: outcome DialBack (own device)");
+                self.own_woken();
+                return Ok(WakeAction::DialBack { did: me.id.did().to_string() });
+            }
             WakeAction::DialBack { did } => {
                 tracing::info!("wake received: outcome DialBack");
                 self.wake_dial_back(did);

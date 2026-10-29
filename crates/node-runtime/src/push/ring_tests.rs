@@ -21,10 +21,10 @@ use crate::hooks::NodeHooks;
 use crate::wire::Ctrl;
 use crate::{CallFloor, CallState, Me};
 
-/// The engine side of a test node: `chat_kick` is recorded, and `in_group_call` says what the
-/// second field holds.
+/// The engine side of a test node: `chat_kick` is recorded, `in_group_call` says what the
+/// second field holds, and the third counts `profile_retry_now`.
 #[derive(Default)]
-struct Kicks(Mutex<Vec<String>>, AtomicBool);
+pub(super) struct Kicks(pub(super) Mutex<Vec<String>>, AtomicBool, pub(super) std::sync::atomic::AtomicU32);
 
 impl NodeHooks for Kicks {
     fn group_unpark(self: Arc<Self>) {}
@@ -71,6 +71,9 @@ impl NodeHooks for Kicks {
         Err(Error::NotStarted)
     }
     fn profile_for_new_contact(self: Arc<Self>, _: &str) {}
+    fn profile_retry_now(self: Arc<Self>) {
+        self.2.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 /// `a` holds the token `b` issued, and `b` has an engine that records its dials.

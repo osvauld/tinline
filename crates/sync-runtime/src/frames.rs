@@ -75,4 +75,8 @@ pub enum SelfMsg {
     // Appended; only after cap/group-receipts/v1 (and both content/history markers).
     GroupReceiptGet { request: u64, group: String, after: Option<String> },
     GroupReceiptPage { request: u64, group: String, after: Option<String>, proofs: Vec<(String, Vec<u8>)>, next: Option<String> },
+    // Appended; only after cap/own-wake/v1 in both Hellos (`engine::own_wake`).
+    /// The sender's wake token for the receiver (`docs/push.md` "Own devices"): `None` when it has
+    /// none (no push target), so the receiver drops an old one. Never logged.
+    OwnWake { token: Option<String>, exp_ms: u64 },
 }

@@ -203,6 +203,8 @@ impl SyncRt {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
+        // Reached: its wake schedule starts over.
+        self.ctx.own_reached(&remote);
         self.log(format!(
             "own-device sync with {} ({})",
             proto::device_to_text(&remote),
@@ -268,6 +270,7 @@ impl SyncRt {
             group_receipts::CAPABILITY.into(),
             VersionVector::default().encode(),
         ));
+        docs.push((own_wake::CAPABILITY.into(), VersionVector::default().encode()));
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
@@ -324,6 +327,7 @@ impl SyncRt {
                                 return Err(Error::Protocol("own receipts renegotiation".into()));
                             }
                             peer.receipts.enabled = receipts;
+                            peer.own_wake.enabled = own_wake::supported(&docs);
                             for (name, vv) in docs {
                                 let Some(vv) = Self::peer_vv_of(&vv) else { continue };
                                 if name == DOC_NAME {
@@ -454,6 +458,7 @@ impl SyncRt {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
                         }
+                        SelfMsg::OwnWake { token, exp_ms } => self.own_wake_in(remote, token, exp_ms),
                         message @ (SelfMsg::GroupHistoryGet { .. } | SelfMsg::GroupHistoryPage { .. }
                             | SelfMsg::GroupWant { .. } | SelfMsg::GroupBatch { .. } | SelfMsg::GroupHistoryChanged { .. }) => {
                             group_history::handle(&self, me, &remote, &mut peer, message, writer).await?;
@@ -470,6 +475,9 @@ impl SyncRt {
                     if full {
                         self.push_all_chat(me, &remote, &mut peer, writer).await?;
                         self.chat.chat_resume_all();
+                    }
+                    if peer.hello {
+                        self.push_own_wake(&remote, &mut peer, writer).await?;
                     }
                     peer.history.pump(&self, me, &remote, writer).await?;
                     peer.receipts.pump(&self, me, &remote, writer).await?;
@@ -508,6 +516,9 @@ impl SyncRt {
                                 self.push_chat_doc(me, &name, &mut peer, writer).await?;
                             }
                         }
+                    }
+                    if peer.hello {
+                        self.push_own_wake(&remote, &mut peer, writer).await?;
                     }
                     peer.history.pump(&self, me, &remote, writer).await?;
                     peer.receipts.pump(&self, me, &remote, writer).await?;

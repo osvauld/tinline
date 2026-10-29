@@ -338,13 +338,14 @@ fn wanted(st: &State, peeked: &BTreeSet<String>) -> Vec<(String, Kinds)> {
 /// Takes back and forgets the tokens of every DID we no longer owe one (a block, a contact
 /// deleted by their block notice, a request that was refused or ran out). Whether anything
 /// changed.
-fn forget_gone(st: &mut State, peeked: &BTreeSet<String>) -> bool {
+fn forget_gone(st: &mut State, peeked: &BTreeSet<String>, me: &crate::Me) -> bool {
     let gone: Vec<String> = {
         let Some(w) = &st.wake else { return false };
         let dids: BTreeSet<&String> = w.issued.iter().map(|e| &e.did).chain(w.held.iter().map(|e| &e.did)).collect();
-        dids.into_iter().filter(|d| !token_wanted(st, d, peeked)).cloned().collect()
+        // Own devices are kept or dropped by the registry (`own.rs`), not by contact policy.
+        dids.into_iter().filter(|d| *d != me.id.did() && own::own_key_device(d).is_none() && !token_wanted(st, d, peeked)).cloned().collect()
     };
-    let mut changed = !gone.is_empty();
+    let mut changed = own::forget_gone_own(st, me) | !gone.is_empty();
     for did in &gone {
         if let Some(w) = st.wake.as_mut() {
             w.block(did);
@@ -574,7 +575,8 @@ impl NodeCtx {
         {
             let mut s = self.shared.lock();
             let st = &mut s.state;
-            let dids: Vec<String> = st.wake.iter().flat_map(|w| w.issued.iter().map(|e| e.did.clone())).collect();
+            // Own devices hold ours under our DID and get it again on every own-device session.
+            let dids: Vec<String> = st.wake.iter().flat_map(|w| w.issued.iter().map(|e| e.did.clone())).filter(|d| own::own_key_device(d).is_none()).collect();
             // Same token, new key: every device of every contact needs it again.
             for did in dids {
                 st.wake_outbox.insert(did, BTreeSet::new());
@@ -653,8 +655,9 @@ impl NodeCtx {
             if st.wake.is_none() {
                 return Round::Done;
             }
-            let dirty = forget_gone(st, &peeked) | code::retire_codes(st);
-            let want = wanted(st, &peeked);
+            let dirty = forget_gone(st, &peeked, &me) | code::retire_codes(st);
+            let mut want = wanted(st, &peeked);
+            want.extend(own::own_wanted(st, &me.device));
             let Some(w) = st.wake.as_ref() else { return Round::Done };
             (w.take_revokes(), w.plan_register(&want, now_ms(), random_tag), dirty)
         };
@@ -694,6 +697,7 @@ impl NodeCtx {
         if let Some((req, pending)) = plan {
             match relay.register(req).await {
                 Ok(resp) => {
+                    let mut own_new = false;
                     let handed = {
                         let mut s = self.shared.lock();
                         if s.epoch != me.epoch {
@@ -701,13 +705,22 @@ impl NodeCtx {
                         }
                         let st = &mut s.state;
                         let handed = st.wake.as_mut().map(|w| w.apply_register(pending, resp)).unwrap_or_default();
-                        // A new token: no device holds it yet.
+                        // A new token: no device holds it yet. Own devices get theirs on the
+                        // own-device link, at the next session (`own.rs`).
                         for (did, _) in &handed {
-                            st.wake_outbox.insert(did.clone(), BTreeSet::new());
+                            if own::own_key_device(did).is_some() {
+                                own_new = true;
+                            } else {
+                                st.wake_outbox.insert(did.clone(), BTreeSet::new());
+                            }
                         }
                         handed.len()
                     };
                     self.persist_logged(me.epoch).await;
+                    if own_new {
+                        // A session up now sends it; otherwise the owed sync dials.
+                        self.sync_bump();
+                    }
                     // An answer without our tags would plan the same request forever.
                     if handed == 0 {
                         tracing::info!("wake register failed: the relay answered without our tags");
@@ -870,7 +883,13 @@ impl NodeCtx {
 
 mod call_back;
 mod code;
+mod own;
+#[cfg(any(test, feature = "testkit"))]
+mod record;
 mod ring;
+#[cfg(any(test, feature = "testkit"))]
+pub use record::RecordingRelay;
+pub use own::{OWN_KEY_PREFIX, own_key, own_key_device};
 pub use code::{
     CODE_REGISTER_TIMEOUT, HANDOVER_HOLD_MS, HANDOVER_WAIT, HELLO_HANDOVER_WAIT, PEEK_HOLD, apply_code_token, handover_in, hold_handover,
     with_handover,
@@ -885,6 +904,8 @@ mod dial_tests;
 mod handover_tests;
 #[cfg(test)]
 mod live_tests;
+#[cfg(test)]
+mod own_tests;
 #[cfg(test)]
 mod ring_tests;
 #[cfg(test)]

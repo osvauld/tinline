@@ -25,7 +25,7 @@ fn shared_catalog_is_bounded_meta_first_and_includes_both_domains() {
         vec![group_meta.clone(), group_day.clone()],
     );
     // Test the saturation case separately from two-domain order.
-    assert_eq!(result.len(), MAX_OWN_DOCS - 3);
+    assert_eq!(result.len(), MAX_OWN_DOCS - 4);
     let mixed = catalog(
         vec![dm.clone()],
         vec![group_meta.clone(), group_day.clone()],
@@ -39,7 +39,8 @@ fn capability_plus_catalog_remains_compatible_with_legacy_hello_count_bound() {
         (0..MAX_OWN_DOCS).map(|i| doc(&format!("dm:{i}"))).collect(),
         Vec::new(),
     );
-    assert_eq!(data.len() + 3 + 4, MAX_OWN_DOCS + 4);
+    // Four markers (contents, history, receipts, own wake) and four fixed account docs.
+    assert_eq!(data.len() + 4 + 4, MAX_OWN_DOCS + 4);
 }
 
 #[test]

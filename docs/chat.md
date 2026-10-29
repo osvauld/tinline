@@ -399,7 +399,11 @@ learns how many devices we have.
   the other device's, the contact's). A write on any device marks its shard dirty and is pushed to
   every connected own device at once; an own device that is not connected is owed the change and
   dialled (the link closes again after 60 s idle, decision 2026-10-17; `docs/protocol.md`
-  "Own-device sync"). Older (closed) days travel the same way, only when a vector
+  "Own-device sync"). A sleeping phone (push mode) is not reached by that dial: since 2026-10-29
+  the dialling device wakes it once with the `msg` wake token the phone handed it over the
+  own-device link (`SelfMsg::OwnWake`), and the phone dials back (`docs/push.md` "Own devices").
+  This is what brings a contact's message, read cursor or new picture that reached only the
+  computer to the phone. Older (closed) days travel the same way, only when a vector
   differs; the cap bounds a session's work.
 - A batch relayed by an own device is validated like a vouched history snapshot (`Ctx::history`):
   the QUIC-authenticated own device signed the batch; the doc must be a conversation of ours (a

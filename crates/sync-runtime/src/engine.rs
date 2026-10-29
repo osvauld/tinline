@@ -31,6 +31,7 @@ pub mod devices;
 pub mod group_contents;
 pub mod group_history;
 pub mod group_receipts;
+pub mod own_wake;
 pub mod push;
 pub mod sessions;
 
@@ -67,6 +68,8 @@ pub struct PeerChat {
     pub groups: Option<Vec<Vec<u8>>>,
     /// The invitation rows last sent (G3).
     pub invitations: Option<Vec<Vec<u8>>>,
+    /// Our wake token for the peer: negotiated, and what it was last told (`own_wake.rs`).
+    pub own_wake: own_wake::OwnWake,
 }
 
 impl node_runtime::OwnDocSink for SelfSync {

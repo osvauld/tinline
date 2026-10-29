@@ -72,10 +72,15 @@ impl SyncRt {
                 let r = this.clone().self_dial(device, relay).await;
                 this.selfsync.dialing.lock().remove(&device);
                 if r.is_err() {
-                    let mut b = this.selfsync.backoff.lock();
-                    let n = b.get(&device).map_or(0, |(n, _)| *n) + 1;
-                    let wait = Duration::from_secs((10u64 << n.min(5)).min(300));
-                    b.insert(device, (n, Instant::now() + wait));
+                    {
+                        let mut b = this.selfsync.backoff.lock();
+                        let n = b.get(&device).map_or(0, |(n, _)| *n) + 1;
+                        let wait = Duration::from_secs((10u64 << n.min(5)).min(300));
+                        b.insert(device, (n, Instant::now() + wait));
+                    }
+                    // A sleeping phone is not reached by a dial: wake it (content-free, throttled);
+                    // it dials us back (`docs/push.md` "Own devices").
+                    this.wake_owed_device(device, generation).await;
                 }
             });
         }

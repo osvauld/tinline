@@ -204,6 +204,13 @@ placement = "nixos"
 timeout_secs = 3600
 
 [[suites.core-it.steps]]
+name = "own_wake"
+command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "own_wake::"]
+after = ["build"]
+placement = "nixos"
+timeout_secs = 3600
+
+[[suites.core-it.steps]]
 name = "profile_sync"
 command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "profile_sync::"]
 after = ["build"]
