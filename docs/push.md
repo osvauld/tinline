@@ -409,6 +409,10 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      fast redials at +2, 4, 7, 10, 15, 20, 30 s); `call.rs` `connect_leg` wakes a callee device
      (`call`) after a first dial of 6 s and redials every 1 s for 30 s, state stays `Dialing`.
      Tests: `dial_tests.rs` (W1, W2, W4/4b/4c, W8, W9, 410).
+     W9b (2026-10-29): a chat session reaches one device of a contact (a computer that stays
+     on), and their other devices hear of a message only from it, which cannot wake them. So a new
+     message, or a dial that connects with something pending, also sends a `msg` wake to each
+     device without a session that we hold a token for (`NodeCtx::wake_others`, usual throttle).
    - Slice 5 done (2026-10-24): `NodeCtx::on_wake` and the wake ring (`crates/node-runtime/src/push/ring.rs`;
      tests `ring_tests.rs`), the app API `crates/core/src/node/api_push.rs` (`PushTarget`, `set_push_target`,
      `push_target`, `on_wake -> WakeOutcome { Ignore, EndCall, DialedBack, Ring { did, name } }` (+ `CodeWake`, 2026-10-26),
@@ -453,6 +457,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W7 | `allow_calls(A, false)` | A's `call` wakes refused; `msg` wakes still work |
 | W8 | A sends 10 messages in 5 s | At most 2 `msg` wakes per minute per device |
 | W9 | B has two devices, both asleep | Both woken; both sync |
+| W9b | B's laptop online, B's phone asleep; A sends | Laptop gets it over the session; phone woken once; phone notifies |
 | W10 | B's FCM/APNs token changes | Contacts receive new tokens; old ones stop working |
 | W11 | A offline before B wakes | B's dial-back fails quietly; message arrives at the next overlap |
 | W12 | Inspect relay and push payload | No DID, name, text or call detail anywhere; two pushes from the same contact are not linkable |
