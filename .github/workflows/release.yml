@@ -149,7 +149,7 @@ jobs:
         run: |
           ndk=$(sed -n 's/^ *ndkVersion = "\(.*\)"/\1/p' android/app/build.gradle.kts)
           test -n "$ndk" || { echo 'ndkVersion not found in android/app/build.gradle.kts'; exit 1; }
-          echo "key=ndk$ndk-x86_64,arm64-v8a-${{ hashFiles('scripts/build_libaom.py') }}" >> "$GITHUB_OUTPUT"
+          echo "key=ndk$ndk-x86_64+arm64-v8a-${{ hashFiles('scripts/build_libaom.py') }}" >> "$GITHUB_OUTPUT"
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: release-android
