@@ -133,3 +133,20 @@ fn contact_cache_preserves_unknown_profile_data_without_a_second_signature_layer
         doc.fields().unwrap()
     );
 }
+#[test]
+fn recovery_keeps_the_hub_tags_of_my_and_my_contacts_cached_pictures() {
+    // Regression (2026-10-29): markers and hub tags hash the owner under different domains, so
+    // recovery matched nothing and the GC took every cached picture on each start.
+    let (me, _) = identity::generate();
+    let (contact, _) = identity::generate();
+    let (stranger, _) = identity::generate();
+    let hash = "a".repeat(64);
+    let markers = [&me, &contact, &stranger].map(|id| picture_marker(id.did(), &hash));
+    let tags = marker_tags(markers, [me.did().to_string(), contact.did().to_string()]);
+    let parsed: iroh_blobs::Hash = hash.parse().unwrap();
+    let want = [me.did(), contact.did()]
+        .map(|did| transfer::BlobHub::owned_tag(did, &parsed))
+        .into_iter()
+        .collect::<std::collections::HashSet<_>>();
+    assert_eq!(tags, want);
+}

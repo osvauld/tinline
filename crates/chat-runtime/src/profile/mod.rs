@@ -36,6 +36,26 @@ pub fn picture_marker(did: &str, hash: &str) -> String {
         hex::encode(cryptography::hash::content(cryptography::domains::PICTURE_MARKER, did.as_bytes()))
     )
 }
+/// The hub tag names that protect the pictures [markers] keep, for the hub's crash recovery. A
+/// marker names its owner by a PICTURE_MARKER hash, the hub's tag by a PROTECTED_BLOB hash, so
+/// this maps through the [owners] we know; a marker of anyone else protects nothing.
+fn marker_tags(
+    markers: impl IntoIterator<Item = String>,
+    owners: impl IntoIterator<Item = String>,
+) -> std::collections::HashSet<String> {
+    let owners = owners
+        .into_iter()
+        .map(|did| (picture_marker(&did, ""), did))
+        .collect::<std::collections::HashMap<_, _>>();
+    markers
+        .into_iter()
+        .filter_map(|key| {
+            let (owner, hash) = key.rsplit_once('/')?;
+            let did = owners.get(&format!("{owner}/"))?;
+            Some(transfer::BlobHub::owned_tag(did, &hash.parse().ok()?))
+        })
+        .collect()
+}
 fn project_availability(
     state: &mut node_runtime::store::State,
     fields: &std::collections::BTreeMap<String, Value>,
@@ -99,11 +119,10 @@ impl ChatRt {
             return Err(Error::Locked);
         }
         let db = sealed(&s)?;
-        Ok(db
-            .list_prefixed("profile/pictures/")?
-            .into_iter()
-            .map(|key| key.replacen("profile/pictures/", "profile/", 1))
-            .collect())
+        let me = s.me.as_ref().ok_or(Error::Locked)?;
+        let owners = std::iter::once(me.id.did().to_string())
+            .chain(s.state.contacts.iter().map(|c| c.did.clone()));
+        Ok(marker_tags(db.list_prefixed("profile/pictures/")?, owners))
     }
 
     pub fn profile_open(self: &Arc<Self>) -> Result<(), Error> {
