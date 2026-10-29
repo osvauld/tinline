@@ -2,7 +2,7 @@
 //! days (`CHAT_LONGRUN_DAYS`, default 30) of traffic both ways between A and B, with A's second
 //! device A2 along. Each side has days off (a weekly day, and a ten-day gap for B and for A2) and
 //! keeps writing while away; messages of closed days are edited and deleted; one day crosses UTC
-//! midnight, one day B's clock is three hours wrong; both mark read now and then; every device
+//! midnight, on the last day B's clock is three hours ahead; both mark read now and then; every device
 //! compacts every day. After every reconnect, every online device must agree. At the end A
 //! restarts (closed days come back from their blobs), a fresh device A3 links and must receive
 //! the whole conversation. `LONGRUN ...` lines carry the measurements (run with `--nocapture`).
@@ -211,9 +211,26 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
             let m = send(&a, &b.did, &format!("a d{d} #{k}"), base, plus);
             ledger.push(Sent { id: m.id, dev: Dev::A, day: d, edited: false, deleted: false });
         }
+        // On the last day B's clock is three hours ahead, for the whole day: its pushes are live
+        // (the day is today) and carry that error, and so does its judgement of A's pushes; the
+        // receiver's live window is 24 h. Earlier days travel as catch-up `Sync` whatever the
+        // clock, so a skew there would prove nothing. (`send` resets the clock, so B's writes on
+        // this day keep the skew by hand; `at` stays under 24 h ahead of the real clock.)
+        let skew = if d == n - 1 { 3 * HOUR } else { 0 };
+        if skew != 0 {
+            b.node.chat_clock_skew_for_test(base + skew);
+        }
         for k in 0..nb {
-            let plus = 8 * HOUR + rng.below(14 * HOUR);
-            let m = send(&b, &a.did, &format!("b d{d} #{k}"), base, plus);
+            let m = if skew != 0 {
+                let plus = 8 * HOUR + rng.below(12 * HOUR);
+                b.node.chat_clock_skew_for_test(base + skew + plus);
+                let m = b.node.send_text(a.did.clone(), format!("b d{d} #{k} (+3h clock)"), None).unwrap();
+                b.node.chat_clock_skew_for_test(base + skew);
+                m
+            } else {
+                let plus = 8 * HOUR + rng.below(14 * HOUR);
+                send(&b, &a.did, &format!("b d{d} #{k}"), base, plus)
+            };
             ledger.push(Sent { id: m.id, dev: Dev::B, day: d, edited: false, deleted: false });
         }
         if d % 6 == 2 {
@@ -226,13 +243,6 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
             let m = send(&a, &b.did, &format!("a d{d} 00:00:30 next day"), base, DAY + 30_000);
             ledger.push(Sent { id: m.id, dev: Dev::A, day: d + 1, edited: false, deleted: false });
         }
-        if d == n / 2 {
-            b.node.chat_clock_skew_for_test(base + 3 * HOUR);
-            let m = b.node.send_text(a.did.clone(), format!("b d{d} skewed +3h"), None).unwrap();
-            b.node.chat_clock_offset_for_test(base);
-            ledger.push(Sent { id: m.id, dev: Dev::B, day: d, edited: false, deleted: false });
-        }
-
         // Edits and deletes of messages in closed days (yesterday's compaction closed days up to
         // d-9): A edits one of day d-9 and deletes one of day d-12; B edits one of its own of d-10.
         if d >= 12 {
@@ -278,6 +288,9 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
                     closed_a = closed;
                 }
             }
+        }
+        if skew != 0 {
+            b.node.chat_clock_offset_for_test(base);
         }
         if d % 10 == 9 || d == n - 1 {
             let (redb, bf, bb) = sizes(&a);
@@ -327,6 +340,12 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
     let (da, d3) = (days_held(&a, &b.did), days_held(&a3, &b.did));
     println!("LONGRUN a3: whole conversation ({} days) after {} ms", d3, ms(t.elapsed()));
     assert_eq!(d3, da, "A3 holds every day A holds");
+    // A3 marks every day holding our not-yet-acknowledged messages as owed to B (P10b) until the
+    // acks reach it (relayed from A, or from B's own hello); compaction skips owed days, so wait
+    // until A3 shows two ticks on everything before comparing what it closes.
+    let t = Instant::now();
+    eventually(300, "A3 shows every message of ours delivered", || mine_delivered(&a3, &b.did));
+    println!("LONGRUN a3: two ticks on every message after {} ms", ms(t.elapsed()));
     let closed_3 = a3.node.compact_now_for_test().unwrap();
     assert_eq!(closed_3, closed_a, "A3 closes the same days");
     assert!(!a3.refused_chat(), "A3 refused: {:?}", a3.refusals());
