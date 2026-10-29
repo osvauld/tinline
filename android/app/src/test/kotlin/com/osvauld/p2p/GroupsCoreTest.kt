@@ -70,9 +70,13 @@ class GroupsCoreTest {
         override fun flag(id: String, did: String) = throw uniffi.p2pcore.Exception.Rejected("they refused: only admins can do that")
         override fun setAdmin(id: String, did: String, admin: Boolean) {}
         override fun leave(id: String) {}
-        override fun appointHost(id: String, did: String, deviceId: String) {}
-        override fun revokeHost(id: String, did: String, deviceId: String) {}
-        override fun acceptHost(id: String, accept: Boolean) {}
+        val hostingWrites = mutableListOf<String>()
+        override fun appointHost(id: String, did: String, deviceId: String) { hostingWrites += "grant messages" }
+        override fun revokeHost(id: String, did: String, deviceId: String) { hostingWrites += "revoke messages" }
+        override fun acceptHost(id: String, accept: Boolean) { hostingWrites += "accept messages $accept" }
+        override fun appointCallHost(id: String, did: String, deviceId: String) { hostingWrites += "grant calls" }
+        override fun revokeCallHost(id: String, did: String, deviceId: String) { hostingWrites += "revoke calls" }
+        override fun acceptCallHost(id: String, accept: Boolean) { hostingWrites += "accept calls $accept" }
         override fun deviceId() = "aa".repeat(32)
         val reqs = mutableListOf<GroupChatRequest>()
         val blocked = mutableListOf<String>()
@@ -110,6 +114,36 @@ class GroupsCoreTest {
 
     private fun inv(id: String, state: GroupInvitationState, outgoing: Boolean = false, invitee: String = me, delivered: Boolean = true) =
         GroupInvitation(id, "g", "Hike", if (outgoing) me else "did:key:sam", if (outgoing) "Me" else "Sam Rao", invitee, "Leo B", outgoing, state, 1uL, 9uL, delivered)
+
+    @Test fun unifiedHostingMemberRequestsCallsWithoutGrantingPermission() {
+        val api = FakeApi()
+        api.details["g"] = detail(CoreRole.MEMBER, listOf(member("did:key:sam", owner = true), member(me)))
+        val ctl = GroupsController(api) { me }
+        ctl.configureHosting("g", me, api.deviceId(), true, false, true).getOrThrow()
+        assertEquals(listOf("accept calls true"), api.hostingWrites)
+    }
+
+    @Test fun unifiedHostingAdminGrantsBothWithoutAcceptingForAnotherDevice() {
+        val api = FakeApi()
+        api.details["g"] = detail(CoreRole.OWNER, listOf(member(me, owner = true), member("did:key:sam")))
+        val ctl = GroupsController(api) { me }
+        ctl.configureHosting("g", "did:key:sam", "remote", false, true, true).getOrThrow()
+        assertEquals(listOf("grant messages", "grant calls"), api.hostingWrites)
+    }
+
+    @Test fun unifiedHostingAcceptsNewCallsAndPreservesExistingMessages() {
+        val api = FakeApi()
+        val h = GroupHost(me, "Me", api.deviceId(), "did:key:sam", true, true)
+        api.details["g"] = detail(CoreRole.MEMBER, listOf(member("did:key:sam", owner = true), member(me)), hosts = listOf(h), amHost = true)
+            .copy(callHostRequests = listOf(h), callHostRequestedHere = true)
+        val ctl = GroupsController(api) { me }
+        ctl.configureHosting("g", me, api.deviceId(), true, true, true).getOrThrow()
+        assertEquals(listOf("accept calls true"), api.hostingWrites)
+        api.hostingWrites.clear()
+        api.details["g"] = api.details.getValue("g").copy(amCallHost = true, callHosts = listOf(h), callHostRequests = emptyList(), callHostRequestedHere = false)
+        ctl.configureHosting("g", me, api.deviceId(), true, true, false).getOrThrow()
+        assertEquals(listOf("accept calls false"), api.hostingWrites)
+    }
 
     @Test fun invitationsCountOnTheBadgeUntilAnswered() {
         val a = summary("a", CoreRole.MEMBER, 2, null)
@@ -196,14 +230,14 @@ class GroupsCoreTest {
         assertEquals(MemberAction.Message, a[0])
         assertEquals(MemberAction.MakeAdmin, a[1])
         assertTrue(MemberAction.Flag in a)
-        assertTrue(a.any { it is MemberAction.Appoint })
+        assertTrue(a.any { it is MemberAction.Hosting })
         assertTrue(GroupText.actions(asOwner, asOwner.members.first { it.isMe }).isEmpty())
 
         val host = GroupHost("did:key:sam", "Sam", "dev-did:key:sam", null, false, true)
         val asAdmin = detail(CoreRole.ADMIN, listOf(owner, mine, priya), hosts = listOf(host))
         assertFalse(MemberAction.MakeAdmin in GroupText.actions(asAdmin, priya))
         assertFalse(MemberAction.Flag in GroupText.actions(asAdmin, owner))
-        assertTrue(MemberAction.Revoke("dev-did:key:sam") in GroupText.actions(asAdmin, owner))
+        assertTrue(MemberAction.Hosting("dev-did:key:sam") in GroupText.actions(asAdmin, owner))
 
         assertEquals(listOf(MemberAction.Message), GroupText.actions(detail(CoreRole.MEMBER, listOf(owner, mine, priya)), priya))
         assertTrue(GroupText.actions(detail(CoreRole.REMOVED, listOf(owner, mine, priya)), priya).isEmpty())

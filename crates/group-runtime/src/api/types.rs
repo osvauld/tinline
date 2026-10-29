@@ -183,6 +183,8 @@ pub struct GroupDetail {
     pub open: bool,
     /// Only the owner and admins post (a channel); hide the composer for others.
     pub admins_only: bool,
+    /// Devices offering to host calls, awaiting an admin permission.
+    pub call_host_offers: Vec<GroupHost>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

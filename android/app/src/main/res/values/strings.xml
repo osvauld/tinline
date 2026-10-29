@@ -3369,4 +3369,38 @@
     <string name="gcall_is_calling_group_unnamed">Someone is calling the group</string>
     <!-- Second line of the group call card, when the person who started the call is not known. -->
     <string name="gcall_started_call_unnamed">Someone started a call</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_permissions">Hosting permissions</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_this_device">Host on this device</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_messages">Messages</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_calls">Calls</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_save">Save hosting permissions</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_saved">Hosting permissions updated. Requests need admin approval and device acceptance.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_active">Hosting</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_waiting_device">Waiting for device acceptance</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_waiting_admin">Waiting for admin approval</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_not_enabled">Not enabled</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_note">Hosts have permissions for messages, calls, or both. An admin grants permission and the device owner accepts it. A host stores messages or forwards call audio, so choose devices you trust.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_consent">Save to accept the selected permissions on this device. Permissions an admin has not granted will be requested. Messages store the group history; calls forward audio and can be heard by the host. Adding a permission requires your consent.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_admin">Choose which permissions to grant this device. The device owner must accept each new permission. Clearing a permission revokes it.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_calls_missing">No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin.</string>
+    <!-- Unified hosting stop confirmation. -->
+    <string name="group_hosting_stop_note">This device stops hosting messages and calls for this group. You remain a member.</string>
+    <!-- Open one device hosting permissions. -->
+    <string name="group_hosting_edit">Permissions</string>
+    <!-- Call action explanation when no device has call permission and consent. -->
+    <string name="group_hosting_calls_title">No host has Calls enabled</string>
 </resources>

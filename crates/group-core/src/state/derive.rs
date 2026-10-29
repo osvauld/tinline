@@ -320,6 +320,14 @@ fn derive_call_hosts(cx: &Ctx, st: &mut GroupState) {
             st.call_host_requests.push(info);
         }
     }
+    for ((did, dev), a) in &caccepts {
+        if matches!(a.rec.body, Body::CallHostAccept { active: true })
+            && st.members.contains_key(did)
+            && !st.call_hosts.iter().any(|h| &h.did == did && &h.dev == dev)
+        {
+            st.call_host_offers.push((did.clone(), *dev));
+        }
+    }
 }
 
 /// The conversation: system lines, and the rotation triggers (counted host revocations and
