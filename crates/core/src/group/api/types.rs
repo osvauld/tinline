@@ -192,6 +192,9 @@ pub struct GroupDetail {
     /// Only the owner and admins post (a channel); hide the composer for others.
     #[uniffi(default = false)]
     pub admins_only: bool,
+    /// Devices offering to host calls, awaiting an admin permission.
+    #[uniffi(default = [])]
+    pub call_host_offers: Vec<GroupHost>,
 }
 
 #[uniffi::remote(Record)]

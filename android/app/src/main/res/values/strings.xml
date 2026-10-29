@@ -49,8 +49,6 @@
     <string name="groups_waiting_host">Waiting for a host</string>
     <!-- Card title in a group chat. {name} is the first name of the admin who asked, {group} the group name. -->
     <string name="groups_host_ask_title">%1$s asked this phone to host %2$s</string>
-    <!-- Explanation under the host request card in a group chat. -->
-    <string name="groups_host_ask_body">A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin.</string>
     <!-- Button on the host request card: this phone agrees to host the group. -->
     <string name="groups_host_here">Host here</string>
     <!-- Snackbar after I decline a request to host a group. -->
@@ -137,8 +135,6 @@
     <string name="groups_chat_call_join">Join group call</string>
     <!-- Accessibility label of the call button when no call runs. -->
     <string name="groups_chat_call_start">Start group call</string>
-    <!-- Snackbar when I tap the dimmed call button of a group without a call host. -->
-    <string name="groups_chat_no_call_host">No call host yet: an admin can appoint one in Group info</string>
     <!-- Accessibility label of the info button in a group chat top bar. -->
     <string name="groups_chat_info">Group info</string>
     <!-- Button above the thread that loads older messages. -->
@@ -271,7 +267,7 @@
     <!-- Row on Group info (admins) that opens the group invite link page. -->
     <string name="groupsb_create_link">Create invite link</string>
     <!-- Second line of the Create invite link row while the group has no host. -->
-    <string name="groupsb_create_link_nohost">Appoint a host first. A link names one host.</string>
+    <string name="groupsb_create_link_nohost">Set up a host first. A link names one host.</string>
     <!-- Second line of the Create invite link row. -->
     <string name="groupsb_create_link_valid">Valid for 7 days</string>
     <!-- Section heading on Group info above the list of members. -->
@@ -311,8 +307,6 @@
     <string name="groupsb_pill_member">Member</string>
     <!-- Pill or icon label for a member who hosts the group (stores it and passes posts on). -->
     <string name="groupsb_host">Host</string>
-    <!-- Pill, icon label and section name for a member or device that carries the group's calls. -->
-    <string name="groupsb_call_host">Call host</string>
     <!-- Row on Group info that opens the leave confirmation, and that sheet's label. -->
     <string name="groupsb_leave_group">Leave group</string>
     <!-- Second line of the disabled Leave group row when I own the group. -->
@@ -371,56 +365,8 @@
     <string name="groupsb_this_device">This device</string>
     <!-- Status line of the Hosts section when no device hosts the group. -->
     <string name="groupsb_hosts_none">This group has no host. Posts wait until a host is appointed.</string>
-    <!-- Status line of the Hosts section when a host is reachable. {count} is the number of hosts online. -->
-    <plurals name="groupsb_hosts_online">
-        <item quantity="one">%1$d host online. Posts go through right away.</item>
-        <item quantity="other">%1$d hosts online. Posts go through right away.</item>
-    </plurals>
-    <!-- Status line of the Hosts section when hosts exist but none is online. -->
-    <string name="groupsb_hosts_offline">No host is online. Your posts are saved and send when one is.</string>
-    <!-- Added after Online or Offline on a host row (joined with a middle dot) when that device also hosts calls. -->
-    <string name="groupsb_also_hosts_calls">also hosts calls</string>
-    <!-- Screen-reader label of the Remove button on a host row. {device} is the device's name. -->
-    <string name="groupsb_remove_host_desc">Remove %1$s as host</string>
-    <!-- Screen-reader label of the Cancel button on a pending host request. {device} is the device's name. -->
-    <string name="groupsb_cancel_host_desc">Cancel host request to %1$s</string>
-    <!-- Second line of a row for a device that has been asked to host and has not yet accepted. -->
-    <string name="groupsb_waiting_accept">Waiting to accept</string>
-    <!-- Second line of a row for a device that offered to host and waits for an admin to appoint it. -->
-    <string name="groupsb_offered_host">Offered to host · needs an admin</string>
-    <!-- Button on a host offer row for an admin to appoint the device as host. -->
-    <string name="groupsb_appoint">Appoint</string>
-    <!-- Explanation under the Hosts section. -->
-    <string name="groupsb_hosts_note">Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.</string>
-    <!-- Extra sentence added after the Hosts explanation for admins (a space is put before it). -->
-    <string name="groupsb_hosts_note_admin">Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it.</string>
-    <!-- Section heading on Group info for the devices that carry the group's calls. -->
-    <string name="groupsb_callhosts_sec">Call hosts</string>
-    <!-- Status line of the Call hosts section when there is none. -->
-    <string name="groupsb_callhosts_none">This group has no call host. Nobody can start a call until an admin appoints one.</string>
-    <!-- Status line of the Call hosts section. {count} is the number of call hosts that are ready. -->
-    <plurals name="groupsb_callhosts_ready">
-        <item quantity="one">%1$d call host ready. Calls start through it.</item>
-        <item quantity="other">%1$d call hosts ready. Calls start through them.</item>
-    </plurals>
-    <!-- Status line of the Call hosts section when none is available. -->
-    <string name="groupsb_callhosts_offline">No call host is available right now. A call can’t start until one is back.</string>
-    <!-- Status line of the Call hosts section when this phone is the only call host. -->
-    <string name="groupsb_callhosts_me">This phone carries the calls you start.</string>
-    <!-- Screen-reader label of the Remove button on a call host row. {device} is the device's name. -->
-    <string name="groupsb_remove_callhost_desc">Remove %1$s as call host</string>
-    <!-- Screen-reader label of the Cancel button on a pending call host request. {device} is the device's name. -->
-    <string name="groupsb_cancel_callhost_desc">Cancel call host request to %1$s</string>
-    <!-- Row on Group info to stop carrying calls on this phone. -->
-    <string name="groupsb_stop_calls_phone">Stop hosting calls on this phone</string>
-    <!-- Row on Group info (admins) to carry calls on this phone. -->
-    <string name="groupsb_host_calls_phone">Host calls on this phone</string>
     <!-- Second line of the Host calls on this phone row. -->
     <string name="groupsb_host_calls_phone_sub">Carries the calls you start here. A computer that stays on can carry everyone’s.</string>
-    <!-- Explanation under the Call hosts section. -->
-    <string name="groupsb_callhosts_note">A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.</string>
-    <!-- Extra sentences added after the Call hosts explanation for admins (a space is put before them). -->
-    <string name="groupsb_callhosts_note_admin">Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts.</string>
     <!-- Section heading on Group info when admins have flagged me for removal. -->
     <string name="groupsb_flags_on_you">Flags on you</string>
     <!-- Explanation under Flags on you. {count} is how many more flags would remove me. -->
@@ -496,34 +442,6 @@
     <string name="groupsb_make_admin">Make admin</string>
     <!-- Menu item that removes the member's admin role. -->
     <string name="groupsb_remove_admin">Remove admin</string>
-    <!-- Menu item for a member with several devices. {device} is a short device id. -->
-    <string name="groupsb_make_device_host">Make device %1$s a host</string>
-    <!-- Menu item that asks the member to host the group. -->
-    <string name="groupsb_make_host">Make host</string>
-    <!-- Second line under Make host. {name} is their first name. -->
-    <string name="groupsb_asks_host">Asks %1$s to host. They have to accept.</string>
-    <!-- Menu item for a member with several devices. {device} is a short device id. -->
-    <string name="groupsb_stop_device_host">Stop device %1$s hosting</string>
-    <!-- Menu item that stops the member's device hosting. -->
-    <string name="groupsb_remove_as_host">Remove as host</string>
-    <!-- Menu item that cancels a pending call host request. For members with several devices a short device id is added after it. -->
-    <string name="groupsb_cancel_callhost_request">Cancel call host request</string>
-    <!-- Second line under Cancel call host request. {name} is their first name. -->
-    <string name="groupsb_waiting_device">Waiting for %1$s’s device to accept</string>
-    <!-- Menu item that stops the member's device hosting calls. A short device id may follow it. -->
-    <string name="groupsb_remove_as_callhost">Remove as call host</string>
-    <!-- Menu item that asks the member's device to carry calls. A short device id may follow it. -->
-    <string name="groupsb_make_callhost">Make call host</string>
-    <!-- Second line under Make call host. {name} is their first name. -->
-    <string name="groupsb_asks_callhost">Asks %1$s to carry group calls. They have to accept.</string>
-    <!-- Menu item in my own sheet to stop hosting the group on this device. -->
-    <string name="groupsb_stop_hosting_device">Stop hosting on this device</string>
-    <!-- Menu item in my own sheet to offer this device as host. -->
-    <string name="groupsb_host_device">Host on this device</string>
-    <!-- Second line under Host on this device. -->
-    <string name="groupsb_host_device_sub">An admin has to appoint it too. A computer that stays on is a better host.</string>
-    <!-- Menu item in my own sheet to stop carrying calls on this device. -->
-    <string name="groupsb_stop_calls_device">Stop hosting calls on this device</string>
     <!-- Menu item that starts flagging a member for removal. -->
     <string name="groupsb_flag_removal">Flag for removal</string>
     <!-- Second line under Flag for removal. {count} is how many flags remove a member, {name} their first name. -->
@@ -554,7 +472,7 @@
     <!-- Label of the group name field. -->
     <string name="groupsb_group_name">Group name</string>
     <!-- Notice on the new group page. -->
-    <string name="groupsb_new_group_host_note">This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined.</string>
+    <string name="groupsb_new_group_host_note">This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host. Set one up under Hosting permissions in Group info once it has joined.</string>
     <!-- Hint on the new group page. -->
     <string name="groupsb_new_group_own">You’ll own the group. Invite people from Group info.</string>
     <!-- Create group button while the group is being made. -->
@@ -1049,9 +967,9 @@
     <!-- Tip text about linking a second device. -->
     <string name="onboarding_tip_devices_body">Link another device when you can, so losing one never locks you out.</string>
     <!-- Tip title on the final onboarding screen. -->
-    <string name="onboarding_tip_groups_title">Groups are hosted on a computer</string>
+    <string name="onboarding_tip_groups_title">A computer makes a good host</string>
     <!-- Tip text about hosting groups on a computer. -->
-    <string name="onboarding_tip_groups_body">To start a group, add Tinline on a computer that can stay on.</string>
+    <string name="onboarding_tip_groups_body">You can start a group on this phone. A computer that stays on keeps it reachable when your phone sleeps.</string>
     <!-- Heading of the nickname step. -->
     <string name="onboarding_name_title">What should people call you?</string>
     <!-- Lead under the nickname heading. -->
@@ -1124,8 +1042,10 @@
     <string name="onboarding_device_hint">You can rename it later.</string>
     <!-- Heading after another account was added. {name} is the account's nickname. -->
     <string name="onboarding_restored_title_adding">Added %1$s to this phone</string>
-    <!-- Lead after another account was added. {name} is the account's nickname. -->
-    <string name="onboarding_restored_lead_adding">Only the account you select is online at a time, so %1$s is online now and your other account is paused. You can switch in Settings.</string>
+    <!-- Lead after another account was added, on a phone that stays connected all the time (Liberum, or Stay connected on). {name} is the account's nickname. -->
+    <string name="onboarding_restored_lead_adding">Only the account you select is online on this phone, so %1$s is online now and your other account is paused. You can switch in Settings.</string>
+    <!-- Lead after another account was added, on a phone with wake-ups (push). {name} is the account's nickname. -->
+    <string name="onboarding_restored_lead_adding_push">%1$s is open on this phone now. Your other account still rings and tells you about new messages here. You can switch in Settings.</string>
     <!-- Lead after restoring an account. -->
     <string name="onboarding_restored_lead">Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list.</string>
     <!-- Button that leaves the restored and linked screens and opens the app. -->
@@ -1143,7 +1063,7 @@
     <!-- Note on the linked screen after 45 seconds without data. -->
     <string name="onboarding_sync_slow">Nothing yet. The other device may be offline: it picks up where it left off the next time both are online.</string>
     <!-- Note on the linked screen while data is arriving. -->
-    <string name="onboarding_sync_keep_online">Keep both devices online. Sync keeps going in the background.</string>
+    <string name="onboarding_sync_keep_online">Keep both devices open and online until this finishes.</string>
     <!-- Heading when the phone could not store the key that opens the account. -->
     <string name="onboarding_savefail_title">Couldn’t save your account</string>
     <!-- Lead under the save-failed heading. -->
@@ -1238,11 +1158,13 @@
     <string name="settings_see_details">See details</string>
     <!-- Small line under the account that is currently selected, in the account list on the Settings landing. -->
     <string name="settings_account_selected">Selected · online</string>
-    <!-- Small line under an account that is not the selected one, in the account list on the Settings landing. Tapping the row switches to it. -->
+    <!-- Small line under an account that is not the selected one and is not woken here (no wake-ups, or its key is not remembered). Tapping the row switches to it. -->
     <string name="settings_account_paused">Paused · tap to switch</string>
+    <!-- Small line under an account that is not the selected one, on a phone with wake-ups: its calls still ring and its messages still notify here. Tapping the row switches to it. -->
+    <string name="settings_account_rings">Rings here · tap to switch</string>
     <!-- Row in the Settings account list, and the title of the sheet that opens from it. -->
     <string name="settings_add_account">Add another account</string>
-    <!-- Explanation under the account list on the Settings landing. -->
+    <!-- Explanation under the account list on the Settings landing, on a phone that stays connected all the time (Liberum, or Stay connected on). With wake-ups the switcher's hint is shown instead. -->
     <string name="settings_accounts_note">Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again.</string>
     <!-- Section heading on Settings for the light/dark choice. -->
     <string name="settings_appearance">Appearance</string>
@@ -1322,10 +1244,12 @@
     <string name="notif_perm_mic_asked">Asked when you call</string>
     <!-- Permission row on the Notifications page for the Android battery setting. -->
     <string name="notif_perm_battery">Battery use</string>
-    <!-- Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name. -->
+    <!-- Status of the battery setting when Tinline is exempt from battery optimisation. Matches the Android setting name. -->
     <string name="notif_perm_unrestricted">Unrestricted</string>
-    <!-- Status of the battery setting when Android may pause Tinline. Matches the Android setting name. -->
+    <!-- Status of the battery setting when the person set Tinline's battery use to Restricted. Matches the Android setting name. -->
     <string name="notif_perm_restricted">Restricted</string>
+    <!-- Status of the battery setting when Android manages Tinline's battery use (the default). Matches the Android setting name. -->
+    <string name="notif_perm_optimized">Optimized</string>
     <!-- Small button on a permission row that opens the system setting to fix it. -->
     <string name="notif_fix">Fix</string>
     <!-- Permission row (Android 14 full-screen notification) on the Notifications page and the battery checklist. -->
@@ -1474,6 +1398,8 @@
     <string name="settings_battery_title">Background &amp; battery</string>
     <!-- Heading on the background and battery page. -->
     <string name="settings_battery_keep">Keep my line open</string>
+    <!-- Heading on the background and battery page when Tinline rests and a wake-up push starts it (Stay connected off). -->
+    <string name="settings_battery_keep_push">How Tinline reaches me</string>
     <!-- Explanation at the top of the background and battery page. -->
     <string name="settings_battery_hint">Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.</string>
     <!-- Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push. -->
@@ -2242,7 +2168,7 @@
     <!-- Shown in the QR box while the code is being made. -->
     <string name="card_preparing">Preparing your code…</string>
     <!-- Hint under your QR code. -->
-    <string name="card_works_once">Works once. Making a new code cancels this one.</string>
+    <string name="card_works_once">Works for 7 days, for anyone you give it to. Each one asks you first. Making a new code cancels this one.</string>
     <!-- Button that replaces your QR code with a new one. -->
     <string name="card_new_code">New code</string>
     <!-- Toast when text shared into the app holds no contact card. -->
@@ -2327,24 +2253,6 @@
     <string name="groupsc_no_longer_admin">No longer an admin.</string>
     <!-- Confirmation after you leave a group. -->
     <string name="groupsc_left_group">You left the group. Its messages stay here.</string>
-    <!-- Confirmation after an admin appoints a member's device as a chat host. -->
-    <string name="groupsc_appointed">Appointed. The device hosts once it agrees.</string>
-    <!-- Confirmation after an admin removes a device as chat host. -->
-    <string name="groupsc_host_revoked">That device no longer hosts the group.</string>
-    <!-- Confirmation after this phone accepts a request to host a group's chat. -->
-    <string name="groupsc_host_agreed">This phone agreed to host. It hosts as soon as an admin has appointed it.</string>
-    <!-- Confirmation after this phone stops hosting a group's chat. -->
-    <string name="groupsc_host_stopped">This phone stopped hosting the group.</string>
-    <!-- Confirmation after an admin asks a device to host the group's calls. -->
-    <string name="groupsc_call_host_asked">Asked. The device carries calls once it accepts.</string>
-    <!-- Confirmation after an admin removes a device as the group's call host. -->
-    <string name="groupsc_call_host_revoked">That device no longer hosts calls for the group.</string>
-    <!-- Confirmation after this device accepts to host the group's calls. -->
-    <string name="groupsc_call_host_agreed">This device now hosts the group’s calls.</string>
-    <!-- Confirmation after this device declines to host the group's calls. -->
-    <string name="groupsc_call_host_declined">This device won’t host the group’s calls.</string>
-    <!-- Confirmation after an admin lets this phone carry group calls. -->
-    <string name="groupsc_calls_here">This phone carries the calls it starts in this group now.</string>
     <!-- Confirmation after an admin switches the group to admins-only posting (a channel). -->
     <string name="groupsc_admins_only_on">Only admins post now. Everyone can still read.</string>
     <!-- Confirmation after an admin lets all members post again. -->
@@ -2522,11 +2430,11 @@
     <!-- Reason line after the request reached them. -->
     <string name="addcontact_why_requested">Request sent. Your line opens when %1$s accepts.</string>
     <!-- Reason line when reaching them takes longer than a few seconds. -->
-    <string name="addcontact_why_slow">Still trying. %1$s’s Tinline needs to be open and online for this.</string>
+    <string name="addcontact_why_slow">Still trying. If %1$s’s phone is asleep, Tinline is waking it.</string>
     <!-- Reason line while the app is dialling them. -->
     <string name="addcontact_why_reaching">Reaching %1$s’s Tinline…</string>
     <!-- Reason line when they could not be reached. -->
-    <string name="addcontact_why_timeout">Couldn’t reach %1$s’s Tinline. It needs to be open and online, so try again when %1$s’s around.</string>
+    <string name="addcontact_why_timeout">Couldn’t reach %1$s’s Tinline. Try again in a little while, or when %1$s’s around.</string>
     <!-- Reason line when their device refused the code. -->
     <string name="addcontact_why_refused">%1$s’s code isn’t valid any more. They may have made a new one, so ask %1$s for their newest code.</string>
     <!-- Reason line when they have blocked you. Kept gentle on purpose. -->
@@ -2996,7 +2904,7 @@
     <!-- Button on the first-run add-contact screen. -->
     <string name="home_first_scan">Scan their code</string>
     <!-- Button on the first-run add-contact screen. -->
-    <string name="home_first_paste">Paste their card</string>
+    <string name="home_first_paste">Paste their code</string>
     <!-- Status on the first-run add-contact screen while my code is shown. -->
     <string name="home_first_waiting">Waiting for them to scan — keep this open.</string>
     <!-- Filter chip on the Chats tab showing every chat. -->
@@ -3275,8 +3183,10 @@
     <string name="onboarding_linked_title_unnamed">Linked to your other device</string>
     <!-- Heading after another account was added, when its nickname is empty. -->
     <string name="onboarding_restored_title_adding_unnamed">Added your account to this phone</string>
-    <!-- Lead after another account was added, when its nickname is empty. -->
-    <string name="onboarding_restored_lead_adding_unnamed">Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings.</string>
+    <!-- Lead after another account was added, when its nickname is empty, on a phone that stays connected all the time. -->
+    <string name="onboarding_restored_lead_adding_unnamed">Only the account you select is online on this phone, so this account is online now and your other account is paused. You can switch in Settings.</string>
+    <!-- Lead after another account was added, when its nickname is empty, on a phone with wake-ups (push). -->
+    <string name="onboarding_restored_lead_adding_push_unnamed">This account is open on this phone now. Your other account still rings and tells you about new messages here. You can switch in Settings.</string>
     <!-- Brief message after tapping Sync now, when the device has no name. -->
     <string name="devices_syncing_unnamed">Syncing with the device…</string>
     <!-- Title of the confirmation dialog for unlinking another device, when it has no name. -->
@@ -3359,8 +3269,6 @@
     <string name="groupsb_member_desc">%1$s. Open actions</string>
     <!-- Spoken in a member row description when they host the group, for example 'Maya, owner, host'. Lowercase, one item of a list. -->
     <string name="groupsb_role_host_lc">host</string>
-    <!-- Spoken in a member row description when they host calls, for example 'Maya, owner, call host'. Lowercase, one item of a list. -->
-    <string name="groupsb_role_callhost_lc">call host</string>
     <!-- Hint at the bottom of the availability sheet when my name is empty. -->
     <string name="avail_note_unnamed">While you’re away, people who call see that they couldn’t reach you. Nothing is queued and nobody is told why.</string>
     <!-- Lead after linking, when the other device has no name. -->
@@ -3369,4 +3277,34 @@
     <string name="gcall_is_calling_group_unnamed">Someone is calling the group</string>
     <!-- Second line of the group call card, when the person who started the call is not known. -->
     <string name="gcall_started_call_unnamed">Someone started a call</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_permissions">Hosting permissions</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_this_device">Host on this device</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_messages">Messages</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_calls">Calls</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_save">Save hosting permissions</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_saved">Hosting permissions updated. Requests need admin approval and device acceptance.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_active">Hosting</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_waiting_device">Waiting for device acceptance</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_waiting_admin">Waiting for admin approval</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_not_enabled">Not enabled</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_note">Hosts have permissions for messages, calls, or both. An admin grants permission and the device owner accepts it. A host stores messages or forwards call audio, so choose devices you trust.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_consent">Save to accept the selected permissions on this device. Permissions an admin has not granted will be requested. Messages store the group history; calls forward audio and can be heard by the host. Adding a permission requires your consent.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_admin">Choose which permissions to grant this device. The device owner must accept each new permission. Clearing a permission revokes it.</string>
+    <!-- Unified group hosting permissions. -->
+    <string name="group_hosting_calls_missing">No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin.</string>
+    <!-- Open one device hosting permissions. -->
+    <string name="group_hosting_edit">Permissions</string>
 </resources>

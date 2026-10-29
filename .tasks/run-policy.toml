@@ -2,6 +2,10 @@
 # Explicit --peer nixos on suite run also supports coordinators without step placement.
 version = 1
 
+# --anywhere jobs stay on Linux: the Mac lacks the Linux libraries and its binaries don't run here.
+[placement]
+os = "linux"
+
 [suites.core-it]
 notes = "Build once, then run every core integration test module on nixos."
 tools = ["cargo"]
@@ -277,3 +281,56 @@ command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--feature
 after = ["build"]
 placement = "nixos"
 timeout_secs = 3600
+
+# iOS on the Mac. Each step is one fixed command, so each keeps its own timing history and
+# estimate; submit these suites (MCP run_suite, or `loadtable suite run ios-sim --who NAME`)
+# instead of a `bash -c "build_core.sh; xcodegen ...; run_sim.sh"` chain. Outputs (ios/build,
+# the generated project) stay in the Mac's working copy between steps.
+[suites.ios-sim]
+notes = "Build the iOS core, generate the Xcode project, then build, install and launch the app on a simulator (screenshot and log in ios/build/sim/)."
+
+[[suites.ios-sim.steps]]
+name = "core"
+command = ["ios/scripts/build_core.sh"]
+placement = "mac"
+timeout_secs = 3600
+
+[[suites.ios-sim.steps]]
+name = "project"
+command = ["xcodegen", "generate", "--spec", "ios/project.yml"]
+after = ["core"]
+placement = "mac"
+timeout_secs = 300
+
+[[suites.ios-sim.steps]]
+name = "sim"
+command = ["ios/scripts/run_sim.sh"]
+after = ["project"]
+placement = "mac"
+timeout_secs = 1800
+isolate = true
+
+[suites.ios-ui]
+notes = "Build the iOS core, generate the Xcode project, then run the XCUITest flows (screenshots in ios/build/ui/shots.zip; the result is the \"UI TEST:\" line, the step always exits 0)."
+
+[[suites.ios-ui.steps]]
+name = "core"
+command = ["ios/scripts/build_core.sh"]
+placement = "mac"
+timeout_secs = 3600
+
+[[suites.ios-ui.steps]]
+name = "project"
+command = ["xcodegen", "generate", "--spec", "ios/project.yml"]
+after = ["core"]
+placement = "mac"
+timeout_secs = 300
+
+[[suites.ios-ui.steps]]
+name = "ui"
+command = ["ios/scripts/run_ui.sh"]
+after = ["project"]
+placement = "mac"
+timeout_secs = 3600
+isolate = true
+long = true

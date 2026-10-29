@@ -69,7 +69,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
         TopBar(stringResource(R.string.settings_battery_title), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(stringResource(R.string.settings_battery_keep), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Text(stringResource(if (alwaysOn) R.string.settings_battery_keep else R.string.settings_battery_keep_push), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                 Hint(stringResource(if (alwaysOn) R.string.settings_battery_hint else R.string.settings_battery_hint_push))
             }
             StayConnectedRow(alwaysOn) { alwaysOn = it }

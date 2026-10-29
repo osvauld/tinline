@@ -87,9 +87,6 @@ text = "QR-Code deiner Kontaktkarte"
 [chat_card_preparing]
 text = "Dein Code wird vorbereitet…"
 
-[chat_card_once]
-text = "Funktioniert einmal. Ein neuer Code ersetzt diesen."
-
 [chat_card_share_subject]
 text = "Kontaktkarte teilen"
 
@@ -2032,9 +2029,6 @@ text = "Neue Passphrase"
 [security_pass]
 text = "Passphrase"
 
-[security_pass_notice]
-text = "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Anrufe auch nach einem Neustart klingeln. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
-
 [security_encrypting]
 text = "Verschlüsseln…"
 
@@ -2268,9 +2262,6 @@ text = "Neues Konto erstellen"
 
 [unlock_link]
 text = "Konto von einem anderen Gerät verknüpfen"
-
-[unlock_one_online]
-text = "Das Konto, das du öffnest, ist online. Deine anderen Konten klingeln und benachrichtigen dich trotzdem, wenn Tinline sie wecken kann; bis dahin klingeln ihre Anrufe auf deinen anderen Geräten."
 
 [shell_account_unread]
 one = "{count} ungelesen"
@@ -2675,9 +2666,6 @@ text = "Optional. Ein Schloss, damit nur du Tinline auf diesem Handy öffnen kan
 [onboarding_pass]
 text = "Passphrase"
 
-[onboarding_pass_notice]
-text = "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Anrufe auch nach einem Neustart klingeln. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
-
 [onboarding_encrypting]
 text = "Verschlüsseln…"
 
@@ -2792,9 +2780,6 @@ text = "Anrufliste"
 [onboarding_sync_slow]
 text = "Noch nichts. Das andere Gerät ist vielleicht offline: Es macht dort weiter, wo es aufgehört hat, sobald beide wieder online sind."
 
-[onboarding_sync_keep]
-text = "Lass beide Geräte online. Der Abgleich läuft im Hintergrund weiter."
-
 [onboarding_nosave_title]
 text = "Dein Konto ließ sich nicht speichern"
 
@@ -2854,9 +2839,6 @@ text = "Damit du eingehende Anrufe und Nachrichten siehst."
 
 [onboarding_perms_title]
 text = "Damit Anrufe dich erreichen"
-
-[onboarding_perms_lead]
-text = "Tinline funktioniert wie eine Telefonleitung: Sie bleibt still im Hintergrund offen. Alles hier ist optional, und du kannst es später ändern."
 
 [onboarding_perm_allowed]
 text = "{name} erlaubt"
@@ -4596,3 +4578,21 @@ text = "{date}, {time}"
 
 [people_when_date]
 text = "{date}, {time}"
+
+[chat_card_once]
+text = "Gilt 7 Tage lang für alle, denen du ihn gibst. Jede Person fragt zuerst bei dir an. Ein neuer Code macht diesen ungültig."
+
+[security_pass_notice]
+text = "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Tinline ohne Nachfrage öffnet. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
+
+[unlock_one_online]
+text = "Nur das Konto, das du öffnest, ist auf diesem Handy online. Anrufe an deine anderen Konten klingeln auf deinen anderen Geräten, bis du zu ihnen wechselst."
+
+[onboarding_pass_notice]
+text = "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Tinline ohne Nachfrage öffnet. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
+
+[onboarding_sync_keep]
+text = "Lass beide Geräte geöffnet und online, bis das fertig ist."
+
+[onboarding_perms_lead]
+text = "Tinline ist deine Leitung zu den Menschen, die du hinzufügst. Jede dieser Berechtigungen ist optional, und du kannst sie später ändern."

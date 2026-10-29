@@ -25,7 +25,6 @@
     <string name="groups_cant_do">এটা করা গেল না</string>
     <string name="groups_waiting_host">হোস্টের অপেক্ষায়</string>
     <string name="groups_host_ask_title">%1$s এই ফোনটিকে %2$s হোস্ট করতে বলেছেন</string>
-    <string name="groups_host_ask_body">হোস্ট গ্রুপের একটি পুরো কপি রাখে, সদস্যদের ফোন ঘুমিয়ে থাকলে মেসেজ পৌঁছে দেয় এবং সদস্যদের গ্রুপ ঠিকানা জানতে পারে। এটিকে অনলাইন থাকতে হয় এবং ব্যাটারি খরচ হয়: যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট। হোস্ট করলে আপনি অ্যাডমিন হয়ে যান না।</string>
     <string name="groups_host_here">এখানে হোস্ট করুন</string>
     <string name="groups_host_declined">ফিরিয়ে দেওয়া হয়েছে। অ্যাডমিনরা এই ফোন থেকে কোনো উত্তর দেখবেন না।</string>
     <string name="groups_list_new_title">নতুন গ্রুপ</string>
@@ -69,7 +68,6 @@
     <string name="groups_chat_call_return">গ্রুপ কলে ফিরে যান</string>
     <string name="groups_chat_call_join">গ্রুপ কলে যোগ দিন</string>
     <string name="groups_chat_call_start">গ্রুপ কল শুরু করুন</string>
-    <string name="groups_chat_no_call_host">এখনও কোনো কল হোস্ট নেই: গ্রুপের তথ্য থেকে একজন অ্যাডমিন কাউকে বেছে নিতে পারেন</string>
     <string name="groups_chat_info">গ্রুপের তথ্য</string>
     <string name="groups_chat_earlier">আগের মেসেজ দেখান</string>
     <string name="groups_chat_no_messages">এখনও কোনো মেসেজ নেই</string>
@@ -143,7 +141,7 @@
     <string name="groupsb_invite_contacts">পরিচিতিদের আমন্ত্রণ জানান</string>
     <string name="groupsb_invite_contacts_sub">প্রত্যেকের জন্য আলাদা ব্যক্তিগত আমন্ত্রণ</string>
     <string name="groupsb_create_link">আমন্ত্রণ লিঙ্ক তৈরি করুন</string>
-    <string name="groupsb_create_link_nohost">আগে একজন হোস্ট নিযুক্ত করুন। প্রতিটি লিঙ্কে একজন হোস্টের নাম থাকে।</string>
+    <string name="groupsb_create_link_nohost">আগে একটি হোস্ট সেট করুন। একটি লিঙ্কে একটিই হোস্ট থাকে।</string>
     <string name="groupsb_create_link_valid">7 দিন কাজ করবে</string>
     <string name="groupsb_members_sec">সদস্য</string>
     <string name="groupsb_req_pending">চ্যাটের অনুরোধ পাঠানো হয়েছে</string>
@@ -165,7 +163,6 @@
     <string name="groupsb_pill_admin">অ্যাডমিন</string>
     <string name="groupsb_pill_member">সদস্য</string>
     <string name="groupsb_host">হোস্ট</string>
-    <string name="groupsb_call_host">কল হোস্ট</string>
     <string name="groupsb_leave_group">গ্রুপ ছেড়ে দিন</string>
     <string name="groupsb_owner_cant_leave">মালিক এখনই গ্রুপ ছাড়তে পারবেন না</string>
     <string name="groupsb_leave_title">%1$s ছেড়ে দেবেন?</string>
@@ -195,34 +192,7 @@
     <string name="groupsb_hosts_sec">হোস্ট</string>
     <string name="groupsb_this_device">এই ডিভাইস</string>
     <string name="groupsb_hosts_none">এই গ্রুপের কোনো হোস্ট নেই। হোস্ট নিযুক্ত না হওয়া পর্যন্ত পোস্টগুলো অপেক্ষা করবে।</string>
-    <plurals name="groupsb_hosts_online">
-        <item quantity="one">%1$dটি হোস্ট অনলাইনে আছে। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।</item>
-        <item quantity="other">%1$dটি হোস্ট অনলাইনে আছে। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।</item>
-    </plurals>
-    <string name="groupsb_hosts_offline">কোনো হোস্ট অনলাইনে নেই। আপনার পোস্ট সেভ করা আছে, হোস্ট এলেই পাঠানো হবে।</string>
-    <string name="groupsb_also_hosts_calls">কলও হোস্ট করে</string>
-    <string name="groupsb_remove_host_desc">হোস্ট হিসেবে %1$s সরান</string>
-    <string name="groupsb_cancel_host_desc">%1$s-কে পাঠানো হোস্টের অনুরোধ বাতিল করুন</string>
-    <string name="groupsb_waiting_accept">গ্রহণের অপেক্ষায়</string>
-    <string name="groupsb_offered_host">হোস্ট হতে চেয়েছে · অ্যাডমিনের সম্মতি দরকার</string>
-    <string name="groupsb_appoint">নিযুক্ত করুন</string>
-    <string name="groupsb_hosts_note">অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন।</string>
-    <string name="groupsb_hosts_note_admin">কোনো সদস্যের মেনু থেকে হোস্ট নিযুক্ত করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।</string>
-    <string name="groupsb_callhosts_sec">কল হোস্ট</string>
-    <string name="groupsb_callhosts_none">এই গ্রুপের কোনো কল হোস্ট নেই। একজন অ্যাডমিন কাউকে নিযুক্ত না করা পর্যন্ত কেউ কল শুরু করতে পারবেন না।</string>
-    <plurals name="groupsb_callhosts_ready">
-        <item quantity="one">%1$dটি কল হোস্ট তৈরি। এর মাধ্যমেই কল শুরু হয়।</item>
-        <item quantity="other">%1$dটি কল হোস্ট তৈরি। এগুলোর মাধ্যমেই কল শুরু হয়।</item>
-    </plurals>
-    <string name="groupsb_callhosts_offline">এখন কোনো কল হোস্ট পাওয়া যাচ্ছে না। কেউ ফিরে এলে আবার কল শুরু করা যাবে।</string>
-    <string name="groupsb_callhosts_me">আপনি যে কল শুরু করেন, এই ফোন সেগুলো চালায়।</string>
-    <string name="groupsb_remove_callhost_desc">কল হোস্ট হিসেবে %1$s সরান</string>
-    <string name="groupsb_cancel_callhost_desc">%1$s-কে পাঠানো কল হোস্টের অনুরোধ বাতিল করুন</string>
-    <string name="groupsb_stop_calls_phone">এই ফোনে কল হোস্ট করা বন্ধ করুন</string>
-    <string name="groupsb_host_calls_phone">এই ফোনে কল হোস্ট করুন</string>
     <string name="groupsb_host_calls_phone_sub">এখানে আপনি যে কল শুরু করেন, সেগুলো চালায়। যে কম্পিউটার সবসময় চালু থাকে, সেটি সবার কল চালাতে পারে।</string>
-    <string name="groupsb_callhosts_note">কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা গ্রুপ হোস্ট করা থেকে আলাদা: গ্রুপ হোস্টকে আপনি কল হোস্ট হিসেবেও নিযুক্ত না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন।</string>
-    <string name="groupsb_callhosts_note_admin">কোনো সদস্যের মেনু থেকে একজনকে নিযুক্ত করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।</string>
     <string name="groupsb_flags_on_you">আপনার ওপর ফ্ল্যাগ</string>
     <plurals name="groupsb_flags_left_note">
         <item quantity="one">যেকোনো অ্যাডমিনের আর %1$dটি ফ্ল্যাগ পড়লে আপনাকে গ্রুপ থেকে সরানো হবে। ফ্ল্যাগ ফিরিয়ে নেওয়া যায় না। ততক্ষণ পর্যন্ত আপনি পড়তে ও পোস্ট করতে পারবেন।</item>
@@ -265,20 +235,6 @@
     <string name="groupsb_sends_request">গ্রুপের হোস্টের মাধ্যমে চ্যাটের অনুরোধ পাঠায়</string>
     <string name="groupsb_make_admin">অ্যাডমিন করুন</string>
     <string name="groupsb_remove_admin">অ্যাডমিন থেকে সরান</string>
-    <string name="groupsb_make_device_host">ডিভাইস %1$s-কে হোস্ট বানান</string>
-    <string name="groupsb_make_host">হোস্ট বানান</string>
-    <string name="groupsb_asks_host">%1$s-কে হোস্ট হতে বলে। তাঁকে গ্রহণ করতে হবে।</string>
-    <string name="groupsb_stop_device_host">ডিভাইস %1$s-এর হোস্টিং বন্ধ করুন</string>
-    <string name="groupsb_remove_as_host">হোস্ট থেকে সরান</string>
-    <string name="groupsb_cancel_callhost_request">কল হোস্টের অনুরোধ বাতিল করুন</string>
-    <string name="groupsb_waiting_device">%1$s-এর ডিভাইসের গ্রহণের অপেক্ষায়</string>
-    <string name="groupsb_remove_as_callhost">কল হোস্ট থেকে সরান</string>
-    <string name="groupsb_make_callhost">কল হোস্ট বানান</string>
-    <string name="groupsb_asks_callhost">%1$s-কে গ্রুপ কল চালাতে বলে। তাঁকে গ্রহণ করতে হবে।</string>
-    <string name="groupsb_stop_hosting_device">এই ডিভাইসে হোস্ট করা বন্ধ করুন</string>
-    <string name="groupsb_host_device">এই ডিভাইসে হোস্ট করুন</string>
-    <string name="groupsb_host_device_sub">একজন অ্যাডমিনকেও এটি নিযুক্ত করতে হবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট।</string>
-    <string name="groupsb_stop_calls_device">এই ডিভাইসে কল হোস্ট করা বন্ধ করুন</string>
     <string name="groupsb_flag_removal">সরানোর জন্য ফ্ল্যাগ করুন</string>
     <plurals name="groupsb_flag_removal_sub">
         <item quantity="one">%1$dটি ফ্ল্যাগ পড়লে %2$s-কে গ্রুপ থেকে সরানো হবে</item>
@@ -295,7 +251,7 @@
     <string name="groupsb_send_request">অনুরোধ পাঠান</string>
     <string name="groupsb_new_group">নতুন গ্রুপ</string>
     <string name="groupsb_group_name">গ্রুপের নাম</string>
-    <string name="groupsb_new_group_host_note">শুরুতে এই ফোনটিই গ্রুপ হোস্ট করবে: গ্রুপটি রাখবে আর মেসেজ পৌঁছে দেবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট — সেটি যোগ দিলে গ্রুপের তথ্য থেকে সেটিকে হোস্ট হিসেবে নিযুক্ত করুন।</string>
+    <string name="groupsb_new_group_host_note">শুরুতে এই ফোনই গ্রুপের হোস্ট: এটি গ্রুপটি রাখে আর মেসেজ পৌঁছে দেয়। যে কম্পিউটার সবসময় চালু থাকে, সেটি আরও ভালো হোস্ট। কম্পিউটারটি যোগ দেওয়ার পর গ্রুপ তথ্যের “হোস্টিং অনুমতি”-তে গিয়ে সেটি সেট করুন।</string>
     <string name="groupsb_new_group_own">গ্রুপের মালিক হবেন আপনি। গ্রুপের তথ্য থেকে লোকজনকে আমন্ত্রণ জানান।</string>
     <string name="groupsb_making">তৈরি হচ্ছে…</string>
     <string name="groupsb_create_group">গ্রুপ তৈরি করুন</string>
@@ -547,8 +503,8 @@
     <string name="onboarding_done_add_contact">আমার প্রথম পরিচিতি যোগ করুন</string>
     <string name="onboarding_tip_devices_title">একের চেয়ে দুটো ডিভাইস ভালো</string>
     <string name="onboarding_tip_devices_body">সুযোগ পেলে আরেকটি ডিভাইস লিঙ্ক করুন, যাতে একটি হারালেও কখনও আটকে না যান।</string>
-    <string name="onboarding_tip_groups_title">গ্রুপ হোস্ট হয় কম্পিউটারে</string>
-    <string name="onboarding_tip_groups_body">গ্রুপ শুরু করতে, এমন একটি কম্পিউটারেও Tinline ইনস্টল করুন, যেটি চালু থাকতে পারে।</string>
+    <string name="onboarding_tip_groups_title">কম্পিউটার ভালো হোস্ট হয়</string>
+    <string name="onboarding_tip_groups_body">এই ফোনে আপনি গ্রুপ শুরু করতে পারেন। আপনার ফোন ঘুমিয়ে থাকলেও, যে কম্পিউটার সবসময় চালু থাকে সেটি গ্রুপটিকে নাগালে রাখে।</string>
     <string name="onboarding_name_title">লোকে আপনাকে কী নামে ডাকবে?</string>
     <string name="onboarding_name_lead">শুধু আপনি যাঁদের যোগ করবেন, তাঁরাই এটা দেখবেন।</string>
     <string name="onboarding_name_hint">সেটিংসে গিয়ে যেকোনো সময় এটা বদলাতে পারেন।</string>
@@ -586,6 +542,7 @@
     <string name="onboarding_device_hint">পরে নাম বদলাতে পারবেন।</string>
     <string name="onboarding_restored_title_adding">এই ফোনে %1$s যোগ করা হয়েছে</string>
     <string name="onboarding_restored_lead_adding">একবারে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে, তাই এখন %1$s অনলাইনে আর আপনার অন্য অ্যাকাউন্টটি থেমে আছে। সেটিংস থেকে বদলাতে পারেন।</string>
+    <string name="onboarding_restored_lead_adding_push">%1$s এখন এই ফোনে খোলা আছে। আপনার অন্য অ্যাকাউন্টের কল এখনও এখানে রিং হয় আর নতুন মেসেজের খবর আসে। সেটিংসে গিয়ে বদলাতে পারবেন।</string>
     <string name="onboarding_restored_lead">আপনার অ্যাকাউন্ট এই ফোনে ফিরে এসেছে। আপনার পরিচিতি, চ্যাট আর কলের ইতিহাস আপনার অন্য ডিভাইসগুলোতে থাকে, কোনো সার্ভারে নয়। এই ফোনে পরিচিতির তালিকা খালি থেকে শুরু হবে।</string>
     <string name="onboarding_open_tinline">Tinline খুলুন</string>
     <string name="onboarding_linked_title">%1$s-এর সঙ্গে লিঙ্ক হয়েছে</string>
@@ -594,7 +551,7 @@
     <string name="onboarding_sync_calls">কলের ইতিহাস</string>
     <string name="onboarding_sync_waiting">অপেক্ষায়</string>
     <string name="onboarding_sync_slow">এখনও কিছু আসেনি। অন্য ডিভাইসটি হয়তো অফলাইনে আছে: পরের বার দুটোই অনলাইনে এলে যেখানে থেমেছিল সেখান থেকে আবার শুরু করবে।</string>
-    <string name="onboarding_sync_keep_online">দুটো ডিভাইসই অনলাইনে রাখুন। সিঙ্ক ব্যাকগ্রাউন্ডে চলতে থাকবে।</string>
+    <string name="onboarding_sync_keep_online">এটি শেষ না হওয়া পর্যন্ত দুটি ডিভাইসই খোলা আর অনলাইনে রাখুন।</string>
     <string name="onboarding_savefail_title">আপনার অ্যাকাউন্ট সেভ করা গেল না</string>
     <string name="onboarding_savefail_lead">আপনার অ্যাকাউন্ট খোলার চাবি Tinline এই ফোনে রাখতে পারেনি, তাই আপনার অ্যাকাউন্ট এখনও সেভ হয়নি।</string>
     <string name="onboarding_savefail_trying">চেষ্টা করা হচ্ছে…</string>
@@ -643,6 +600,7 @@
     <string name="settings_see_details">বিস্তারিত দেখুন</string>
     <string name="settings_account_selected">বেছে নেওয়া · অনলাইন</string>
     <string name="settings_account_paused">থেমে আছে · বদলাতে ট্যাপ করুন</string>
+    <string name="settings_account_rings">এখানে রিং হবে · বদলাতে ট্যাপ করুন</string>
     <string name="settings_add_account">আরেকটি অ্যাকাউন্ট যোগ করুন</string>
     <string name="settings_accounts_note">এই ফোনে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে। বদলালে অন্যটি থেমে যায়: আবার বেছে না নেওয়া পর্যন্ত সেটিতে কোনো কল আসে না।</string>
     <string name="settings_appearance">চেহারা</string>
@@ -686,6 +644,7 @@
     <string name="notif_perm_battery">ব্যাটারি ব্যবহার</string>
     <string name="notif_perm_unrestricted">সীমাহীন</string>
     <string name="notif_perm_restricted">সীমাবদ্ধ</string>
+    <string name="notif_perm_optimized">অপ্টিমাইজ করা</string>
     <string name="notif_fix">ঠিক করুন</string>
     <string name="notif_ring_lock">লক স্ক্রিনের ওপর রিং</string>
     <string name="notif_system_note">এগুলো আপনার সিস্টেম সেট করে, Tinline নয়। দরকার হলেই শুধু Tinline অনুমতি চায়।</string>
@@ -763,6 +722,7 @@
     <string name="settings_calls_allowed_note">যাঁকে অনুমতি দিয়েছেন তিনি আপনাকে কল করতে পারেন; যিনি শুধু মেসেজে আছেন তিনি তবুও লিখতে পারেন। আপনি যাঁদের ব্লক করেছেন, তাঁরা কোনোটাই পারেন না।</string>
     <string name="settings_battery_title">ব্যাকগ্রাউন্ড ও ব্যাটারি</string>
     <string name="settings_battery_keep">আমার লাইন খোলা রাখুন</string>
+    <string name="settings_battery_keep_push">Tinline আমার কাছে কীভাবে পৌঁছায়</string>
     <string name="settings_battery_hint">Tinline ব্যাকগ্রাউন্ডে কানেক্টেড থাকে, যাতে সাধারণ ফোনের মতো কলে রিং হয়। এতে সামান্য ব্যাটারি খরচ হয়। এর জন্য Android-এর কী কী দরকার, তা নিচের চেকলিস্টে আছে।</string>
     <string name="settings_battery_hint_push">কেউ আপনার সঙ্গে যোগাযোগ না করা পর্যন্ত Tinline বিশ্রামে থাকে, তারপর একটা ছোট্ট সংকেত ওকে জাগিয়ে দেয়, তাই ব্যাটারির কোনো ছাড় লাগে না। কলে রিং হওয়ার জন্য Android-এর যা দরকার, তা নিচের চেকলিস্টে আছে।</string>
     <string name="settings_stay_connected">সব সময় কানেক্টেড থাকা</string>
@@ -1148,7 +1108,7 @@
     <string name="card_nothing_to_share">শেয়ার করার মতো কিছু নেই</string>
     <string name="card_qr_desc">আপনার পরিচিতি কার্ডের QR কোড</string>
     <string name="card_preparing">আপনার কোড তৈরি হচ্ছে…</string>
-    <string name="card_works_once">একবারই কাজ করে। নতুন কোড তৈরি করলে এটা বাতিল হয়ে যাবে।</string>
+    <string name="card_works_once">7 দিন কাজ করে, আপনি যাঁদের দেবেন তাঁদের সবার জন্য। যোগ দেওয়ার আগে প্রত্যেকের ব্যাপারে আপনাকে জিজ্ঞেস করা হবে। নতুন কোড তৈরি করলে এটি বাতিল হয়ে যায়।</string>
     <string name="card_new_code">নতুন কোড</string>
     <string name="card_none_found">ওই মেসেজে কোনো Tinline পরিচিতি কার্ড নেই</string>
     <string name="card_chat_with">%1$s-এর সঙ্গে চ্যাট করবেন?</string>
@@ -1194,15 +1154,6 @@
     <string name="groupsc_made_admin">অ্যাডমিন করা হয়েছে।</string>
     <string name="groupsc_no_longer_admin">আর অ্যাডমিন নন।</string>
     <string name="groupsc_left_group">আপনি গ্রুপ ছেড়ে দিয়েছেন। এর মেসেজগুলো এখানে থাকবে।</string>
-    <string name="groupsc_appointed">নিযুক্ত করা হয়েছে। ডিভাইসটি রাজি হলেই হোস্ট করবে।</string>
-    <string name="groupsc_host_revoked">ওই ডিভাইস আর গ্রুপটি হোস্ট করে না।</string>
-    <string name="groupsc_host_agreed">এই ফোন হোস্ট করতে রাজি হয়েছে। কোনো অ্যাডমিন নিযুক্ত করলেই হোস্ট করবে।</string>
-    <string name="groupsc_host_stopped">এই ফোন গ্রুপটি হোস্ট করা বন্ধ করেছে।</string>
-    <string name="groupsc_call_host_asked">অনুরোধ পাঠানো হয়েছে। ডিভাইসটি গ্রহণ করলেই কল চালাবে।</string>
-    <string name="groupsc_call_host_revoked">ওই ডিভাইস আর গ্রুপের কল হোস্ট করে না।</string>
-    <string name="groupsc_call_host_agreed">এই ডিভাইস এখন গ্রুপের কল হোস্ট করছে।</string>
-    <string name="groupsc_call_host_declined">এই ডিভাইস গ্রুপের কল হোস্ট করবে না।</string>
-    <string name="groupsc_calls_here">এই গ্রুপে এই ফোন যে কল শুরু করে, এখন থেকে সেগুলো এটাই চালাবে।</string>
     <string name="groupsc_admins_only_on">এখন শুধু অ্যাডমিনরা পোস্ট করবেন। সবাই আগের মতোই পড়তে পারবেন।</string>
     <string name="groupsc_admins_only_off">সবাই আবার পোস্ট করতে পারবেন।</string>
     <string name="groupsc_req_declined">ফিরিয়ে দেওয়া হয়েছে। %1$s-কে জানানো হবে “ফিরিয়ে দেওয়া হয়েছে”।</string>
@@ -1297,9 +1248,9 @@
     <string name="addcontact_why_known">%1$s আগে থেকেই আপনার পরিচিতিতে আছেন।</string>
     <string name="addcontact_why_added">%1$s-এর সঙ্গে আপনার লাইন খোলা। হ্যালো বলুন।</string>
     <string name="addcontact_why_requested">অনুরোধ পাঠানো হয়েছে। %1$s গ্রহণ করলেই আপনার লাইন খুলে যাবে।</string>
-    <string name="addcontact_why_slow">এখনও চেষ্টা চলছে। এর জন্য %1$s-এর Tinline খোলা আর অনলাইনে থাকা দরকার।</string>
+    <string name="addcontact_why_slow">এখনও চেষ্টা চলছে। %1$s-এর ফোন ঘুমিয়ে থাকলে Tinline সেটিকে জাগিয়ে তুলছে।</string>
     <string name="addcontact_why_reaching">%1$s-এর Tinline-এ পৌঁছানো হচ্ছে…</string>
-    <string name="addcontact_why_timeout">%1$s-এর Tinline-এ পৌঁছানো গেল না। এটা খোলা আর অনলাইনে থাকা দরকার, তাই %1$s কাছাকাছি থাকলে আবার চেষ্টা করুন।</string>
+    <string name="addcontact_why_timeout">%1$s-এর Tinline-এ পৌঁছানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন, কিংবা %1$s কাছাকাছি থাকলে।</string>
     <string name="addcontact_why_refused">%1$s-এর কোডটি আর কাজ করে না। হয়তো উনি নতুন একটা তৈরি করেছেন, তাই %1$s-এর কাছে সবচেয়ে নতুন কোডটি চেয়ে নিন।</string>
     <string name="addcontact_why_blocked_them">এখন আপনি %1$s-কে যোগ করতে পারবেন না। উনি এখানে যোগাযোগ না রাখার সিদ্ধান্ত নিয়েছেন।</string>
     <string name="addcontact_why_offline">আপনি অফলাইনে আছেন। কানেক্ট হলে আবার চেষ্টা করুন।</string>
@@ -1537,7 +1488,7 @@
     <string name="home_first_title">আপনার প্রথম পরিচিতি যোগ করুন</string>
     <string name="home_first_lead">আপনার কোড কোনো বন্ধুকে দেখান, অথবা কপি করে পাঠান। কিংবা ওঁরটা স্ক্যান করুন।</string>
     <string name="home_first_scan">ওঁর কোড স্ক্যান করুন</string>
-    <string name="home_first_paste">ওঁর কার্ড পেস্ট করুন</string>
+    <string name="home_first_paste">ওঁর কোড পেস্ট করুন</string>
     <string name="home_first_waiting">ওঁর স্ক্যানের অপেক্ষায় — এটা খোলা রাখুন।</string>
     <string name="chats_filter_all">সব</string>
     <string name="chats_filter_unread">না-পড়া</string>
@@ -1687,6 +1638,7 @@
     <string name="onboarding_linked_title_unnamed">আপনার অন্য ডিভাইসের সঙ্গে লিঙ্ক হয়েছে</string>
     <string name="onboarding_restored_title_adding_unnamed">এই ফোনে আপনার অ্যাকাউন্ট যোগ করা হয়েছে</string>
     <string name="onboarding_restored_lead_adding_unnamed">একবারে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে, তাই এখন এই অ্যাকাউন্টটি অনলাইনে আর আপনার অন্য অ্যাকাউন্টটি থেমে আছে। সেটিংস থেকে বদলাতে পারেন।</string>
+    <string name="onboarding_restored_lead_adding_push_unnamed">এই অ্যাকাউন্টটি এখন এই ফোনে খোলা আছে। আপনার অন্য অ্যাকাউন্টের কল এখনও এখানে রিং হয় আর নতুন মেসেজের খবর আসে। সেটিংসে গিয়ে বদলাতে পারবেন।</string>
     <string name="devices_syncing_unnamed">ডিভাইসের সঙ্গে সিঙ্ক হচ্ছে…</string>
     <string name="devices_confirm_unlink_title_unnamed">এই ডিভাইসের লিঙ্ক সরাবেন?</string>
     <string name="devices_unlinked_msg_unnamed">ডিভাইসের লিঙ্ক সরানো হয়েছে</string>
@@ -1728,7 +1680,6 @@
     <string name="common_list_separator">, </string>
     <string name="groupsb_member_desc">%1$s। অপশনগুলো খুলুন</string>
     <string name="groupsb_role_host_lc">হোস্ট</string>
-    <string name="groupsb_role_callhost_lc">কল হোস্ট</string>
     <string name="avail_note_unnamed">আপনি দূরে থাকার সময় কেউ কল করলে দেখবেন যে আপনার কাছে পৌঁছানো যায়নি। কিছুই জমা থাকে না, আর কাউকে কারণও জানানো হয় না।</string>
     <string name="onboarding_linked_lead_unnamed">আপনার পরিচিতি আর চ্যাট আপনার অন্য ডিভাইস থেকে আসছে, আর দুটিতেই মিলিয়ে রাখা হবে।</string>
     <string name="gcall_is_calling_group_unnamed">কেউ একজন গ্রুপে কল করছেন</string>

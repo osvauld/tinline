@@ -405,3 +405,21 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
   uses stub group helpers whose shape (`add_group_member(host, group, did)`) does not fit the
   invite model; it stays ignored. Its intent is covered by design: blocks never touch group state.
 - The Android/desktop apps are not wired (G1 only provides the API).
+
+
+## Unified hosting setup (2026-10-29)
+
+Desktop and Android expose one **Hosting permissions** editor per member device and one
+**Hosts** list. Admins select **Messages**, **Calls**, or both. The device owner reviews and
+accepts the selected permissions in the same editor; a later addition requires that consent.
+Existing message-only and call-only hosts keep their current permissions. A member may offer
+one or both capabilities; the list shows **Waiting for admin approval** until permitted.
+Admin grants without device acceptance show **Waiting for device acceptance**. Clearing a
+permission withdraws the local acceptance, or revokes the grant when an admin edits it.
+
+The signed `HostPermit`/`HostAccept` and `CallHostPermit`/`CallHostAccept` records remain
+independent capabilities behind that single setup. Opening the editor never writes records;
+saving changes only the selected differences. A remote admin cannot accept on a device's
+behalf. `GroupDetail.call_host_offers` exposes voluntary call offers, derived from an active
+`CallHostAccept` without an active call host, just like `host_offers` for messages.
+No automatic upgrade grants existing message hosts access to call audio.

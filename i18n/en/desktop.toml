@@ -501,12 +501,12 @@ text = "New message"
 note = "Desktop, body of a notification for a message to one of your other accounts on this computer (not the one open now). Its title names the sender and the account."
 
 [accounts_tap_to_switch]
-text = "Tap to switch"
+text = "Click to switch"
 note = "Desktop, settings account list: small line under another account of this computer. Clicking the row switches to it."
 
 [accounts_new_tap_to_switch]
-one = "{count} new message · tap to switch"
-other = "{count} new messages · tap to switch"
+one = "{count} new message · click to switch"
+other = "{count} new messages · click to switch"
 note = "Desktop, settings account list: small line under another account of this computer that has unread messages. Clicking the row switches to it."
 
 [accounts_every_account_stays_online]
@@ -964,7 +964,7 @@ text = "Could not show this: {error}"
 note = "Desktop, chats (in chat_view.rs, viewer_overlay). {error} is the underlying error text, not translated."
 
 [chat_couldnt_download_tap_to]
-text = "{value} · couldn’t download — tap to retry"
+text = "{value} · couldn’t download — click to retry"
 note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app."
 
 [chat_delete]
@@ -1052,7 +1052,7 @@ text = "Message deleted"
 note = "Desktop, chats (in chat.rs, preview_of)."
 
 [chat_messages_go_straight_to]
-text = "Messages go straight to their devices."
+text = "Messages go straight to their devices, with no server in between. They arrive when you’re both online."
 note = "Desktop, chats (in chat_view.rs, message_list)."
 
 [chat_new_messages]
@@ -1141,7 +1141,7 @@ text = "Signed by {value}"
 note = "Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app."
 
 [chat_tap_to_retry]
-text = "Tap to retry"
+text = "Click to retry"
 note = "Desktop, chats (in chat_view.rs, attachment_view)."
 
 [chat_that_is_everything_has]
@@ -1301,7 +1301,7 @@ text = "The system keyring did not accept the key."
 note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
 
 [gate_these_24_words_are]
-text = "These {words} words are the only way to restore your identity on another device."
+text = "These {words} words bring your account back on any device. Keep them somewhere safe."
 note = "Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number."
 
 [gate_this_computer_no_longer]
@@ -1321,7 +1321,7 @@ text = "Turn on"
 note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 
 [gate_you_didnt_set_a]
-text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the only way back. Your contacts stay."
+text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the way back, unless another linked device still has your account. Your contacts stay."
 note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view). {words} is the number of recovery words (24), a number."
 
 [gate_your_calls_come_through]
@@ -1343,7 +1343,7 @@ note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 # ---- Group calls
 
 [gcall_a_call_host_is]
-text = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
+text = "A call host is a device an admin allowed to carry calls, and that agreed to it. Admins change this under Hosting permissions in Group info."
 note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
 
 [gcall_battery_is_low_or]
@@ -1409,42 +1409,18 @@ note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
 
 # ---- Groups
 
-[group_a_call_host_carries]
-text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept."
-note = "Desktop, group info, call hosts section note, for members."
-
-[group_a_call_host_is]
-text = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
-note = "Desktop, groups (in group_live_view.rs, live_pane)."
-
-[group_a_call_host_is_a]
-text = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
-note = "Desktop, groups (in group_live_view.rs, live_pane)."
-
-[group_a_call_needs_a]
-text = "A call needs a call host"
-note = "Desktop, groups (in group_live_view.rs, live_pane)."
-
 [group_a_flag_is_signed]
 text = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
 [group_a_host_keeps_a]
-text = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
+text = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while it runs, also with the window closed (it stays in the tray)."
 note = "Desktop, groups (in group_live_view.rs, live_hosting_page)."
-
-[group_a_host_keeps_a_full]
-text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
-note = "Desktop, groups (in group_live_view.rs, live_pane)."
 
 [group_a_host_lists_up]
 one = "A host lists up to {count} person at a time, so there may be more."
 other = "A host lists up to {count} people at a time, so there may be more."
 note = "Desktop, group \"Who's online\" dialog (in group_live_view.rs). {count} is the most people a host lists at a time (a number)."
-
-[group_a_host_stays_on]
-text = "A host stays on and passes posts on while others are offline"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_a_link_that_doesnt]
 text = "A link that doesn’t expire"
@@ -1486,14 +1462,6 @@ note = "Desktop, groups (in group_live.rs, pick_rows)."
 text = "Also confirmed: {value}"
 note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app."
 
-[group_also_hosts_calls]
-text = "Also hosts calls"
-note = "Desktop, group info (in group_live_view.rs), a host device row, joined after Online/Offline with a separator: this device also hosts calls."
-
-[group_an_admin_asked_this]
-text = "An admin asked this computer to carry the group’s calls"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_anyone_holding_the_link]
 text = "Anyone holding the link can join, with no invite and no expiry. Share it where you’d like people to find the group."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
@@ -1506,17 +1474,9 @@ note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 text = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
-[group_appoint]
-text = "Appoint"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_appoint_a_host_first]
-text = "Appoint a host first. A link names one host."
+text = "Set up a host first. A link names one host."
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_appointed_the_device_hosts]
-text = "Appointed. The device hosts once it agrees (Host from this device)."
-note = "Desktop, groups (in group_live.rs, run)."
 
 [group_as_a_host_this]
 text = "As a host this computer will:"
@@ -1526,17 +1486,9 @@ note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 text = "Ask {name} for a private chat"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
-[group_asked_the_device_carries]
-text = "Asked. The device carries calls once it accepts."
-note = "Desktop, groups (in group_live.rs, run)."
-
 [group_asked_this_computer_to]
 text = "{name} asked this computer to host {group}"
 note = "Desktop, group (in group_live_view.rs): banner when an admin asks this computer to host. {name} is the admin's first name, {group} the group name."
-
-[group_asks_to_carry_group]
-text = "Asks {name} to carry group calls on that device; they have to accept"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
 
 [group_block]
 text = "Block {name}"
@@ -1554,31 +1506,9 @@ note = "Desktop, groups (in groups_view.rs, privacy_page). {value} is a value fi
 text = "Blocked you"
 note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
 
-[group_call_hosts]
-text = "Call hosts"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_call_hosts_ready]
-one = "{count} call host ready. Calls start through it."
-other = "{count} call hosts ready. Calls start through them."
-note = "Group info, call hosts section. {count} is how many call hosts are ready."
-
-[group_call_hosts_appointed]
-one = "{count} device is appointed to host calls."
-other = "{count} devices are appointed to host calls."
-note = "Group info, call hosts section. Counts appointed devices, including offline or busy devices; this does not claim availability."
-
-[group_calls_go_through_the]
-text = "Calls go through the other call hosts"
-note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
 [group_can_invite_flag_members]
 text = "Can invite, flag members and appoint hosts"
 note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
-[group_carries_the_groups_calls]
-text = "Carries the group’s calls; a computer that stays on is best"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_checking_with_the_groups]
 text = "Checking with the group’s host…"
@@ -1681,10 +1611,6 @@ note = "Desktop, groups (in group_live_view.rs, live_list)."
 text = "{gname} has no other host: messages will wait on people’s devices until another one hosts it."
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
 
-[group_host_calls_on_this]
-text = "Host calls on this computer"
-note = "Desktop, groups (in group_live_view.rs, live_pane)."
-
 [group_host_here]
 text = "Host here"
 note = "Desktop, groups (in group_live_view.rs, live_pane)."
@@ -1692,10 +1618,6 @@ note = "Desktop, groups (in group_live_view.rs, live_pane)."
 [group_host_on_this_computer]
 text = "Host {gname} on this computer?"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
-
-[group_host_this_group_on]
-text = "Host this group on this computer"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_hosts]
 text = "Hosts"
@@ -1705,19 +1627,6 @@ note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 one = "{count} host"
 other = "{count} hosts"
 note = "Number of hosts of a group. {count} is the host count."
-
-[group_hosts_once_agrees_on]
-text = "Hosts once {name} agrees on that device; a computer that stays on is best"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
-
-[group_hosts_online]
-one = "{count} host online. Posts go through right away."
-other = "{count} hosts online. Posts go through right away."
-note = "Desktop, group info, hosts section. {count} is how many hosts are online."
-
-[group_hosts_store_the_group]
-text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group."
-note = "Desktop, group info, hosts section note, for members."
 
 [group_if_accepts_you_can]
 text = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
@@ -1773,7 +1682,7 @@ text = "Invites"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_it_starts_hosting_once]
-text = "It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
+text = "It starts hosting once an admin allows it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
 [group_join_a_group]
@@ -1828,22 +1737,6 @@ note = "Desktop, groups (in group_live_view.rs, live_menu)."
 text = "Make {name} an admin?"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
-[group_make_call_host]
-text = "Make call host"
-note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
-[group_make_device_a_call]
-text = "Make device {value} a call host"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
-
-[group_make_device_a_host]
-text = "Make device {value} a host"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
-
-[group_make_host]
-text = "Make host"
-note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
 [group_making_it]
 text = "Making it…"
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
@@ -1885,10 +1778,6 @@ note = "Number of people in a group, in the group summary line. {count} is the m
 text = "Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
-[group_members_stop_going_through]
-text = "Members stop going through it"
-note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
 [group_message_from_whom_you]
 text = "Message from {name}, whom you blocked"
 note = "Desktop, groups (in group_live_view.rs, live_item). {name} is a person's name (usually the first word of their chosen name)."
@@ -1909,10 +1798,6 @@ note = "Desktop, groups (in group_live_view.rs, live_list)."
 text = "No host answered in time. Try again when a host is online."
 note = "Desktop, groups (in group_live.rs, gerr)."
 
-[group_no_host_is_online]
-text = "No host is online. Your posts are saved and send when one is."
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_no_longer_an_admin]
 text = "No longer an admin."
 note = "Desktop, groups (in group_live.rs, run)."
@@ -1928,10 +1813,6 @@ note = "Desktop, groups (in groups_view.rs, privacy_page)."
 [group_not_yet]
 text = "Not yet"
 note = "Desktop, groups (in group_live_view.rs, group_receipt_lines)."
-
-[group_offered_to_host]
-text = "Offered to host"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_on_their_device]
 text = "On their device"
@@ -2082,45 +1963,17 @@ note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's
 text = "{name} stays in the group as a member. Flags they already made still count."
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
-[group_stop_device_carrying_calls]
-text = "Stop device {value} carrying calls"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
-
-[group_stop_device_hosting]
-text = "Stop device {value} hosting"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
-
 [group_stop_hosting]
 text = "Stop hosting"
 note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
-[group_stop_hosting_calls]
-text = "Stop hosting calls"
-note = "Desktop, groups (in group_live_view.rs, live_menu)."
-
-[group_stop_hosting_calls_on]
-text = "Stop hosting calls on this computer"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_stop_hosting_here]
 text = "Stop hosting {gname} here?"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
 
-[group_stop_hosting_on_this]
-text = "Stop hosting on this computer"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_text]
 text = "{label}: {value}"
 note = "Desktop, group message receipts (in group_live_view.rs, group_receipt_lines). {label} is a receipt word such as Delivered or Read, {value} is a list of names."
-
-[group_that_device_no_longer]
-text = "That device no longer carries this group’s calls."
-note = "Desktop, groups (in group_live.rs, run)."
-
-[group_that_device_no_longer_hosts]
-text = "That device no longer hosts the group."
-note = "Desktop, groups (in group_live.rs, run)."
 
 [group_that_group_isnt_on]
 text = "That group isn’t on this computer."
@@ -2158,44 +2011,12 @@ note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 text = "They blocked you, so you can’t ask them for a chat."
 note = "Desktop, groups (in group_live.rs, gerr)."
 
-[group_this_computer_carries_the]
-text = "This computer carries the calls."
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_this_computer_carries_this]
-text = "This computer carries this group’s calls now."
-note = "Desktop, groups (in group_live.rs, run)."
-
 [group_this_computer_doesnt_host]
 text = "This computer doesn’t host any groups. To host one, open it and choose Host from this computer in the members pane."
 note = "Desktop, groups (in group_live_view.rs, live_hosting_page)."
 
-[group_this_computer_hosts_the]
-text = "This computer hosts the group. Posts go through right away."
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_this_computer_stopped_carrying]
-text = "This computer stopped carrying this group’s calls."
-note = "Desktop, groups (in group_live.rs, run)."
-
-[group_this_computer_stops_passing]
-text = "This computer stops passing the group’s messages on. You stay a member."
-note = "Desktop, groups (in group_live_view.rs, live_overlay)."
-
-[group_this_device_agreed_to]
-text = "This device agreed to host. It hosts as soon as an admin has appointed it."
-note = "Desktop, groups (in group_live.rs, run)."
-
-[group_this_device_stopped_hosting]
-text = "This device stopped hosting the group."
-note = "Desktop, groups (in group_live.rs, run)."
-
-[group_this_group_has_no]
-text = "This group has no call host. Nobody can start a call until an admin appoints one."
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_this_group_has_no_host]
-text = "This group has no host. Posts wait until a host is appointed."
+text = "This group has no host. Posts wait until an admin allows one."
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_turn_on_open_link]
@@ -2222,10 +2043,6 @@ note = "Desktop, groups (in group_live_view.rs, live_item)."
 text = "Waiting for a host. No group host is online; your posts are saved and send when one is."
 note = "Desktop, groups (in group_live_view.rs, live_pane)."
 
-[group_waiting_to_accept]
-text = "Waiting to accept"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
 [group_while_its_open_no]
 text = "While it’s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
@@ -2250,10 +2067,6 @@ note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 one = "{name} will be able to invite people, flag members ({count} flag removes someone) and appoint hosts. Only you, the owner, can make or remove admins."
 other = "{name} will be able to invite people, flag members ({count} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
 note = "Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member."
-
-[group_withdraw_the_offer_to]
-text = "Withdraw the offer to host"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_working]
 text = "Working…"
@@ -3180,7 +2993,7 @@ text = "On this computer"
 note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
 
 [profile_on_wi_fi_and]
-text = "On Wi-Fi and mobile data"
+text = "Every picture downloads as it arrives"
 note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
 
 [profile_online_now]
@@ -3939,7 +3752,7 @@ text = "Couldn’t make a new code just now. Try again in a moment."
 note = "Desktop, sign-up, restore and add contact (in signup.rs, gate_update)."
 
 [signup_couldnt_reach_s_tinline]
-text = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
+text = "Couldn’t reach {name}’s Tinline. Try again in a little while, or when {name}’s around."
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
 [signup_couldnt_read_the_clipboard]
@@ -4191,7 +4004,7 @@ text = "Start a chat"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
 
 [signup_still_trying_s_tinline]
-text = "Still trying. {name}’s Tinline needs to be open and online for this."
+text = "Still trying. If {name}’s phone is asleep, Tinline is waking it."
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
 
 [signup_strong]
@@ -4215,7 +4028,7 @@ text = "That code from {value} has expired. Codes last 7 days, so ask them for a
 note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app."
 
 [signup_that_doesnt_look_like]
-text = "That doesn’t look like a Tinline code. Could they copy it again for you?"
+text = "That doesn’t look like a Tinline code. Codes from older versions don’t work, so ask them for a new one."
 note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted)."
 
 [signup_that_key_has_a]
@@ -4801,19 +4614,6 @@ note = "Desktop, group info, a HOST DEVICE of the group is online (describes a d
 text = "Offline"
 note = "Desktop, group info, a HOST DEVICE of the group is offline (describes a device, not a person)."
 
-[group_hosts_online_here]
-one = "{count} host online, this computer too. Posts go through right away."
-other = "{count} hosts online, this computer too. Posts go through right away."
-note = "Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer."
-
-[group_hosts_store_the_group_admin]
-text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
-note = "Desktop, group info, hosts section note, for admins."
-
-[group_a_call_host_carries_admin]
-text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
-note = "Desktop, group info, call hosts section note, for admins."
-
 [group_asked_this_computer_to_unnamed]
 text = "An admin asked this computer to host {group}"
 note = "Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name."
@@ -5147,3 +4947,70 @@ note = "Desktop, linking a device (in link_view.rs). Same as link_linked_to when
 text = "You blocked {name} · {when}"
 note = "Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\"."
 
+[group_hosting_permissions]
+text = "Hosting permissions"
+note = "Unified group hosting permissions."
+
+[group_hosting_this_device]
+text = "Host on this device"
+note = "Unified group hosting permissions."
+
+[group_hosting_messages]
+text = "Messages"
+note = "Unified group hosting permissions."
+
+[group_hosting_calls]
+text = "Calls"
+note = "Unified group hosting permissions."
+
+[group_hosting_save]
+text = "Save hosting permissions"
+note = "Unified group hosting permissions."
+
+[group_hosting_saved]
+text = "Hosting permissions updated. Requests need admin approval and device acceptance."
+note = "Unified group hosting permissions."
+
+[group_hosting_active]
+text = "Hosting"
+note = "Unified group hosting permissions."
+
+[group_hosting_waiting_device]
+text = "Waiting for device acceptance"
+note = "Unified group hosting permissions."
+
+[group_hosting_waiting_admin]
+text = "Waiting for admin approval"
+note = "Unified group hosting permissions."
+
+[group_hosting_not_enabled]
+text = "Not enabled"
+note = "Unified group hosting permissions."
+
+[group_hosting_note]
+text = "Hosts have permissions for messages, calls, or both. An admin grants permission and the device owner accepts it. A host stores messages or forwards call audio, so choose devices you trust."
+note = "Unified group hosting permissions."
+
+[group_hosting_consent]
+text = "Save to accept the selected permissions on this device. Permissions an admin has not granted will be requested. Messages store the group history; calls forward audio and can be heard by the host. Adding a permission requires your consent."
+note = "Unified group hosting permissions."
+
+[group_hosting_admin]
+text = "Choose which permissions to grant this device. The device owner must accept each new permission. Clearing a permission revokes it."
+note = "Unified group hosting permissions."
+
+[group_hosting_calls_missing]
+text = "No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin."
+note = "Unified group hosting permissions."
+
+[group_hosting_stop_note]
+text = "This device stops hosting messages and calls for this group. You remain a member."
+note = "Unified hosting stop confirmation."
+
+[group_hosting_edit]
+text = "Permissions"
+note = "Open one device hosting permissions."
+
+[group_hosting_calls_title]
+text = "No host has Calls enabled"
+note = "Call action explanation when no device has call permission and consent."

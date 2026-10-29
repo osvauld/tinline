@@ -541,3 +541,21 @@ fn concurrent_settings_tie_break_by_time() {
 }
 
 mod causal;
+
+#[test]
+fn call_host_offers_need_admin_permission_and_can_be_withdrawn() {
+    let (_, mut owner, mut members) = group(1);
+    let (did, dev) = (members[0].did(), members[0].dev);
+    members[0].write(Body::CallHostAccept { active: true });
+    sync(&mut members[0], &mut owner);
+    assert!(owner.state().call_host_offers.contains(&(did.clone(), dev)));
+    assert!(!owner.state().is_call_host(&did, &dev));
+    owner.write(Body::CallHostPermit { host: did.clone(), host_dev: dev, active: true });
+    assert!(owner.state().is_call_host(&did, &dev));
+    assert!(owner.state().call_host_offers.is_empty());
+    sync(&mut owner, &mut members[0]);
+    members[0].write(Body::CallHostAccept { active: false });
+    sync(&mut members[0], &mut owner);
+    assert!(!owner.state().is_call_host(&did, &dev));
+    assert!(owner.state().call_host_offers.is_empty());
+}

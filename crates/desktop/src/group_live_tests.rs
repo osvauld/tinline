@@ -23,6 +23,8 @@ struct G {
     left: bool,
     /// (did, dev)
     hosts: Vec<(String, String)>,
+    call_permits: Vec<(String, String)>,
+    call_accepted: Vec<(String, String)>,
     /// A host has a live session with us.
     online: bool,
     msgs: Vec<GroupMessage>,
@@ -51,6 +53,7 @@ struct Fake {
     invs: RefCell<Vec<GroupInvitation>>,
     /// "Show me as online" is off on this install.
     hidden: RefCell<bool>,
+    hosting_writes: RefCell<Vec<String>>,
     /// Posts whose picture was asked for (`group_fetch_image`).
     fetched: RefCell<Vec<String>>,
 }
@@ -200,10 +203,17 @@ impl GroupApi for Fake {
                 at: 5,
                 flags: (1..=3).map(|i| GroupFlag { by_did: format!("did:key:a{i}"), by_name: format!("A{i}"), at: i }).collect(),
             }),
-            am_call_host: false,
-            call_hosts: Vec::new(),
-            call_host_requests: Vec::new(),
-            call_host_requested_here: false,
+            am_call_host: g.call_permits.contains(&(ME.into(), DEV.into())) && g.call_accepted.contains(&(ME.into(), DEV.into())),
+            call_hosts: g.call_permits.iter().filter(|x| g.call_accepted.contains(x)).map(|(did, dev)| GroupHost {
+                did: did.clone(), name: did.clone(), device_id: dev.clone(), appointed_by: Some(g.owner.clone()), is_me: did == ME && dev == DEV, online: true,
+            }).collect(),
+            call_host_requests: g.call_permits.iter().filter(|x| !g.call_accepted.contains(x)).map(|(did, dev)| GroupHost {
+                did: did.clone(), name: did.clone(), device_id: dev.clone(), appointed_by: Some(g.owner.clone()), is_me: did == ME && dev == DEV, online: true,
+            }).collect(),
+            call_host_requested_here: g.call_permits.contains(&(ME.into(), DEV.into())) && !g.call_accepted.contains(&(ME.into(), DEV.into())),
+            call_host_offers: g.call_accepted.iter().filter(|x| !g.call_permits.contains(x)).map(|(did, dev)| GroupHost {
+                did: did.clone(), name: did.clone(), device_id: dev.clone(), appointed_by: None, is_me: did == ME && dev == DEV, online: true,
+            }).collect(),
             open: g.open,
             admins_only: g.admins_only,
         })
@@ -369,6 +379,22 @@ impl GroupApi for Fake {
             } else {
                 g.hosts.retain(|h| h.1 != DEV);
             }
+            Ok(())
+        })
+    }
+    fn group_appoint_call_host(&self, id: String, did: String, device_id: String) -> Result<(), Error> {
+        self.hosting_writes.borrow_mut().push("grant calls".into());
+        self.with(&id, |g| { Fake::check_admin(g)?; g.call_permits.push((did, device_id)); Ok(()) })
+    }
+    fn group_revoke_call_host(&self, id: String, did: String, device_id: String) -> Result<(), Error> {
+        self.hosting_writes.borrow_mut().push("revoke calls".into());
+        self.with(&id, |g| { Fake::check_admin(g)?; g.call_permits.retain(|x| *x != (did.clone(), device_id.clone())); Ok(()) })
+    }
+    fn group_accept_call_host(&self, id: String, accept: bool) -> Result<(), Error> {
+        self.hosting_writes.borrow_mut().push(format!("accept calls {accept}"));
+        self.with(&id, |g| {
+            g.call_accepted.retain(|x| *x != (ME.into(), DEV.into()));
+            if accept { g.call_accepted.push((ME.into(), DEV.into())); }
             Ok(())
         })
     }
@@ -661,7 +687,7 @@ fn member_actions_follow_roles() {
     assert_eq!(p[0], Action::Message);
     assert_eq!(p[1], Action::MakeAdmin);
     assert!(p.contains(&Action::Flag));
-    assert!(p.iter().any(|a| matches!(a, Action::Appoint(_))));
+    assert!(p.iter().any(|a| matches!(a, Action::Hosting(_))));
     assert!(acts(&l, ME).is_empty(), "nothing on ourselves");
 
     l.step(&api, Lm::Open("adm".into()));
@@ -670,7 +696,7 @@ fn member_actions_follow_roles() {
     assert!(p.contains(&Action::Flag));
     let owner = acts(&l, "did:key:sam");
     assert!(!owner.contains(&Action::Flag), "the owner can't be flagged");
-    assert!(owner.iter().any(|a| matches!(a, Action::Revoke(_))), "the owner's host device can be revoked");
+    assert!(owner.iter().any(|a| matches!(a, Action::Hosting(_))), "the owner's host device can be revoked");
 
     l.step(&api, Lm::Open("mem".into()));
     assert_eq!(acts(&l, "did:key:priya"), vec![Action::Message], "a plain member can only ask for a private chat");
@@ -855,13 +881,18 @@ fn hosting_from_this_device_and_appointing_others() {
     l.step(&api, Lm::Open("a".into()));
     assert_eq!(l.status_line(), "2 members \u{b7} no host yet");
     l.step(&api, Lm::AskHost(true));
+    l.step(&api, Lm::HostingMessages(true));
     run(&mut l, &api, Lm::Confirm);
     assert!(l.detail.as_ref().unwrap().am_host);
     let dev = l.member("did:key:priya").unwrap().device_ids[0].clone();
-    run(&mut l, &api, Lm::Appoint("did:key:priya".into(), dev.clone()));
-    assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Revoke(dev.clone())));
-    run(&mut l, &api, Lm::Revoke("did:key:priya".into(), dev.clone()));
-    assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Appoint(dev)));
+    l.step(&api, Lm::Hosting("did:key:priya".into(), dev.clone()));
+    l.step(&api, Lm::HostingMessages(true));
+    run(&mut l, &api, Lm::Confirm);
+    assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Hosting(dev.clone())));
+    l.step(&api, Lm::Hosting("did:key:priya".into(), dev.clone()));
+    l.step(&api, Lm::HostingMessages(false));
+    run(&mut l, &api, Lm::Confirm);
+    assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Hosting(dev)));
     // Settings › Hosting: opens the group and asks.
     l.close();
     let out = l.step(&api, Lm::StopHostingOf("a".into()));
@@ -1016,8 +1047,9 @@ fn an_admin_asking_this_device_to_host_shows_a_prompt() {
     l.step(&api, Lm::Open("a".into()));
     assert_eq!(l.host_asked().as_deref(), Some("sam"));
     let out = l.step(&api, Lm::AnswerHost(true));
-    assert_eq!(out.job, Some(Job::AcceptHost { gid: "a".into(), accept: true }));
-    l.step(&api, out.job.unwrap().run(&api));
+    assert!(out.job.is_none(), "review permissions before giving consent");
+    assert!(matches!(l.dialog, Some(LDialog::Hosting { messages: true, calls: false, .. })));
+    run(&mut l, &api, Lm::Confirm);
     assert_eq!(l.host_asked(), None);
     assert!(l.detail.as_ref().unwrap().am_host);
 }
@@ -1030,3 +1062,61 @@ mod images;
 
 #[path = "group_voice_tests.rs"]
 mod voice;
+
+#[test]
+fn unified_hosting_member_requests_calls_without_self_appointing() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &[]);
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    l.step(&api, Lm::Hosting(ME.into(), DEV.into()));
+    l.step(&api, Lm::HostingCalls(true));
+    run(&mut l, &api, Lm::Confirm);
+    let d = l.detail.as_ref().unwrap();
+    assert!(!d.am_call_host);
+    assert_eq!(d.call_host_offers.len(), 1);
+    assert_eq!(*api.hosting_writes.borrow(), ["accept calls true"]);
+    assert!(hosting_status(d, ME, DEV).contains("Calls: Waiting for admin approval"));
+}
+
+#[test]
+fn unified_hosting_admin_grants_both_without_accepting_for_remote_device() {
+    let api = Fake::default();
+    api.add("a", ME, &[], &["did:key:priya"]);
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    let dev = l.member("did:key:priya").unwrap().device_ids[0].clone();
+    l.step(&api, Lm::Hosting("did:key:priya".into(), dev));
+    l.step(&api, Lm::HostingMessages(true));
+    l.step(&api, Lm::HostingCalls(true));
+    run(&mut l, &api, Lm::Confirm);
+    let d = l.detail.as_ref().unwrap();
+    assert!(d.call_hosts.is_empty());
+    assert_eq!(d.call_host_requests.len(), 1);
+    assert_eq!(*api.hosting_writes.borrow(), ["grant calls"]);
+}
+
+#[test]
+fn unified_hosting_adding_calls_requires_local_review_and_preserves_messages() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &[]);
+    api.g.borrow_mut().get_mut("a").unwrap().hosts.push((ME.into(), DEV.into()));
+    api.g.borrow_mut().get_mut("a").unwrap().call_permits.push((ME.into(), DEV.into()));
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.detail.as_ref().unwrap().am_call_host);
+    assert!(l.host_asked().is_some());
+    l.step(&api, Lm::AnswerHost(true));
+    assert!(matches!(l.dialog, Some(LDialog::Hosting { messages: true, calls: true, .. })));
+    run(&mut l, &api, Lm::Confirm);
+    let d = l.detail.as_ref().unwrap();
+    assert!(d.am_host && d.am_call_host);
+    assert_eq!(*api.hosting_writes.borrow(), ["accept calls true"]);
+    api.hosting_writes.borrow_mut().clear();
+    l.step(&api, Lm::Hosting(ME.into(), DEV.into()));
+    l.step(&api, Lm::HostingCalls(false));
+    run(&mut l, &api, Lm::Confirm);
+    let d = l.detail.as_ref().unwrap();
+    assert!(d.am_host && !d.am_call_host, "withdrawing calls must preserve messages");
+    assert_eq!(*api.hosting_writes.borrow(), ["accept calls false"]);
+}

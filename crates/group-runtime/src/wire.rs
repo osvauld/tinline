@@ -36,6 +36,11 @@ use node_runtime::frames::{FrameBuf, send_frame};
 
 pub const GROUP_ALPN: &[u8] = b"tinline/group/5";
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
+/// The most a `Hello` (or `Fetch`, `Moved`) may claim before its endpoint proof is checked.
+/// A hello carries the meta doc's version vector and those of `HELLO_DAYS` day docs (about
+/// 12 bytes per writer each), a signed invite and the host addresses: 1 MiB leaves room for
+/// thousands of writers, where `MAX_FRAME` would let a stranger make a host buffer 16 MiB.
+pub const HELLO_FRAME: usize = 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
 
@@ -151,6 +156,12 @@ impl Reader {
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv(&mut self) -> Result<Option<GroupMsg>, Error> {
         self.0.recv(MAX_FRAME, "group ").await
+    }
+
+    /// The first frame of an incoming session, before its endpoint proof is checked: capped at
+    /// `HELLO_FRAME`.
+    pub async fn recv_hello(&mut self) -> Result<Option<GroupMsg>, Error> {
+        self.0.recv(HELLO_FRAME, "group ").await
     }
 }
 

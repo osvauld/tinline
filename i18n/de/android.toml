@@ -72,9 +72,6 @@ text = "Wartet auf einen Host"
 [groups_host_ask_title]
 text = "{name} bittet dieses Handy, {group} zu hosten"
 
-[groups_host_ask_body]
-text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss online bleiben und braucht Akku: Ein Computer, der an bleibt, ist ein besserer Host. Hosten macht dich nicht zum Admin."
-
 [groups_host_here]
 text = "Hier hosten"
 
@@ -203,9 +200,6 @@ text = "Gruppenanruf beitreten"
 
 [groups_chat_call_start]
 text = "Gruppenanruf starten"
-
-[groups_chat_no_call_host]
-text = "Noch kein Anruf-Host: Ein Admin kann in der Gruppeninfo einen festlegen"
 
 [groups_chat_info]
 text = "Gruppeninfo"
@@ -386,9 +380,6 @@ text = "Eine private Einladung an jede Person"
 [groupsb_create_link]
 text = "Einladungslink erstellen"
 
-[groupsb_create_link_nohost]
-text = "Lege zuerst einen Host fest. Ein Link nennt einen Host."
-
 [groupsb_create_link_valid]
 text = "7 Tage gültig"
 
@@ -443,9 +434,6 @@ text = "Mitglied"
 
 [groupsb_host]
 text = "Host"
-
-[groupsb_call_host]
-text = "Anruf-Host"
 
 [groupsb_leave_group]
 text = "Gruppe verlassen"
@@ -534,73 +522,8 @@ text = "Dieses Gerät"
 [groupsb_hosts_none]
 text = "Diese Gruppe hat keinen Host. Beiträge warten, bis ein Host festgelegt ist."
 
-[groupsb_hosts_online]
-one = "{count} Host online. Beiträge gehen sofort raus."
-other = "{count} Hosts online. Beiträge gehen sofort raus."
-
-[groupsb_hosts_offline]
-text = "Kein Host ist online. Deine Beiträge sind gespeichert und gehen raus, sobald einer da ist."
-
-[groupsb_also_hosts_calls]
-text = "hostet auch Anrufe"
-
-[groupsb_remove_host_desc]
-text = "{device} als Host entfernen"
-
-[groupsb_cancel_host_desc]
-text = "Host-Anfrage an {device} zurückziehen"
-
-[groupsb_waiting_accept]
-text = "Wartet auf Zusage"
-
-[groupsb_offered_host]
-text = "Bietet Hosten an · braucht einen Admin"
-
-[groupsb_appoint]
-text = "Festlegen"
-
-[groupsb_hosts_note]
-text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird."
-
-[groupsb_hosts_note_admin]
-text = "Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
-
-[groupsb_callhosts_sec]
-text = "Anruf-Hosts"
-
-[groupsb_callhosts_none]
-text = "Diese Gruppe hat keinen Anruf-Host. Anrufe starten erst, wenn ein Admin einen festlegt."
-
-[groupsb_callhosts_ready]
-one = "{count} Anruf-Host bereit. Anrufe starten über ihn."
-other = "{count} Anruf-Hosts bereit. Anrufe starten über sie."
-
-[groupsb_callhosts_offline]
-text = "Gerade ist kein Anruf-Host erreichbar. Ein Anruf startet, sobald einer zurück ist."
-
-[groupsb_callhosts_me]
-text = "Dieses Handy trägt die Anrufe, die du startest."
-
-[groupsb_remove_callhost_desc]
-text = "{device} als Anruf-Host entfernen"
-
-[groupsb_cancel_callhost_desc]
-text = "Anruf-Host-Anfrage an {device} zurückziehen"
-
-[groupsb_stop_calls_phone]
-text = "Auf diesem Handy keine Anrufe mehr hosten"
-
-[groupsb_host_calls_phone]
-text = "Anrufe auf diesem Handy hosten"
-
 [groupsb_host_calls_phone_sub]
 text = "Trägt die Anrufe, die du hier startest. Ein Computer, der an bleibt, kann die Anrufe aller tragen."
-
-[groupsb_callhosts_note]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt."
-
-[groupsb_callhosts_note_admin]
-text = "Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die auf ihm gestartet werden."
 
 [groupsb_flags_on_you]
 text = "Markierungen gegen dich"
@@ -704,48 +627,6 @@ text = "Zum Admin machen"
 [groupsb_remove_admin]
 text = "Als Admin entfernen"
 
-[groupsb_make_device_host]
-text = "Gerät {device} zum Host machen"
-
-[groupsb_make_host]
-text = "Zum Host machen"
-
-[groupsb_asks_host]
-text = "Bittet {name} zu hosten. Die Person muss zustimmen."
-
-[groupsb_stop_device_host]
-text = "Hosten auf Gerät {device} beenden"
-
-[groupsb_remove_as_host]
-text = "Als Host entfernen"
-
-[groupsb_cancel_callhost_request]
-text = "Anruf-Host-Anfrage zurückziehen"
-
-[groupsb_waiting_device]
-text = "Wartet auf Zusage vom Gerät von {name}"
-
-[groupsb_remove_as_callhost]
-text = "Als Anruf-Host entfernen"
-
-[groupsb_make_callhost]
-text = "Zum Anruf-Host machen"
-
-[groupsb_asks_callhost]
-text = "Bittet {name}, Gruppenanrufe zu tragen. Die Person muss zustimmen."
-
-[groupsb_stop_hosting_device]
-text = "Hosten auf diesem Gerät beenden"
-
-[groupsb_host_device]
-text = "Auf diesem Gerät hosten"
-
-[groupsb_host_device_sub]
-text = "Ein Admin muss es auch festlegen. Ein Computer, der an bleibt, ist ein besserer Host."
-
-[groupsb_stop_calls_device]
-text = "Anruf-Hosten auf diesem Gerät beenden"
-
 [groupsb_flag_removal]
 text = "Zum Entfernen markieren"
 
@@ -785,9 +666,6 @@ text = "Neue Gruppe"
 
 [groupsb_group_name]
 text = "Gruppenname"
-
-[groupsb_new_group_host_note]
-text = "Dieses Handy hostet die Gruppe vorerst: Es hält die Gruppe und gibt Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host – leg ihn in der Gruppeninfo fest, sobald er beigetreten ist."
 
 [groupsb_new_group_own]
 text = "Die Gruppe gehört dir. Lade Leute über die Gruppeninfo ein."
@@ -1518,12 +1396,6 @@ text = "Zwei Geräte sind besser als eins"
 [onboarding_tip_devices_body]
 text = "Verknüpfe ein weiteres Gerät, sobald es geht. Dann sperrt dich ein verlorenes Gerät nie aus."
 
-[onboarding_tip_groups_title]
-text = "Gruppen werden auf einem Computer gehostet"
-
-[onboarding_tip_groups_body]
-text = "Um eine Gruppe zu starten, richte Tinline auf einem Computer ein, der an bleiben kann."
-
 [onboarding_name_title]
 text = "Wie sollen dich die Leute nennen?"
 
@@ -1658,9 +1530,6 @@ text = "Wartet"
 
 [onboarding_sync_slow]
 text = "Noch nichts. Das andere Gerät ist vielleicht offline: Es macht dort weiter, wo es aufgehört hat, sobald beide wieder online sind."
-
-[onboarding_sync_keep_online]
-text = "Lass beide Geräte online. Der Abgleich läuft im Hintergrund weiter."
 
 [onboarding_savefail_title]
 text = "Dein Konto ließ sich nicht speichern"
@@ -3297,9 +3166,6 @@ text = "QR-Code deiner Kontaktkarte"
 [card_preparing]
 text = "Dein Code wird vorbereitet…"
 
-[card_works_once]
-text = "Funktioniert einmal. Ein neuer Code ersetzt diesen."
-
 [card_new_code]
 text = "Neuer Code"
 
@@ -3418,33 +3284,6 @@ text = "Nicht mehr Admin."
 
 [groupsc_left_group]
 text = "Du hast die Gruppe verlassen. Die Nachrichten bleiben hier."
-
-[groupsc_appointed]
-text = "Festgelegt. Das Gerät hostet, sobald es zustimmt."
-
-[groupsc_host_revoked]
-text = "Dieses Gerät hostet die Gruppe nicht mehr."
-
-[groupsc_host_agreed]
-text = "Dieses Handy hat dem Hosten zugestimmt. Es hostet, sobald ein Admin es festgelegt hat."
-
-[groupsc_host_stopped]
-text = "Dieses Handy hostet die Gruppe nicht mehr."
-
-[groupsc_call_host_asked]
-text = "Gefragt. Das Gerät trägt Anrufe, sobald es zustimmt."
-
-[groupsc_call_host_revoked]
-text = "Dieses Gerät hostet keine Anrufe mehr für die Gruppe."
-
-[groupsc_call_host_agreed]
-text = "Dieses Gerät hostet jetzt die Anrufe der Gruppe."
-
-[groupsc_call_host_declined]
-text = "Dieses Gerät hostet die Anrufe der Gruppe nicht."
-
-[groupsc_calls_here]
-text = "Dieses Handy trägt jetzt die Anrufe, die es in dieser Gruppe startet."
 
 [groupsc_admins_only_on]
 text = "Jetzt posten nur Admins. Lesen können weiter alle."
@@ -3696,14 +3535,8 @@ text = "Deine Leitung zu {name} ist offen. Sag Hallo."
 [addcontact_why_requested]
 text = "Anfrage gesendet. Deine Leitung öffnet sich, wenn {name} annimmt."
 
-[addcontact_why_slow]
-text = "Wird noch versucht. Tinline muss dafür bei {name} offen und online sein."
-
 [addcontact_why_reaching]
 text = "Verbindung zu Tinline bei {name}…"
-
-[addcontact_why_timeout]
-text = "Tinline bei {name} war nicht erreichbar. Es muss offen und online sein, versuch es also nochmal, wenn {name} da ist."
 
 [addcontact_why_refused]
 text = "Der Code von {name} gilt nicht mehr. Vielleicht gibt es einen neuen, also frag {name} nach dem neuesten Code."
@@ -4400,9 +4233,6 @@ text = "Zeig deinen Code einer Freundin oder einem Freund, oder kopiere ihn und 
 [home_first_scan]
 text = "Code der Person scannen"
 
-[home_first_paste]
-text = "Karte der Person einfügen"
-
 [home_first_waiting]
 text = "Wartet aufs Scannen – lass das hier offen."
 
@@ -4925,9 +4755,6 @@ text = "{list}. Aktionen öffnen"
 [groupsb_role_host_lc]
 text = "Host"
 
-[groupsb_role_callhost_lc]
-text = "Anruf-Host"
-
 [avail_note_unnamed]
 text = "Solange du weg bist, sehen Leute, die anrufen, dass sie dich nicht erreichen konnten. Nichts wird gesammelt, und niemand erfährt, warum."
 
@@ -4939,3 +4766,45 @@ text = "Jemand ruft die Gruppe an"
 
 [gcall_started_call_unnamed]
 text = "Jemand hat einen Anruf gestartet"
+
+[groupsb_create_link_nohost]
+text = "Richte zuerst einen Host ein. Ein Link nennt einen Host."
+
+[groupsb_new_group_host_note]
+text = "Dieses Handy hostet die Gruppe zunächst: Es bewahrt die Gruppe auf und leitet Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host. Richte einen unter Hosting-Berechtigungen in der Gruppeninfo ein, sobald er beigetreten ist."
+
+[onboarding_tip_groups_title]
+text = "Ein Computer ist ein guter Host"
+
+[onboarding_tip_groups_body]
+text = "Du kannst auf diesem Handy eine Gruppe starten. Ein Computer, der an bleibt, hält sie erreichbar, wenn dein Handy schläft."
+
+[onboarding_sync_keep_online]
+text = "Lass beide Geräte geöffnet und online, bis das fertig ist."
+
+[card_works_once]
+text = "Gilt 7 Tage lang für alle, denen du ihn gibst. Jede Person fragt zuerst bei dir an. Ein neuer Code macht diesen ungültig."
+
+[addcontact_why_slow]
+text = "Wird weiter versucht. Wenn das Handy von {name} schläft, weckt Tinline es auf."
+
+[addcontact_why_timeout]
+text = "Tinline bei {name} war nicht erreichbar. Versuch es in einer Weile nochmal oder wenn {name} da ist."
+
+[home_first_paste]
+text = "Code der Person einfügen"
+
+[settings_account_rings]
+text = "Klingelt hier · tippen zum Wechseln"
+
+[settings_battery_keep_push]
+text = "Wie Tinline mich erreicht"
+
+[notif_perm_optimized]
+text = "Optimiert"
+
+[onboarding_restored_lead_adding_push]
+text = "{name} ist jetzt auf diesem Handy geöffnet. Dein anderes Konto klingelt hier trotzdem und meldet dir neue Nachrichten. Wechseln kannst du in den Einstellungen."
+
+[onboarding_restored_lead_adding_push_unnamed]
+text = "Dieses Konto ist jetzt auf diesem Handy geöffnet. Dein anderes Konto klingelt hier trotzdem und meldet dir neue Nachrichten. Wechseln kannst du in den Einstellungen."
