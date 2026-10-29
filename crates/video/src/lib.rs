@@ -153,7 +153,8 @@ pub struct Packet {
     pub frame: u64,
 }
 
-const EAGAIN: i32 = 11;
+// 11 on Linux/Android, 35 on Apple: rav1d returns the platform's -EAGAIN for "no picture yet".
+const EAGAIN: i32 = libc::EAGAIN;
 
 pub struct Decoder {
     ctx: Option<Dav1dContext>,

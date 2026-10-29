@@ -117,11 +117,16 @@ def main():
             "-DCMAKE_SYSTEM_NAME=iOS",
             f"-DCMAKE_OSX_SYSROOT={IOS_SDK[args.target]}",
             "-DCMAKE_OSX_ARCHITECTURES=arm64",
+            # CMake makes executables app bundles on iOS; aomenc's install rule has no BUNDLE DESTINATION.
+            "-DCMAKE_MACOSX_BUNDLE=OFF",
             f"-DCMAKE_OSX_DEPLOYMENT_TARGET={IOS_MIN}",
             "-DAOM_TARGET_CPU=arm64",
             "-DCONFIG_RUNTIME_CPU_DETECT=0",
             # iOS makes executables app bundles by default; aomenc's install rule has no bundle path.
             "-DCMAKE_MACOSX_BUNDLE=OFF",
+            # With runtime detection off libaom uses the best kernel it was compiled with, unconditionally. Recent clang
+            # accepts SVE, but no iPhone before the M4/A19 has it: the encoder died with SIGILL in av1_block_error_lp_sve.
+            "-DENABLE_SVE=0", "-DENABLE_SVE2=0",
         ]
     elif args.target == "host" and sys.platform == "darwin":
         # Explicit, so an IPHONEOS_DEPLOYMENT_TARGET in the environment can't make clang build it for iOS.
