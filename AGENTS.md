@@ -1,34 +1,67 @@
 # Repository instructions
 
-> **Every build, test and Android build goes through the task manager, and by default
-> to whichever machine is free.** Use
-> `tasks run --who YOUR_AGENT --anywhere -- <direct command>`
-> (`/home/abe/.local/bin/tasks`). The manager syncs your checkout to the peer over
-> iroh (LAN, no SSH), runs it under that machine's admission, streams the log back
-> and returns the exit code. Never use `ssh`, `tasks-offload`, `scripts/buildlock.py`
-> or `scripts/build_android.py`: they bypass the queue, so the job is invisible in
-> `tasks list`/`tasks ui`, cannot be placed on the idle machine and holds the laptop's
-> compile slot. Android builds:
-> `tasks run --who YOUR_AGENT --peer nixos --fetch android/app/build/outputs/apk/debug/app-debug.apk -- ./android/gradlew -p android --no-daemon --console=plain :app:assembleDebug`
-> (run from the repo root; the wrapper is `android/gradlew`. The nixos worker has the
-> SDK/NDK; `--fetch REL` brings the output back).
-> Fetched files may be up to 2 GiB each (full APKs are fine).
-> Without `--anywhere`/`--peer`, only cargo check/test/clippy/nextest are placed
-> automatically; gradle, npm and scripts stay on the laptop. `tasks place -- <cmd>`
-> shows where a command would run without running it. Dev servers and device jobs
-> stay local (`--pin`, `--device SERIAL`).
-> **Cargo:** pass `-j 6` at most (the worker refuses `-j 8`; use `-j 2` for jobs that
-> must stay on the laptop). It has sccache, so do not set RUSTC_WRAPPER. **Name your
-> test targets:** `cargo test -p X --lib FILTER` / `--test NAME`, never a bare filter
+> **Every build, test and Android build goes through the task manager LoadTable (`loadtable`), and by
+> default to whichever machine is free.** Use
+> `loadtable run --who YOUR_AGENT --anywhere -- <direct command>`
+> (`/home/abe/.local/bin/loadtable`; Claude sessions can use the LoadTable MCP tools (server `tasks2`)
+> `submit`/`wait`/`logs`/`status` instead). The manager syncs your checkout to the peer
+> over iroh (no SSH), runs it under that machine's admission, streams the log back and
+> returns the exit code. The old `tasks` (v1) is retired and removed: do not use
+> `tasks`, `ssh`, `tasks-offload`, `scripts/buildlock.py` or
+> `scripts/build_android.py`; they bypass the `loadtable` queue.
+> Placement: `--anywhere` lets the manager pick a machine, `--peer nixos` names the
+> worker, `--pin` keeps the job on this laptop (GUIs, dev servers). Without a flag the
+> job runs on this laptop. Device jobs use `--device SERIAL` and stay on the machine
+> the device is attached to. Never use the personal phone `ZD22257P6G`.
+> **Builds: `--anywhere`, not `--pin`.** The manager runs a build on the nixos worker
+> when it is free, otherwise on this laptop. `.tasks/run-policy.toml` sets
+> `[placement] os = "linux"`, so an `--anywhere` job never goes to the Mac (it lacks
+> the Linux libraries, and its binaries do not run here). Pin only what must run here:
+> the desktop GUI, device jobs, dev servers.
+> **Builds you need back here: add `--fetch` for each file** (a path from the repo root,
+> repeatable, up to 2 GiB each; MCP `submit` takes `placement: "anywhere"` and
+> `fetch: [...]`). The log says `[loadtable] fetched PATH (size, sha256)`; when the job ran
+> on this laptop the file is already in place.
+> Android (run from the repo root; the nixos worker has the SDK/NDK):
+> `loadtable run --who YOUR_AGENT --anywhere --fetch android/app/build/outputs/apk/debug/app-debug.apk -- ./android/gradlew -p android --no-daemon --console=plain :app:assembleDebug`
+> (`assemblePlayDebug` -> `apk/play/debug/app-play-debug.apk`). An APK built on nixos
+> is signed with the worker's debug key and will not install over a laptop build, so
+> always re-sign it with the laptop's debug key (harmless when it was built here; the
+> password is Android's public default, `android`):
+> `P=android ~/Android/Sdk/build-tools/<newest>/apksigner sign --ks ~/.android/debug.keystore --ks-pass env:P APK`.
+> Release signing stays on CI.
+> Desktop (`p2p-desktop`):
+> `loadtable run --who YOUR_AGENT --anywhere --fetch target/debug/p2p-desktop -- cargo build -p desktop --bin p2p-desktop -j 6`
+> (optimised: add `--release` and fetch `target/release/p2p-desktop`). A binary built on
+> nixos points at `/nix/store` and will not start here until it is patched, so after
+> every build: `B=target/debug/p2p-desktop;`
+> `readelf -l $B | grep -q /nix/store && patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 --remove-rpath $B`,
+> then `ldd $B | grep 'not found'` must print nothing (if it names a library, the two
+> machines' versions differ: report it and build with `--pin`). Run `$B` directly, not
+> `cargo run`, which would rebuild. This is for testing on this laptop only; release
+> tarballs, `.deb` and AppImage are built by CI on Ubuntu 24.04, never from nixos.
+> Tests and checks: `--anywhere`, no fetch.
+> **iOS (on the Mac peer `mac`): run a suite, never a `bash -c "a; b; c"` chain:**
+> `loadtable suite run ios-sim --who YOUR_AGENT` (core -> xcodegen -> simulator launch) or
+> `ios-ui` (core -> xcodegen -> XCUITests); MCP: `run_suite`. Each step is one fixed
+> command with its own history, so it gets an estimate; a chain is a new command every
+> time and gets none. `loadtable policy show` lists the suites (`.tasks/run-policy.toml`).
+> For a single step, submit that one script directly (`--peer mac -- ios/scripts/build_core.sh`).
+> The Mac starts peer jobs only while it is on AC power, unless its owner allows battery:
+> a job that waits with `mac is on battery` is held, not stuck. Jobs on a peer are confined:
+> they can read and write only the build cache, the synced checkout and the toolchains,
+> not the rest of that machine's home folder.
+> **Cargo:** pass `-j 6` at most (`-j 2` for jobs that stay on the laptop). `loadtable`
+> sets sccache itself, so do not set RUSTC_WRAPPER. **Name your test targets:**
+> `cargo test -p X --lib FILTER` / `--test NAME`, never a bare filter
 > (`cargo test -p p2pcore video_call` builds all ~37 p2pcore test binaries, ~45 min;
 > `--broad-test` builds everything deliberately).
-> Check `tasks list --active` and `tasks admission` before starting; do not bypass
-> pressure gates, duplicate a job after a timeout or interrupt jobs. `tasks logs ID`
-> is plain text (`--json` for scripts). If `tasks` fails, report the exact error; do
-> not work around it. A job that failed with "incomplete or oversized response" was
-> never run: resubmit it. Coordinator source is `/home/abe/task-manager`; read
-> `/home/abe/task-manager/TRIAL.md`. Required feedback: your task report plus your own
-> new file under `/home/abe/task-manager/feedback/`.
+> Check `loadtable list --active` and `loadtable status` before starting; do not bypass
+> pressure gates, duplicate a job after a timeout or interrupt jobs. `loadtable logs ID`
+> reads a job's output, `loadtable cancel ID` stops your own job only. If `loadtable` fails,
+> report the exact error and job id; do not work around it. Coordinator source is
+> `/home/abe/task-manager` (branch `dev`). Required feedback: your task report plus your
+> own new file under `/home/abe/task-manager/feedback/`.
 
 This repository contains Tinline: Rust core/protocol/media crates, an Iced desktop
 app, and a Kotlin/Compose Android app. The Svelte playground under
@@ -51,12 +84,11 @@ app, and a Kotlin/Compose Android app. The Svelte playground under
 
 ### Task-manager trial: required use and feedback
 
-The shared Rust coordinator is an **experimental trial**, not a finished system.
-Its authoritative source is now the separate local repository
-`/home/abe/task-manager` (not Tinline's historical tools/task-manager copies).
-Read `/home/abe/task-manager/TRIAL.md` before first use in an agent session.
-Use `tasks` for new direct heavy workloads as below; do not bypass admission or
-silently fall back when it misbehaves. Inspect the existing ID/logs first and
+The shared Rust coordinator LoadTable (`loadtable`) is an **experimental trial**, not a finished
+system. Its source is the separate local repository `/home/abe/task-manager`
+(branch `dev`; design and regression docs under `docs/`).
+Use `loadtable` for new direct heavy workloads as below; do not bypass admission or
+silently fall back to the old `tasks` when it misbehaves. Inspect the existing ID/logs first and
 report blockers before requesting an authorized workaround.
 
 After meaningful use in each agent session, provide feedback in your task report
@@ -70,34 +102,34 @@ reread this section before their next heavy job; old helper jobs may finish.
 
 ### Admission and execution
 
-- Heavy local builds/tests must use the shared Rust task manager (installed at
-  `/home/abe/.local/bin/tasks`):
-  `tasks run --who <unique-agent-name> -- <direct command>`.
-  Default admission is compile; use `tasks run --who <name> --run -- <already-built command>`
-  for run-only work, or `--device <serial>` for an explicitly authorized device job.
-  `tasks run` explicitly submits/approves/starts that command and returns its exit
-  status. Ctrl-C detaches the client; query/cancel the existing job, never duplicate it.
-  For approval-separated work: `tasks enqueue ...`, read `submitted_id`, then
-  `tasks approve-command ID` and `tasks start-worker`.
-  Agents share the default native daemon/state; do not set TASK_MANAGER_STATE_DIR
-  except for deliberately isolated tests. Query `tasks list`, `tasks admission`,
-  `tasks logs ID`; cancel only your own work with `tasks cancel ID`.
-  Commands use a trusted LIVE cwd (not an immutable source snapshot); keep that
-  checkout stable during compile/run, don't put secrets in argv, and inspect
-  failures before retrying. Use `env NAME=value ...` for needed non-secret build
-  inputs (e.g. VPX_DIR), not cache-policy overrides.
+- Heavy builds/tests must use the shared task manager LoadTable (`loadtable`) (installed at
+  `/home/abe/.local/bin/loadtable`):
+  `loadtable run --who <unique-agent-name> [--anywhere | --peer nixos | --pin] -- <direct command>`.
+  Use `--device <serial>` only for an explicitly authorized device job.
+  `loadtable run` submits the command, follows its log and returns its exit status;
+  `--detach` (or `loadtable enqueue`) submits and prints the id without following.
+  Ctrl-C detaches the client; query/cancel the existing job, never duplicate it.
+  `--priority background` for work that may wait; `--priority blocking --reason TEXT`
+  only when someone is waiting on the result now.
+  Query `loadtable list --active`, `loadtable status`, `loadtable logs ID`; cancel only your
+  own work with `loadtable cancel ID`.
+  Jobs run in your live checkout (synced to the worker for `--peer`/`--anywhere`);
+  keep that checkout stable during compile/run, don't put secrets in argv, and
+  inspect failures before retrying. Use `env NAME=value ...` for needed non-secret
+  build inputs (e.g. VPX_DIR), not cache-policy overrides.
   The legacy Python helpers (`scripts/buildlock.py`, `scripts/build_android.py`) are
   retired for builds: run the underlying command (`cargo ...`, `./gradlew ...`) under
-  `tasks run --anywhere` instead, so it is tracked, placed and visible. Do not wrap
+  `loadtable run --anywhere` instead, so it is tracked, placed and visible. Do not wrap
   any command in your own lock.
-- All build output and caches live on the cache disk `/home/abe/build-cache`: tasks
-  (and legacy buildlock) create missing per-checkout `target/`, `android/build` and
-  `android/app/build` links there without migrating/deleting existing outputs, run
-  Gradle with `GRADLE_USER_HOME=/home/abe/build-cache/gradle`, and every cargo build shares compiled crates
-  through sccache (`/home/abe/build-cache/sccache`; machine-wide via `~/.cargo/config.toml`,
-  set up by `scripts/setup_build_cache.py`). Don't override `RUSTC_WRAPPER`/`CARGO_TARGET_DIR`/`GRADLE_USER_HOME`
-  or point several worktrees at one `target/` (branches overwrite each other's binaries).
-- Inspect `tasks admission` and `tasks list` before starting work. Do not
+- Build output and caches live on each machine's cache disk `~/build-cache`: `loadtable`
+  creates missing per-checkout `target/`, `android/build` and `android/app/build` links
+  under `~/build-cache/loadtable/checkouts/` without migrating/deleting existing outputs,
+  sets `GRADLE_USER_HOME=~/build-cache/gradle` when that directory exists, and runs
+  every cargo build with sccache (`~/build-cache/sccache`). Don't override
+  `RUSTC_WRAPPER`/`CARGO_TARGET_DIR`/`GRADLE_USER_HOME` or point several worktrees at
+  one `target/` (branches overwrite each other's binaries). `loadtable cache` shows the
+  cache setup and free disk.
+- Inspect `loadtable status` and `loadtable list --active` before starting work. Do not
   bypass admission, launch duplicate jobs after a timeout, or terminate another
   agent's processes. Use the existing device lock for emulator/phone operations.
 - Run targeted checks for owned changes; report exact commands, results, ignored
