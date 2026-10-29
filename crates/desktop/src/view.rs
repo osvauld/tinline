@@ -553,7 +553,7 @@ impl App {
             list = list.push(
                 button(
                     row![
-                        avatar(t, &name, &c.did, 40.0),
+                        self.profile_avatar(t, &name, &c.did, 40.0),
                         column![semi(name, 15.0, if sel { t.on_primary_c } else { t.ink }), tx(self.contact_sub(&c.did), 13.0, if sel { t.on_primary_c } else { t.ink2 })]
                             .spacing(2)
                             .width(Fill),
@@ -751,7 +751,7 @@ impl App {
         let gate = self.blocks.call_gate(&c.did, true);
         let can_call = !matches!(gate, crate::blocks::CallGate::Closed(_));
         let call_icon = if self.blocks.can_call(&c.did, true) { Icon::Phone } else { Icon::PhoneOff };
-        let head = row![avatar(t, &name, &c.did, 72.0), column![title, badges].spacing(10).width(Fill)]
+        let head = row![self.profile_avatar(t, &name, &c.did, 72.0), column![title, badges].spacing(10).width(Fill)]
             .spacing(20)
             .align_y(Alignment::Center);
         let actions = row![
