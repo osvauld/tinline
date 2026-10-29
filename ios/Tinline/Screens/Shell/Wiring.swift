@@ -85,7 +85,7 @@ enum ShellWiring {
         let ctl = calls.controller
         let callLive = ctl.ui.map { $0.info.peerDid == chatId && !$0.isEnded } ?? false
         ConversationView(
-            chatId: chatId, name: name, online: app.status?.online == true, isSelf: isSelf,
+            chatId: chatId, name: name, online: app.online, isSelf: isSelf,
             block: isSelf ? nil : ConvBlock(view: people.blocks.of(chatId), composer: people.blocks.composer(chatId, contact: c != nil),
                                             callGate: people.blocks.callGate(chatId, contact: c != nil)),
             notDelivered: { id in node?.notDeliveredReason(peerDid: chatId, messageId: id) },

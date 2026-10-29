@@ -47,7 +47,7 @@ struct ShellHomeScreen: View {
     /// "Not now" on a Contacts card hides it for now; the request stays in the core (and comes back next time).
     @State private var hiddenRequests: Set<String> = []
 
-    private var online: Bool { app.status?.online == true }
+    private var online: Bool { app.online }
     private var myDid: String? { app.accountDid }
 
     private var rows: [ShellChatRow] {

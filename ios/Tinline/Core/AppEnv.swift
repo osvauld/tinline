@@ -1,3 +1,4 @@
+import Network
 import SwiftUI
 
 /// The one object every screen reads. The Shell area owns creating the `Node` (see android CoreService.kt) and
@@ -14,6 +15,20 @@ final class AppEnv: ObservableObject {
 
     /// The core's network status (`onStatus`); nil until the node reported once.
     @Published var status: NodeStatus?
+    /// The phone has a usable network path (airplane mode, no Wi-Fi or data: false). The core only re-reports `online` when
+    /// its relay address changes, which can lag the network by a long time, so the offline messages also ask the system.
+    @Published private(set) var networkUp = true
+    /// For the offline banner and the chat's offline strip: a network path and a home relay.
+    var online: Bool { networkUp && status?.online == true }
+    private let pathMonitor = NWPathMonitor()
+
+    init() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let up = path.status == .satisfied
+            Task { @MainActor in if self?.networkUp != up { self?.networkUp = up } }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "tl-network-path"))
+    }
     @Published var lockState: LockState = .noIdentity
     @Published var hasIdentity = false
     /// The selected account's DID (changes when the user switches); nil with no account.
