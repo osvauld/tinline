@@ -71,7 +71,9 @@ struct AddContactSheet: View {
             // `.tabs.gone`: hidden but keeping its height, so the sheet doesn't jump when it becomes a request.
             HStack(spacing: 8) {
                 PeopleChip(text: tr("people_add_tab_code"), pressed: !qrTab) { if inc == nil { qrTab = false; scanning = false; reset() } }
+                    .fixedSize(horizontal: true, vertical: false)
                 PeopleChip(text: tr("people_add_tab_qr"), pressed: qrTab) { if inc == nil { qrTab = true; reset() } }
+                    .fixedSize(horizontal: true, vertical: false)   // natural width: a squeezed pill wrapped "QR" onto two lines
             }
             .padding(.top, 8).opacity(inc != nil ? 0 : 1)
 
