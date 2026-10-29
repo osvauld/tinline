@@ -21,6 +21,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.osvauld.tinline
         INFOPLIST_FILE: Tinline/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon   # Assets.xcassets/AppIcon.appiconset: the brand mark, from the Android launcher icon
         CODE_SIGN_ENTITLEMENTS: Tinline/Tinline.entitlements
     # P2pCore.xcframework + generated Swift come from ios/scripts/build_core.sh (not in Git).
     dependencies:
