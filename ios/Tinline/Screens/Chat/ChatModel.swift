@@ -123,7 +123,11 @@ final class ConversationModel: ObservableObject {
     /// Loads the newest day and starts listening. Call once, from `.task`.
     func start() async {
         source.events.receive(on: DispatchQueue.main).sink { [weak self] e in self?.handle(e) }.store(in: &cancellables)
-        source.linksPublisher.receive(on: DispatchQueue.main).sink { [weak self] m in self?.link = m[self?.peerDid ?? ""] ?? .unknown }.store(in: &cancellables)
+        // Only this contact's own state, and only when it changes: a @Published set announces even an equal value, and
+        // every contact's presence event used to re-render (and re-measure) the open chat.
+        let did = peerDid
+        source.linksPublisher.map { $0[did] ?? .unknown }.removeDuplicates().receive(on: DispatchQueue.main)
+            .sink { [weak self] l in self?.link = l }.store(in: &cancellables)
         link = source.links[peerDid] ?? .unknown
         if let p = try? await source.day(peerDid: peerDid, day: nil) { await absorb(p) }
         loaded = true

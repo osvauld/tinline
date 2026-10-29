@@ -48,7 +48,20 @@ struct ChatTextMetrics { let lineCount: Int; let width: CGFloat; let lastRight: 
 
 enum ChatTextMeasure {
     /// Lines, widest line and the right edge of the last line of `s` laid out in `maxWidth` (TextKit, no padding).
+    /// A layout pass asks for the same text at the same width many times (and again on every re-render), each answer a
+    /// whole TextKit layout: keep the answers. Keyed by content, width and the content size category (fonts scale).
+    private final class Box { let m: ChatTextMetrics; init(_ m: ChatTextMetrics) { self.m = m } }
+    private static let cache: NSCache<NSString, Box> = { let c = NSCache<NSString, Box>(); c.countLimit = 2000; return c }()
+
     static func measure(_ s: NSAttributedString, maxWidth: CGFloat) -> ChatTextMetrics {
+        let key = "\(s.hash)|\(s.length)|\(maxWidth.isFinite ? Int(maxWidth * 4) : -1)|\(UIApplication.shared.preferredContentSizeCategory.rawValue)" as NSString
+        if let hit = cache.object(forKey: key) { return hit.m }
+        let m = layout(s, maxWidth: maxWidth)
+        cache.setObject(Box(m), forKey: key)
+        return m
+    }
+
+    private static func layout(_ s: NSAttributedString, maxWidth: CGFloat) -> ChatTextMetrics {
         let storage = NSTextStorage(attributedString: s)
         let lm = NSLayoutManager()
         let tc = NSTextContainer(size: CGSize(width: maxWidth.isFinite ? maxWidth : 100_000, height: .greatestFiniteMagnitude))
