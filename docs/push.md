@@ -288,11 +288,17 @@ a read cursor, a group change).
   turned off). A new token bumps the sync generation, so the next session carries it. The receiver
   keeps it under our own DID and the sender's device (`WakeState::held`), only from a live own
   device.
-- **Wake.** The own-device dial loop dials devices owed a change; when such a dial fails, the
-  dialler sends that device one `msg` wake (`SyncRt::wake_owed_device` ->
+- **Wake.** The own-device dial loop dials devices owed a change; when such a dial fails to
+  connect (not when a session came up and then ended, e.g. the phone stopping), and the device is
+  not known to hold the current change generation (`SelfSync::held`: like `synced`, but a
+  `sync_kick` does not forget it, so a network change or restart of the laptop wakes nothing) and
+  has no session up, the dialler sends that device one `msg` wake (`SyncRt::wake_owed_device` ->
   `NodeCtx::wake_own_device`), on the contact schedule (`wake::msg_wake_due`: 0, 30 s, 2, 10,
   30 min, then hourly), which an own-device session with it starts over. Not on a bare start
-  (generation 0, nothing changed yet), so restarting the laptop does not wake the phone.
+  (generation 0, nothing changed yet), so restarting the laptop does not wake the phone. No wake
+  loop: the woken phone stays up 90 s (Android `CoreService.IDLE_HOLD_MS`), its session marks it
+  in sync after 30 s quiet, so when it sleeps again nothing is owed and nothing wakes it
+  (`it` test `own_wake::own_wake_a_phone_that_caught_up_and_sleeps_again_is_not_woken_again`).
 - **Woken.** The hint opens to a `self:` tag: `on_wake` returns `DialBack` with our own DID (the
   app starts the node as for any dial-back; the app API is unchanged), kicks own-device sync
   (`sync_kick`: dial every own device now) and retries pending pictures at once (no contact is

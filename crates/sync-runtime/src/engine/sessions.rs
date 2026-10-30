@@ -20,11 +20,14 @@ impl SyncRt {
         r
     }
 
+    /// Dials own device `device` and runs the session. The outer `Err`: it was not reached (no
+    /// connection came up); `Ok(r)`: it was, and the session ended with `r` (an error there,
+    /// such as the peer stopping, says nothing about whether it sleeps).
     pub async fn self_dial(
         self: Arc<Self>,
         device: [u8; 32],
         relay: Option<String>,
-    ) -> Result<(), Error> {
+    ) -> Result<Result<(), Error>, Error> {
         let ep = self.endpoint()?;
         let addr = addr_for(&device, relay.as_deref())?;
         let conn = tokio::time::timeout(
@@ -37,7 +40,7 @@ impl SyncRt {
         if r.is_err() {
             conn.close(0u32.into(), b"done");
         }
-        r
+        Ok(r)
     }
 
     pub fn tombstones(&self) -> HashSet<[u8; 32]> {
@@ -301,12 +304,18 @@ impl SyncRt {
                     if t != seen {
                         seen = t;
                         active = Instant::now();
-                    } else if active.elapsed() >= node_runtime::wire::idle_close() && !changes.has_changed().unwrap_or(true) {
+                    } else if !changes.has_changed().unwrap_or(true) && active.elapsed() >= settle_quiet() {
+                        // Quiet with nothing unseen: the peer holds everything up to here, also
+                        // if the session later ends by the peer going away (a phone that stops
+                        // before the idle close). Without this a stopped phone counted as owed
+                        // everything since our start, and a failed dial woke it for nothing.
                         self.selfsync_settled(remote, &changes);
-                        writer.finish();
-                        let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
-                        self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
-                        return Ok(());
+                        if active.elapsed() >= node_runtime::wire::idle_close() {
+                            writer.finish();
+                            let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                            self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
+                            return Ok(());
+                        }
                     }
                 }
                 m = reader.recv::<SelfMsg>() => {
