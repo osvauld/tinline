@@ -42,6 +42,8 @@ pub struct ChatRt {
     /// Picture downloads in flight: `(epoch, did, hash)`.
     pub profile_downloads: Mutex<HashSet<(u64, String, String)>>,
     pub profile_fetches: Arc<Semaphore>,
+    /// The platform pauses sending older days to contacts (metered network, low battery).
+    pub backfill_paused: std::sync::atomic::AtomicBool,
 }
 
 impl ChatRt {
@@ -54,6 +56,7 @@ impl ChatRt {
             profile_events: Default::default(),
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),
+            backfill_paused: Default::default(),
         }
     }
 

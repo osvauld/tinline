@@ -55,7 +55,7 @@ retry_alone = true
 # The long-running 1:1 simulation (crates/core/tests/it/chat_longrun.rs); `CHAT_LONGRUN_DAYS`
 # (default 30) sets its length. `--nocapture` keeps its `LONGRUN ...` measurement lines in the log.
 name = "chat_longrun"
-command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "chat_longrun::", "--nocapture"]
+command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "chat_longrun::", "--include-ignored", "--nocapture"]
 after = ["build"]
 placement = "nixos"
 timeout_secs = 3600
@@ -157,7 +157,7 @@ timeout_secs = 3600
 # The long-running group simulation (crates/core/tests/it/group_longrun.rs); `GROUP_LONGRUN_DAYS`
 # (default 30) sets its length. `--nocapture` keeps its `LONGRUN ...` measurement lines in the log.
 name = "group_longrun"
-command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "group_longrun::", "--nocapture"]
+command = ["cargo", "test", "--profile", "fasttest", "-p", "p2pcore", "--features", "dev-tools", "--test", "it", "--no-fail-fast", "--", "group_longrun::", "--include-ignored", "--nocapture"]
 after = ["build"]
 placement = "nixos"
 timeout_secs = 3600

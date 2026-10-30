@@ -38,10 +38,11 @@ fn mismatch(e: ConnectionError) -> String {
 // KIND: invariant (P9c; P10 bumped again: a record holds one version per writer)
 #[test]
 fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
-    assert_eq!(CHAT.current, b"tinline/chat/7");
+    assert_eq!(CHAT.current, b"tinline/chat/8");
     assert!(reason(&CHAT, b"tinline/chat/6").contains("wipe"), "postcard changed every stored format");
     assert!(reason(&OWN, b"tinline/self/4").contains("wipe"));
     assert!(!reason(&CHAT, b"tinline/chat/5").contains("wipe"), "receipt frames do not require a data wipe");
+    assert!(!reason(&CHAT, b"tinline/chat/7").contains("wipe"), "day inventories do not require a data wipe");
     assert!(!reason(&CHAT, b"tinline/chat/3").contains("wipe"), "profile support upgrades do not require a data wipe");
     assert!(!reason(&CHAT, b"tinline/chat/4").contains("wipe"), "photo sizes do not require a data wipe");
     assert!(!reason(&OWN, b"tinline/self/3").contains("wipe"), "photo sizes do not require a data wipe");
@@ -64,6 +65,7 @@ fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
             b"tinline/chat/4".to_vec(),
             b"tinline/chat/5".to_vec(),
             b"tinline/chat/6".to_vec(),
+            b"tinline/chat/7".to_vec(),
             b"tinline/self/1".to_vec(),
             b"tinline/self/2".to_vec(),
             b"tinline/self/3".to_vec(),
@@ -72,7 +74,7 @@ fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
         ]
     );
     let r = reason(&CHAT, b"tinline/chat/2");
-    assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/7") && r.contains("update"), "{r}");
+    assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/8") && r.contains("update"), "{r}");
 }
 
 // KIND: invariant (P9c, test-first)

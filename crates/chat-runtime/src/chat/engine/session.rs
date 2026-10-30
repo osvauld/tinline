@@ -69,7 +69,6 @@ impl ChatRt {
             dialing: Default::default(),
             downloading: Default::default(),
             next_dl: AtomicU64::new(1),
-            pulling: Default::default(),
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
             presence: crate::chat::presence::Presence::new(),
@@ -518,8 +517,11 @@ impl ChatRt {
             dialer: if dialer { my_dev } else { remote },
             tx,
             peer_vv: Default::default(),
+            vv_known: Default::default(),
             receipt_vv: Default::default(),
-            hist: Default::default(),
+            inv_seen: Default::default(),
+            backfill_busy: AtomicBool::new(false),
+            backfill_again: AtomicBool::new(false),
             presence: crate::chat::presence::session_store(),
         });
         // One session per contact: if both sides dialled at once, the one dialled by the lower
@@ -609,6 +611,7 @@ impl ChatRt {
                 Err(e) => tracing::warn!("chat receipts: hello for {}: {e}", short(&sess.did)),
             }
             self.chat_resume_downloads(&core, &sess.did);
+            self.handle.spawn(self.clone().chat_days_sync(core.clone(), sess.clone()));
             let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
             // Idle = no ChatMsg either way and no local activity (`chat_keep`); presence datagrams
             // do not count.
@@ -657,11 +660,21 @@ impl ChatRt {
                                 break 'run e.to_string();
                             }
                         }
-                        Some(Cmd::History(before, limit)) => {
+                        Some(Cmd::Days(after, days)) => {
                             active = std::time::Instant::now();
-                            if let Err(e) = writer.send(&ChatMsg::HistoryReq { before, limit }).await {
+                            if let Err(e) = writer.send(&ChatMsg::Days { after, days }).await {
                                 break 'run e.to_string();
                             }
+                        }
+                        Some(Cmd::Backfill(day, done)) => {
+                            active = std::time::Instant::now();
+                            let me = match self.me() { Ok(m) => m, Err(e) => break 'run e.to_string() };
+                            let pair = pair_id(me.id.did(), &sess.did);
+                            let theirs = sess.peer_vv.lock().get(&day).cloned().unwrap_or_default();
+                            if let Err(e) = self.chat_send_own(&core, &me, &sess, &pair, &day, &theirs, &mut writer, true).await {
+                                break 'run e.to_string();
+                            }
+                            let _ = done.send(());
                         }
                         Some(Cmd::Profile) => {
                             active = std::time::Instant::now();
@@ -684,7 +697,6 @@ impl ChatRt {
                 map.remove(&sess.device);
             }
         }
-        sess.hist.lock().take();
         self.presence_update(&core, &sess.did);
         let _ = writer.0.finish();
         let c2 = conn.clone();

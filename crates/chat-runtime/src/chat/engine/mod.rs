@@ -5,7 +5,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use iroh::endpoint::{Accepting, Connection};
@@ -49,6 +49,8 @@ const MAX_HELLO_SHARDS: usize = 64;
 const CLOSE_AFTER_DAYS: i64 = 8;
 const UPDATES_BEFORE_SNAPSHOT: u32 = 64;
 const MAX_SHARDS_CACHED: usize = 12;
+/// Between two backfilled days, so a long history does not crowd out live traffic.
+const BACKFILL_PAUSE_MS: u64 = 200;
 
 /// Retry delays after a failed fetch while we stay connected; then the blob is marked failed
 /// ("Tap to retry"). A reconnect restarts wanted blobs regardless.
@@ -77,7 +79,6 @@ pub struct ChatCore {
     dialing: Mutex<HashSet<String>>,
     downloading: Mutex<HashMap<String, Dl>>,
     next_dl: AtomicU64,
-    pulling: Mutex<HashSet<(String, String)>>,
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub presence: crate::chat::presence::Presence,
@@ -135,7 +136,10 @@ impl ChatCore {
 pub enum Cmd {
     Push(String),
     Ack(String),
-    History(String, u32),
+    /// One page of our day inventory.
+    Days(Option<String>, Vec<(String, Vec<u8>)>),
+    /// Send the ops of this day the contact device lacks (backfill); answered when sent.
+    Backfill(String, oneshot::Sender<()>),
     Profile,
     /// Send the receipt-ledger ops of this day the contact device lacks (chat/6).
     Receipts(String),
@@ -154,10 +158,18 @@ pub struct Session {
     dialer: [u8; 32],
     tx: mpsc::UnboundedSender<Cmd>,
     peer_vv: Mutex<HashMap<String, VersionVector>>,
+    /// Days whose `peer_vv` came from the contact device itself (its `Hello`, `Sync` or `Ack`):
+    /// for these we send every op it lacks, not only ours.
+    vv_known: Mutex<std::collections::HashSet<String>>,
     /// Receipt-ledger version the contact device holds, per day (its `ReceiptHello`/`ReceiptAck`,
     /// advanced optimistically by what we sent).
     receipt_vv: Mutex<HashMap<String, VersionVector>>,
-    hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
+    /// The days of the contact device's current inventory seen so far (`ChatMsg::Days`).
+    inv_seen: Mutex<HashSet<String>>,
+    /// A backfill pass to this contact device is running (`chat_backfill`).
+    backfill_busy: AtomicBool,
+    /// Another inventory arrived meanwhile: run the pass again when it ends.
+    backfill_again: AtomicBool,
     /// What this contact device last said about itself (presence).
     pub presence: loro::awareness::EphemeralStore,
 }

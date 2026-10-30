@@ -163,4 +163,5 @@ fn touch(map: &LoroMap, id: &str) {
 mod basics;
 mod forgeries;
 mod honest;
+mod relay;
 mod writer_ids;

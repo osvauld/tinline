@@ -314,11 +314,13 @@ pub struct Ctx {
     /// The DID the batch comes from (the session's contact; for own-device sync, ourselves).
     pub signer_did: String,
     pub now_ms: i64,
-    /// A live push: `at` must also be within 24 h of now.
+    /// A live push: a new message of the signer's must also be within 24 h of now.
     pub live: bool,
-    /// A copy that may hold both parties' ops (a contact's vouched history snapshot, or
-    /// own-device sync): `Some(the other party)`. Authors must be `signer_did` or this, and
-    /// either may appear changed. `None`: only the signer's own ops and messages.
+    /// A batch that may hold both parties' ops (a contact's batch, which carries our own
+    /// messages from our other devices too (docs/chat.md section 10), or own-device sync):
+    /// `Some(the other party)`. Authors must be `signer_did` or this, and either may appear
+    /// changed; every op is still proven by its author's DID signature. `None`: only the
+    /// signer's own ops and messages.
     pub history: Option<String>,
 }
 
@@ -786,7 +788,9 @@ impl Shard {
                     if new.at < lo || new.at >= hi {
                         return Err(Reject::OutOfRange);
                     }
-                    if ctx.live && (new.at - ctx.now_ms).abs() >= DAY_MS {
+                    // Our own messages a contact carries may be old; only what the signer
+                    // writes now is held to the live window.
+                    if ctx.live && new.author == ctx.signer_did && (new.at - ctx.now_ms).abs() >= DAY_MS {
                         return Err(Reject::OutOfRange);
                     }
                     applied.added.push(id.clone());

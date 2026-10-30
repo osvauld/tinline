@@ -131,6 +131,7 @@ fn appoint_host(o: &Peer, h: &Peer, g: &str, all_peers: &[&Peer]) {
 // ---- the long run -------------------------------------------------------------------------------
 
 #[test]
+#[ignore = "long simulation, not for CI: run by hand (loadtable step chat_longrun / group_longrun, --include-ignored)"]
 fn a_group_over_many_days_with_absences_a_host_restart_and_rotation_converges() {
     let n = days();
     let t_run = Instant::now();

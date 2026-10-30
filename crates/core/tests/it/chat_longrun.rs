@@ -274,6 +274,7 @@ fn ms(d: Duration) -> u128 {
 // ---- 1. the long run ---------------------------------------------------------------------------
 
 #[test]
+#[ignore = "long simulation, not for CI: run by hand (loadtable step chat_longrun / group_longrun, --include-ignored)"]
 fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() {
     let n = days();
     let t_run = Instant::now();
@@ -477,18 +478,17 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
         let what = if both { "online devices are consistent and everything is delivered" } else { "one side's online devices agree" };
         agree(&format!("day {d}: {what}"), d, &peers, &names, &other, &side_a, &ups, false, both, &ledger);
         if handover {
-            let held: BTreeSet<String> = all_msgs(&b2, &a.did).into_iter().map(|m| m.id).collect();
+            // B2 comes back as B leaves: A holds B's messages and carries them to B2 (docs/chat.md
+            // section 10), older days included, within one inventory pass.
             let yesterday: Vec<&Sent> = ledger.iter().filter(|s| s.dev == Dev::B && s.day == d - 1).collect();
-            let lacks = yesterday.iter().filter(|s| !held.contains(&s.id)).count();
             assert!(yesterday.iter().all(|s| has(&a, &b.did, &s.id)), "A holds B's messages of yesterday");
-            let a_old = ledger.iter().filter(|s| matches!(s.dev, Dev::A | Dev::A2) && s.day < d - 6 && !held.contains(&s.id)).count();
-            let b2_st = state(&b2, &a.did);
-            let stale = state(&a, &b.did).iter().filter(|x| !b2_st.contains(x) && held.contains(&x.0)).count();
-            println!(
-                "LONGRUN day {d}: B2 back as B leaves: lacks {lacks} of B's {} messages of yesterday that A holds (A sends only its own), \
-                 {a_old} of A's older than the hello window, and shows {stale} messages without a later edit or delete (all come from B)",
-                yesterday.len()
-            );
+            let t = Instant::now();
+            let gap = || {
+                let b2_st = state(&b2, &a.did);
+                state(&a, &b.did).into_iter().filter(|x| !b2_st.contains(x)).count()
+            };
+            eventually(60, "B2 holds everything A holds", || gap() == 0);
+            println!("LONGRUN day {d}: B2 back as B leaves: holds all {} messages A holds (B's {} of yesterday included) after {} ms", state(&a, &b.did).len(), yesterday.len(), ms(t.elapsed()));
         }
         for (i, t) in came_up {
             reconnects.push((d, names[i], t.elapsed()));
@@ -555,8 +555,10 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
         check_conflicts(peers[i], &other[i], &conflicts);
     }
     eventually(60, "B drops A2 from A's devices", || !b.dials(&a).contains(&a2_key) && !b2.dials(&a).contains(&a2_key));
-    for p in peers {
+    for (i, p) in peers.iter().enumerate() {
         assert!(!p.refused_chat(), "refused: {:?}", p.refusals());
+        let pending = p.logs.lock().unwrap().iter().filter(|l| l.contains("waits for earlier ops")).count();
+        assert_eq!(pending, 0, "{}: a batch the device could not place (a vector that claims ops it lacks)", names[i]);
     }
     let closed_b = b.node.compact_now_for_test().unwrap();
     println!("LONGRUN end: {} messages over {n} days; A closed {closed_a} days, B {closed_b}", ledger.len());
@@ -609,6 +611,7 @@ fn a_conversation_over_many_days_with_absences_edits_and_compaction_converges() 
 // is the newest day of every contact among them? Nothing is compacted here: the hello lists a
 // day's meta whether it is closed or not.
 #[test]
+#[ignore = "long simulation, not for CI: run by hand (loadtable step chat_longrun / group_longrun, --include-ignored)"]
 fn a_fresh_device_of_a_large_history_receives_the_newest_days() {
     let a = S.peer("cap-a");
     let (contacts, days_each) = (60usize, 80i64);
@@ -624,7 +627,7 @@ fn a_fresh_device_of_a_large_history_receives_the_newest_days() {
     for d in 0..days_each {
         let at = today - (days_each - d) * DAY + 12 * HOUR;
         for (i, did) in dids.iter().enumerate() {
-            let author = if (d as usize + i) % 2 == 0 { a.did.clone() } else { did.clone() };
+            let author = if (d as usize + i).is_multiple_of(2) { a.did.clone() } else { did.clone() };
             a.node.synth_dm_for_test(did.clone(), author, format!("c{i} d{d}"), at, None).unwrap();
         }
     }
@@ -665,4 +668,77 @@ fn a_fresh_device_of_a_large_history_receives_the_newest_days() {
     assert!(second > 0, "the new device received something");
     assert!(!a3.refused_chat(), "A3 refused: {:?}", a3.refusals());
     assert!(!a.refused_chat(), "A refused: {:?}", a.refusals());
+}
+
+// ---- 3. the contact carries the history (docs/chat.md section 10) ------------------------------
+
+/// No device of `p` logged a batch it could not place (a version vector that claimed ops the
+/// device lacked), and none refused the other side.
+fn clean(p: &Peer, name: &str) {
+    assert!(!p.refused_chat(), "{name} refused: {:?}", p.refusals());
+    let pending = p.logs.lock().unwrap().iter().filter(|l| l.contains("waits for earlier ops")).count();
+    assert_eq!(pending, 0, "{name}: a batch the device could not place");
+}
+
+/// A and B write on each of the `days` days before today (A at noon, B a minute later); returns
+/// the ids. Both clocks are back at today afterwards.
+fn write_days(a: &Peer, b: &Peer, days: i64) -> Vec<String> {
+    let mut ids = Vec::new();
+    for d in (1..=days).rev() {
+        let base = -d * DAY;
+        ids.push(send(a, &b.did, &format!("A, {d} days ago"), base, 0).id);
+        ids.push(send(b, &a.did, &format!("B, {d} days ago"), base, 60_000).id);
+    }
+    a.node.chat_clock_offset_for_test(0);
+    b.node.chat_clock_offset_for_test(0);
+    ids
+}
+
+// Acceptance 3. A2 is away while A and B write on 60 days; then A is off and A2 comes back: B
+// carries every day to A2, A's messages included, though most are older than the hello window.
+#[test]
+#[ignore = "long simulation, not for CI: run by hand (loadtable step chat_longrun / group_longrun, --include-ignored)"]
+fn a_device_away_sixty_days_with_its_sibling_off_gets_every_day_from_the_contact() {
+    let a = S.peer("away-a");
+    let b = S.peer("away-b");
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    eventually(30, "A has B as a contact", || a.node.contacts().iter().any(|c| c.did == b.did));
+    let a2 = S.link_fresh(&a, "away-a2");
+    eventually(60, "A2 knows B", || a2.node.contacts().iter().any(|c| c.did == b.did));
+    eventually(60, "B learns A2 from A's device list", || b.dials(&a).contains(&a2.key()));
+    a2.node.stop();
+
+    let ids = write_days(&a, &b, 60);
+    eventually(120, "B holds every message", || ids.iter().all(|id| has(&b, &a.did, id)));
+    let want = state(&b, &a.did);
+    a.node.stop();
+    let t = Instant::now();
+    online(&a2.node);
+    eventually(300, "A2 holds everything B holds", || state(&a2, &b.did) == want);
+    println!("LONGRUN away: A2 back after 60 days with A off: all {} messages, {} days, from B in {} ms", want.len(), days_held(&a2, &b.did), ms(t.elapsed()));
+    clean(&a2, "A2");
+    clean(&b, "B");
+}
+
+// Acceptance 4. A loses its only device, restores the account from the phrase and adds B again:
+// B gives back the whole conversation, A's own messages included (each verifies against A's DID).
+#[test]
+#[ignore = "long simulation, not for CI: run by hand (loadtable step chat_longrun / group_longrun, --include-ignored)"]
+fn a_restore_with_no_device_left_gets_the_history_back_from_the_contact() {
+    let a = S.peer("rest-a");
+    let b = S.peer("rest-b");
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    eventually(30, "A has B as a contact", || a.node.contacts().iter().any(|c| c.did == b.did));
+    let ids = write_days(&a, &b, 20);
+    eventually(120, "B holds every message", || ids.iter().all(|id| has(&b, &a.did, id)));
+    let want = state(&b, &a.did);
+    a.node.stop();
+
+    let t = Instant::now();
+    let a3 = Peer::restored(S.0, "rest-a3", &a.phrase);
+    a3.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    eventually(300, "A3 holds the whole conversation", || state(&a3, &b.did) == want);
+    println!("LONGRUN restore: the restored install holds all {} messages ({} days) from B after {} ms", want.len(), days_held(&a3, &b.did), ms(t.elapsed()));
+    clean(&a3, "A3");
+    clean(&b, "B");
 }

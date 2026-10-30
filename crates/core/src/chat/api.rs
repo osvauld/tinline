@@ -171,8 +171,9 @@ impl Node {
         self.block_rt(async move { chat.chat_day(&peer_did, day).await })
     }
 
-    /// Asks the peer for days older than `before_day` that we do not hold (needs a connection;
-    /// blocks until answered or timed out). Returns how many days were added.
+    /// Nothing older than `before_day` on this device: opens a link to the contact, which sends
+    /// every day we lack, newest first, and waits up to ~10 s for older days to arrive. Returns
+    /// how many did (docs/chat.md section 10).
     pub fn fetch_older_history(&self, peer_did: String, before_day: String) -> Result<u32, Error> {
         let chat = self.open().chat.clone();
         self.block_rt(async move { chat.chat_fetch_history(&peer_did, before_day).await })
