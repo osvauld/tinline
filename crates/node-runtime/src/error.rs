@@ -161,6 +161,8 @@ impl From<transfer::Error> for Error {
             transfer::Error::Timeout => Error::Timeout,
             transfer::Error::Protocol(s) => Error::Protocol(s),
             transfer::Error::Net(s) => Error::Net(s),
+            // A bad or tampered copy at one peer: another source may still be good.
+            transfer::Error::Corrupt(s) => Error::Net(format!("data does not match the signed hash: {s}")),
             transfer::Error::Io(s) => Error::Io(s),
         }
     }
