@@ -122,6 +122,22 @@ impl GroupRt {
                 size: v.size,
                 state: blob_state(core, gid, &v.as_blob()),
             }),
+            file: i.file.as_ref().map(|f| {
+                let state = blob_state(core, gid, &f.as_blob());
+                GroupFile {
+                    name: f.name.clone(),
+                    size: f.size,
+                    mime: f.mime.clone(),
+                    done: if state == GroupImageState::Loading { core.images.files.done_of(gid, &f.hash, f.size) } else { 0 },
+                    state,
+                    kept_by_hosts: f.kept_by_hosts(),
+                    holders: core
+                        .file_holders_of(gid, &i.id)
+                        .into_iter()
+                        .map(|did| GroupFileHolder { name: self.group_name_of(core, gid, &did), did })
+                        .collect(),
+                }
+            }),
         })
     }
 
@@ -250,6 +266,7 @@ impl GroupRt {
             reply_to: None,
             image: None,
             voice: None,
+            file: None,
             before_removal: false,
             peer: entry.peer,
             counter: entry.counter,

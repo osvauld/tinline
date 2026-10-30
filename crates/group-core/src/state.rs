@@ -117,6 +117,8 @@ pub struct Item {
     pub image: Option<crate::record::ImageRef>,
     /// A voice post's recording (`Body::Voice`); `text` and `image` are then empty.
     pub voice: Option<crate::record::VoiceRef>,
+    /// A file post's file (`Body::File`); `text` is then its caption.
+    pub file: Option<crate::record::FileRef>,
     /// A post shown although its author is removed now: written before the removal (U11).
     pub before_removal: bool,
     pub peer: u64,
@@ -276,9 +278,10 @@ pub fn refused_admins_only(st: &GroupState, uploader: &str, author: &str, seen: 
 
 /// The conversation line of a post; `before_removal` is its author's removal now.
 pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
-    let (text, reply_to, image, voice) = match &e.rec.body {
-        Body::Post { text, reply_to, image } => (text.clone(), reply_to, image.clone(), None),
-        Body::Voice { reply_to, voice } => (String::new(), reply_to, None, Some(voice.clone())),
+    let (text, reply_to, image, voice, file) = match &e.rec.body {
+        Body::Post { text, reply_to, image } => (text.clone(), reply_to, image.clone(), None, None),
+        Body::Voice { reply_to, voice } => (String::new(), reply_to, None, Some(voice.clone()), None),
+        Body::File { caption, reply_to, file } => (caption.clone(), reply_to, None, None, Some(file.clone())),
         _ => return None,
     };
     Some(Item {
@@ -291,6 +294,7 @@ pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
         reply_to: reply_to.clone(),
         image,
         voice,
+        file,
         before_removal: st.removed.contains_key(&e.rec.author),
         peer: e.peer,
         counter: e.counter,

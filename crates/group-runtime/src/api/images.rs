@@ -17,7 +17,7 @@ impl GroupRt {
     ) -> Result<GroupMessage, Error> {
         let img = self.group_image_add(core, gid, &p, mime).await?;
         let body = Body::Post { text: caption, reply_to: None, image: Some(img.clone()) };
-        self.group_post_blob(core, gid, img, body).await
+        self.group_post_blob(core, gid, img, None, body).await
     }
 
     /// Seals a finished recording (Ogg Opus, checked by the caller) into the group's blob store
@@ -32,16 +32,17 @@ impl GroupRt {
     ) -> Result<GroupMessage, Error> {
         let voice = self.group_voice_add(core, gid, ogg, duration_ms, waveform).await?;
         let blob = voice.as_blob();
-        self.group_post_blob(core, gid, blob, Body::Voice { reply_to: None, voice }).await
+        self.group_post_blob(core, gid, blob, None, Body::Voice { reply_to: None, voice }).await
     }
 
-    /// Writes `body`, a post naming the blob `blob` that is already sealed into our store; on a
-    /// refused write the blob goes again.
-    async fn group_post_blob(
+    /// Writes `body`, a post naming the blob `blob` (of `file`, for a file post) that is already
+    /// sealed into our store; on a refused write the blob goes again.
+    pub(crate) async fn group_post_blob(
         self: &Arc<Self>,
         core: &Arc<GroupCore>,
         gid: &str,
         blob: ImageRef,
+        file: Option<FileRef>,
         body: Body,
     ) -> Result<GroupMessage, Error> {
         let (entry, changed) = match core.write(gid, body) {
@@ -62,6 +63,8 @@ impl GroupRt {
             failed: false,
             dropped: false,
             referenced: true,
+            file,
+            deleted: false,
         };
         if let Err(e) = core.store.put_image(gid, &row) {
             tracing::warn!("group {}: image row: {e}", crate::short(gid));

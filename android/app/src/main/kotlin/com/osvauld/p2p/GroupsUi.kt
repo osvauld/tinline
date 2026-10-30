@@ -67,9 +67,9 @@ fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2
 fun GroupMandala(art: FingerprintDrawing, size: Dp, modifier: Modifier = Modifier) {
     val c = Tin.c
     val (bg, fg) = if (c.dark) art.darkBg to art.darkFg else art.lightBg to art.lightFg
-    val gold = c.gold
+    val img = rememberFingerprint(art, size, fg, c.gold)
     Box(modifier.size(size).clip(androidx.compose.foundation.shape.RoundedCornerShape(size * 0.28f)).background(bg)
-        .drawBehind { drawFingerprint(art, fg, gold) })
+        .drawBehind { drawFilling(img) })
 }
 
 /** Person avatar in group surfaces (GroupInfo / MemberSheet use the one Avatar with the person's hue and picture, contact or not). */

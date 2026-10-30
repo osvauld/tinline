@@ -356,8 +356,8 @@ fn messages_from_our_other_device_are_searchable() {
     assert_eq!(hits(&a2.node, "marmal")[0].conv_name, "You");
 }
 
-// KIND: acceptance (S1) — a day pulled with `fetch_older_history` (a vouched snapshot) is indexed
-// when imported.
+// KIND: acceptance (S1) — an old day the contact sends (its backfill, docs/chat.md section 10) is
+// indexed when it arrives.
 #[test]
 fn a_day_pulled_by_history_import_is_searchable() {
     let a = peer("hista");

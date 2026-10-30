@@ -4808,3 +4808,34 @@ text = "{name} अब इस फ़ोन पर खुला है। आप�
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "यह खाता अब इस फ़ोन पर खुला है। आपके दूसरे खाते की कॉल अब भी यहाँ बजती हैं और नए संदेशों की सूचना आती है। आप सेटिंग में जाकर बदल सकते हैं।"
+
+[groupsc_file_line]
+text = "फ़ाइल: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name} भी यह फ़ाइल होस्ट कर रहे हैं"
+
+[groupsc_file_holders]
+one = "{name} और {count} अन्य के पास यह फ़ाइल है"
+other = "{name} और {count} अन्य के पास यह फ़ाइल है"
+
+[groups_file_not_available]
+text = "अभी उपलब्ध नहीं है। बाद में फिर कोशिश करें।"
+
+[groups_file_try_again_name]
+text = "{name} फिर से डाउनलोड करें"
+
+[groups_file_delete_copy_name]
+text = "{name} की मेरी कॉपी हटाएँ"
+
+[groups_attach_title]
+text = "{name} में शेयर करें"
+
+[groups_attach_hint]
+text = "हर फ़ाइल 2 GB तक। ग्रुप के होस्ट एक कॉपी रखते हैं, ताकि आपके ऑफ़लाइन होने पर भी सदस्य इसे पा सकें।"
+
+[groups_attach_photo]
+text = "फ़ोटो"
+
+[groups_file_no_picker]
+text = "इस फ़ोन पर कोई फ़ाइल पिकर नहीं है।"

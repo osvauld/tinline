@@ -12,7 +12,6 @@
 //! blob/{hash}                    BlobInfo   hash -> key (+ name, size, mime, state)
 //! ref/{hash}/{pair}              empty      this conversation may read that blob
 //! pb/{pair}/{hash}               empty      the blobs a conversation uses (for deletion)
-//! snapcache/{pair}/{day}         SnapRef    a snapshot blob we made for a peer's history request
 //! set/auto_download              u64 BE
 //! ```
 
@@ -82,15 +81,6 @@ pub struct BlobInfo {
     pub day: String,
     #[serde(default)]
     pub msg: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SnapRef {
-    #[serde(with = "hexbytes")]
-    pub vv: Vec<u8>,
-    pub hash: String,
-    pub key: String,
-    pub size: u64,
 }
 
 mod hexbytes {
@@ -359,14 +349,6 @@ impl ChatStore {
             .into_iter()
             .filter_map(|k| k.strip_prefix(&prefix).map(str::to_string))
             .collect())
-    }
-
-    pub fn snapcache(&self, pair: &str, day: &str) -> Result<Option<SnapRef>, Error> {
-        self.get_json(&format!("snapcache/{pair}/{day}"))
-    }
-
-    pub fn put_snapcache_op(&self, pair: &str, day: &str, s: &SnapRef) -> Result<Op, Error> {
-        self.db.put_op(&format!("snapcache/{pair}/{day}"), &json(s)).map_err(Error::from)
     }
 
     // ---- settings ----------------------------------------------------------------------------

@@ -97,6 +97,14 @@ interface GroupApi {
     fun fetchVoice(id: String, messageId: String) {}
     /** Blocking the first time (the core opens the recording into a file): IO threads only. */
     fun voicePath(id: String, messageId: String): String? = null
+    // File posts (docs/design/group-files.md): any file up to 2 GB, streamed from disk by the core.
+    /** Blocking (the core seals the whole file): IO threads only. */
+    fun postFile(id: String, path: String, name: String, mime: String, caption: String): GroupMessage = throw UnsupportedOperationException()
+    fun fetchFile(id: String, messageId: String) {}
+    fun cancelFile(id: String, messageId: String) {}
+    /** Blocking the first time (the core decrypts the file once): IO threads only. */
+    fun filePath(id: String, messageId: String): String? = null
+    fun deleteFileCopy(id: String, messageId: String) {}
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -142,6 +150,11 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun postVoice(id: String, path: String, waveform: ByteArray) = node().groupPostVoice(id, path, waveform)
     override fun fetchVoice(id: String, messageId: String) = node().groupFetchVoice(id, messageId)
     override fun voicePath(id: String, messageId: String) = node().groupVoicePath(id, messageId)
+    override fun postFile(id: String, path: String, name: String, mime: String, caption: String) = node().groupPostFile(id, path, name, mime, caption.ifEmpty { null })
+    override fun fetchFile(id: String, messageId: String) = node().groupFetchFile(id, messageId)
+    override fun cancelFile(id: String, messageId: String) = node().groupCancelFile(id, messageId)
+    override fun filePath(id: String, messageId: String) = node().groupFilePath(id, messageId)
+    override fun deleteFileCopy(id: String, messageId: String) = node().groupDeleteFileCopy(id, messageId)
 }
 
 /** A contact as the "Add members" picker sees it. */
@@ -241,12 +254,25 @@ object GroupText {
         }
     }
 
-    /** A post in one line: its text, "Voice message", "Photo" for a picture alone, "Photo · caption" with one. Same words as desktop. */
+    /** A post in one line: its text, "Voice message", "Photo" for a picture alone, "Photo · caption" with one, "File: name". Same words as desktop. */
     fun postLine(m: GroupMessage): String = when {
         m.voice != null -> appString(R.string.chat_preview_voice)
+        m.file != null -> appString(R.string.groupsc_file_line, m.file!!.name)
         m.image == null -> m.text
         m.text.isEmpty() -> appString(R.string.groups_photo_desc)
         else -> appString(R.string.groupsc_photo_caption_line, m.text)
+    }
+
+    /**
+     * Under a file card: who else has the file ("Anoop is also hosting this file", "Anoop and 2 others have this file"), from
+     * the core's holders (the author first). I am never named; nobody else: null. Same words as desktop.
+     */
+    fun holdersLine(f: uniffi.p2pcore.GroupFile, me: String, name: (uniffi.p2pcore.GroupFileHolder) -> String): String? {
+        val others = f.holders.filter { it.did != me }
+        val first = others.firstOrNull() ?: return null
+        val who = firstName(name(first)).ifBlank { appString(R.string.common_someone) }
+        return if (others.size == 1) appString(R.string.groupsc_file_also_hosting, who)
+        else appPlural(R.plurals.groupsc_file_holders, others.size - 1, who, others.size - 1)
     }
 
     /** Largest picture file the composer reads in (the core refuses anything larger). */
@@ -541,6 +567,27 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
 
     /** The voice post's recording as a file once it is here (null before). IO threads only. */
     fun voicePath(id: String, messageId: String): String? = try { api.voicePath(id, messageId) } catch (_: Exception) { null }
+
+    /** Posts the file at [path] (a temporary copy the caller deletes after) as [name] with [caption]. IO threads only. */
+    fun postFile(id: String, path: String, name: String, mime: String, caption: String): Result<GroupMessage> {
+        if (_open.value?.takeIf { it.id == id }?.detail?.let(GroupText::adminsOnlyLocked) == true) return Result.failure(GroupFailure(GroupText.ADMINS_ONLY_ERROR))
+        return runCatching { api.postFile(id, path, name, mime, caption.trim()) }.onSuccess { m -> synchronized(this) {
+            _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
+            _list.value = try { api.groups() } catch (e: Exception) { _list.value }
+        } }.mapError()
+    }
+
+    /** Downloads a file post's file now (tap, or try again); `onGroupImage` reports progress and the end. IO threads only. */
+    fun fetchFile(id: String, messageId: String): Result<Unit> = runCatching { api.fetchFile(id, messageId) }.mapError()
+
+    /** Stops a download; the file goes back to "not downloaded". IO threads only. */
+    fun cancelFile(id: String, messageId: String): Result<Unit> = runCatching { api.cancelFile(id, messageId) }.mapError()
+
+    /** The file of a file post once it is here (null before). IO threads only. */
+    fun filePath(id: String, messageId: String): String? = try { api.filePath(id, messageId) } catch (_: Exception) { null }
+
+    /** Deletes this phone's copy (the group learns I no longer have it). IO threads only. */
+    fun deleteFileCopy(id: String, messageId: String): Result<Unit> = runCatching { api.deleteFileCopy(id, messageId) }.mapError()
 
     /** Loads a post's picture now (tap to load, or try again). IO threads only. */
     fun fetchImage(id: String, messageId: String): Result<Unit> = runCatching { api.fetchImage(id, messageId) }.mapError()

@@ -119,6 +119,20 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
       Code: `crates/core/src/group/calls/start.rs` (`group_call_step`, `calls_originate`). Next:
       reproduce with a slow network after a rotation, fix (resend when the route returns), un-ignore.
 
+## Group files (`feat/group-files`, 2026-10-30; `docs/design/group-files.md`)
+- [x] **Decided (user):** option B for now: hosts keep every file up to 2 GB (`HOST_KEEP_FILE_MAX`
+      = 2 GiB); the on-demand relay of option A is removed. Revisit if host storage becomes an
+      issue (ideas: only laptop/desktop hosts keep big files; a host asks members to host a file).
+- [x] Android: attach sheet (Photo / File) in the group composer; file card (type icon, name,
+      size, caption; Download / progress + Cancel / Open via FileProvider, Save to Downloads,
+      Delete my copy / "Not available right now. Try again later." + retry); holder line; list
+      row and notification "File: <name>". Not device-tested.
+- [x] Desktop: file button next to the picture button; the same card (Open in the default app,
+      Save to Downloads, Delete my copy); holder line. Not tried by hand.
+- [ ] iOS: the same, later.
+- [ ] Core follow-ups: a direct member-to-member fetch over an existing contact link
+      (optimisation); a per-host keep cap; the user's ideas above.
+
 ## Decisions still open
 - [ ] Delete the storage-attestation runtime? Nothing issues one. Recommendation: delete.
 - [ ] Remote unlink: lock the account instead of deleting its directory? Recommendation: lock.

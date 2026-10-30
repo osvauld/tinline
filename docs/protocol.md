@@ -529,6 +529,17 @@ picture sealed with `transfer::crypt` under a per-image key carried in the post;
 ciphertext's BLAKE3), and the group endpoint also accepts the stock iroh-blobs ALPN, gated per
 requester and hash. No ALPN bump (`/5` is unreleased).
 
+**Group files (2026-10-30, `feat/group-files`, not merged).** Records, not frames, again:
+`Body::File{caption, reply_to, file: FileRef{hash, key, size, name, mime}}` (tag 15, a post) and
+`Body::FileHeld{post, day, hash, held}` (tag 16, in the day doc of the post it names; the doc
+rule checks `day` instead of the post time window). `FileRef.hash` is the BLAKE3 (bao) root of
+the blob sealed with `transfer::crypt`, computed while sealing and signed with the post; every
+fetch (member from host, host relaying from a member) is verified against it chunk by chunk, and
+a mismatch is `transfer::Error::Corrupt`. Limits every device checks: `size <= 2 GiB`, name 1..=255
+bytes and a single path component, mime <= 100 ASCII bytes. No ALPN bump: an app that predates
+the kinds refuses the batch (the session closes, as for voice posts); see
+`docs/design/group-files.md` §8.
+
 **Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
 `tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->
 host only; hosts relay the original native ledger ops). No compatibility with `/3` (user,

@@ -1,4 +1,4 @@
-//! The framing of `tinline/chat/7` over one iroh bidirectional stream: the messages and the batch
+//! The framing of `tinline/chat/8` over one iroh bidirectional stream: the messages and the batch
 //! signature are `chat_core::wire`, re-exported here.
 
 use iroh::endpoint::{RecvStream, SendStream};

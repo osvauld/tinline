@@ -3672,3 +3672,22 @@ text = "এখনও চেষ্টা চলছে। {name}-এর ফোন 
 
 [signup_that_doesnt_look_like]
 text = "এটা Tinline-এর কোড বলে মনে হচ্ছে না। পুরোনো সংস্করণের কোড কাজ করে না, তাই ওঁর কাছে নতুন একটা চেয়ে নিন।"
+
+[group_file_line]
+text = "ফাইল: {name}"
+
+[group_file_also_hosting]
+text = "{name}-ও এই ফাইলটি হোস্ট করছেন"
+
+[group_file_holders]
+one = "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে"
+other = "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে"
+
+[group_file_not_available]
+text = "এখন পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।"
+
+[group_attach_file]
+text = "ফাইল শেয়ার করুন"
+
+[group_file_delete_copy]
+text = "আমার কপি মুছুন"

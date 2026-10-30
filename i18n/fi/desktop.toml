@@ -3672,3 +3672,22 @@ text = "Yritetään yhä. Jos henkilön {name} puhelin nukkuu, Tinline herättä
 
 [signup_that_doesnt_look_like]
 text = "Tämä ei näytä Tinline-koodilta. Vanhempien versioiden koodit eivät toimi, joten pyydä heiltä uusi."
+
+[group_file_line]
+text = "Tiedosto: {name}"
+
+[group_file_also_hosting]
+text = "{name} myös säilyttää tätä tiedostoa"
+
+[group_file_holders]
+one = "{name} ja {count} muu ovat saaneet tämän tiedoston"
+other = "{name} ja {count} muuta ovat saaneet tämän tiedoston"
+
+[group_file_not_available]
+text = "Ei saatavilla juuri nyt. Yritä myöhemmin uudelleen."
+
+[group_attach_file]
+text = "Jaa tiedosto"
+
+[group_file_delete_copy]
+text = "Poista kopioni"

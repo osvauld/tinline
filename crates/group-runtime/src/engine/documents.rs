@@ -112,7 +112,7 @@ impl GroupCore {
             seen: live.doc.seen(),
             body,
         };
-        if rec.body.is_post() {
+        if rec.body.in_day_doc() {
             self.write_post(live, gid, rec)
         } else {
             self.write_meta(live, gid, rec)
@@ -126,7 +126,7 @@ impl GroupCore {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
         let rec = Record { group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen, body };
-        if rec.body.is_post() { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
+        if rec.body.in_day_doc() { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
     }
 
     /// Test hook (a modified app): a fresh identity writes `OpenJoin{name}` claiming `seen`; the
@@ -184,6 +184,7 @@ impl GroupCore {
                 new_items,
                 posts: Vec::new(),
                 history: false,
+                held: Vec::new(),
             },
         ))
     }
@@ -195,7 +196,12 @@ impl GroupCore {
         rec: Record,
     ) -> Result<(Entry, Changed), Error> {
         let previous_meta = live.meta.clone();
-        let day = day_of(rec.at);
+        // A file holder announcement goes in its post's day doc; a post in that of its time.
+        let day = rec.body.held_day().map(str::to_string).unwrap_or_else(|| day_of(rec.at));
+        let held: Vec<String> = match &rec.body {
+            Body::FileHeld { post, .. } => vec![post.clone()],
+            _ => Vec::new(),
+        };
         let Live {
             state,
             shards,
@@ -255,6 +261,7 @@ impl GroupCore {
                 new_items: shown,
                 posts,
                 history: false,
+                held,
             },
         ))
     }
@@ -363,6 +370,7 @@ impl GroupCore {
             new_items,
             posts,
             history: false,
+            held: Vec::new(),
         }))
     }
 
@@ -449,6 +457,13 @@ impl GroupCore {
         }
         let mut shown = Vec::new();
         let fresh_ids: Vec<String> = fresh.iter().map(|e| e.id.clone()).collect();
+        let held: Vec<String> = fresh
+            .iter()
+            .filter_map(|e| match &e.rec.body {
+                Body::FileHeld { post, .. } => Some(post.clone()),
+                _ => None,
+            })
+            .collect();
         for e in fresh {
             let vis = post_visible(state, &e.rec.author, &e.rec.seen);
             if vis == Vis::Pending {
@@ -502,6 +517,7 @@ impl GroupCore {
             new_items: shown,
             posts,
             history: false,
+            held,
         }))
     }
 }

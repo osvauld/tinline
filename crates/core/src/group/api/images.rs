@@ -190,6 +190,8 @@ impl Node {
                 failed: false,
                 dropped: false,
                 referenced: true,
+                file: None,
+                deleted: false,
             };
             core.store.put_image(&group_id, &row)?;
             let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();

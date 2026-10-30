@@ -110,7 +110,13 @@ impl ChatRt {
                         days.push(d.clone());
                     }
                 }
+                let recent = self.recent_days();
                 for day in days {
+                    // Their Hello lists every recent day they hold, so a recent day it leaves out
+                    // is one they have none of.
+                    if theirs.contains_key(&day) || recent.contains(&day) {
+                        sess.vv_known.lock().insert(day.clone());
+                    }
                     let their_vv = theirs.get(&day).cloned().unwrap_or_default();
                     sess.peer_vv.lock().insert(day.clone(), their_vv.clone());
                     self.chat_ack(core, &me, &sess.did, &pair, &day, &their_vv)?;
@@ -127,6 +133,7 @@ impl ChatRt {
                 let their = decode_vv(&vv)?;
                 let day = self.chat_doc_day(&me, sess, &doc)?;
                 self.chat_receive(core, &me, sess, &doc, &update, &sig, false, writer).await?;
+                sess.vv_known.lock().insert(day.clone());
                 sess.peer_vv.lock().insert(day, their);
                 Ok(())
             }
@@ -140,21 +147,10 @@ impl ChatRt {
                 let day = self.chat_doc_day(&me, sess, &doc)?;
                 let vv = decode_vv(&vv)?;
                 sess.peer_vv.lock().entry(day.clone()).and_modify(|v| merge_vv(v, &vv)).or_insert_with(|| vv.clone());
+                sess.vv_known.lock().insert(day.clone());
                 self.chat_ack(core, &me, &sess.did, &pair, &day, &vv)
             }
-            ChatMsg::HistoryReq { before, limit } => {
-                if !day_valid(&before) {
-                    return Err(Error::Protocol("bad day".into()));
-                }
-                let days = self.chat_history_days(core, &pair, &before, limit.min(14)).await?;
-                writer.send(&ChatMsg::HistoryResp { days }).await
-            }
-            ChatMsg::HistoryResp { days } => {
-                if let Some(tx) = sess.hist.lock().take() {
-                    let _ = tx.send(days);
-                }
-                Ok(())
-            }
+            ChatMsg::Days { days, .. } => self.chat_days_in(core, &me, sess, days),
             ChatMsg::Notice { .. } => Err(Error::Protocol("unexpected notice".into())),
             ChatMsg::ReceiptHello { days } => self.chat_receipt_hello_in(core, sess, days, writer).await,
             ChatMsg::Receipts { day, update } => self.chat_receipts_in(core, sess, &day, &update, writer).await,
@@ -315,6 +311,9 @@ impl ChatRt {
         writer: &mut ChatWriter,
     ) -> Result<(), Error> {
         let day = self.chat_doc_day(me, sess, doc)?;
+        if day > day_of(self.chat_wall_now() + DAY_MS) {
+            return Err(Error::Protocol("a day later than tomorrow".into()));
+        }
         if !verify_batch(&sess.device, doc, update, sig) {
             return Err(Error::Protocol(Reject::BadSignature.to_string()));
         }
@@ -322,20 +321,20 @@ impl ChatRt {
         let held = self.chat_shard(core, &pair, &day).await?;
         let mut added_files = Vec::new();
         let mut unchanged: Option<VersionVector> = None;
-        let mut need_history = false;
-        let (vv_now, notify) = 'blk: {
+        let (vv_now, notify) = {
             let mut shards = held;
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: self.chat_wall_now(), live, history: None };
+            // The contact carries every writer's ops of the day, ours from our other devices too
+            // (docs/chat.md section 10); each is proven by its author's DID signature.
+            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: self.chat_wall_now(), live, history: Some(me.id.did().to_string()) };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
-                // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
-                // be judged on its own. Ask them for the day as a vouched snapshot instead.
+                // The batch builds on ops we do not hold: it cannot be judged on its own. Our
+                // next inventory tells the contact what we hold, and it sends the rest.
                 Err(Reject::Pending) => {
-                    need_history = true;
-                    unchanged = Some(shard.vv());
-                    break 'blk (shard.vv(), (Vec::new(), ConvMeta::default()));
+                    self.log(format!("chat batch of {day} from {} waits for earlier ops", sess.did));
+                    return Ok(());
                 }
                 Err(r) => {
                     self.log(format!("rejected chat batch from {}: {r}", sess.did));
@@ -351,17 +350,16 @@ impl ChatRt {
             (shard.vv(), (owned, conv))
             }
         };
-        if need_history {
-            self.chat_pull_day(core, me, sess, &day);
-            return Ok(());
-        }
         if unchanged.is_some() {
             let _ = writer.send(&ChatMsg::Ack { doc: doc.to_string(), vv: vv_now.encode() }).await;
             return Ok(());
         }
         let (recs, conv) = notify;
         if let Some(ev) = self.ev() {
-            for (rec, added) in &recs {
+            // A day older than the live ones is backfill: it is there when the user scrolls to
+            // it, without a message event each (docs/chat.md section 10, P2).
+            let live_day = self.recent_days().contains(&day);
+            for (rec, added) in recs.iter().filter(|_| live_day) {
                 let m = self.chat_api_message(core, me, &sess.did, &pair, &day, rec);
                 if *added { ev.on_message_added(m) } else { ev.on_message_changed(m) }
             }
@@ -385,8 +383,8 @@ impl ChatRt {
 
     /// Persists an accepted batch (`applied` says what it changed) and returns what to announce:
     /// the touched messages (flag: newly added), the conversation row and the files to fetch.
-    /// `all_remote`: the batch came from another of our own devices, so even messages we
-    /// authored have no bytes here. Call with the shard cache locked.
+    /// `all_remote`: the batch came from another of our own devices (that device issues the
+    /// delivered receipts). Call with the shard cache locked.
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
     pub fn chat_commit(
         &self,
@@ -408,7 +406,8 @@ impl ChatRt {
             if applied.added.contains(&rec.id) {
                 ops.push(core.store.mi_op(pair, &rec.id, day)?);
             }
-            let (o, dl) = self.chat_register_file(core, pair, day, rec, all_remote || rec.author != me.id.did())?;
+            // A remote batch: even a message of ours has no bytes here unless we hold them.
+            let (o, dl) = self.chat_register_file(core, pair, day, rec, true)?;
             ops.extend(o);
             if let Some(h) = dl {
                 files.push(h);
@@ -475,22 +474,31 @@ impl ChatRt {
     ) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
-        // Our ops are under any of our writer IDs: this install's, and those of our earlier or
-        // other installs whose ops we hold (P10b).
-        if !Self::chat_owes(core, &meta, their_vv) {
+        // Where we know what the contact device holds of the day, we send it every op it lacks,
+        // whoever wrote it: its own person's from their other devices too (docs/chat.md section
+        // 10). Otherwise only ours: under any of our writer IDs, this install's and those of our
+        // earlier or other installs whose ops we hold (P10b).
+        let all = sess.vv_known.lock().contains(day);
+        let lacks = if all { Self::chat_lacks(&meta, their_vv) } else { Self::chat_owes(core, &meta, their_vv) };
+        if !lacks {
             return Ok(());
         }
         let out = {
             let shards = self.chat_shard(core, pair, day).await?;
             shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
                 let vv = s.vv();
-                let ends: Vec<(u64, i32)> = s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect();
+                let ends: Vec<(u64, i32)> = if all {
+                    vv.iter().map(|(p, c)| (*p, *c)).collect()
+                } else {
+                    s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect()
+                };
                 // A live push must not create a message the contact refuses for the 24 h live
                 // window (an old one of ours not delivered yet, e.g. from another writer ID):
                 // that batch goes as a catch-up `Sync` instead, which has no such window and
                 // keeps the session up (P10b). One hour of margin for clock skew.
                 let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), self.chat_wall_now(), DAY_MS - HOUR_MS);
-                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
+                let update = if all { s.export_all_since(their_vv) } else { s.export_own_since(their_vv, me.id.did()) };
+                update.map(|u| (u, vv, ends, catch_up))
             })
         };
         let Some((update, vv, ends, catch_up)) = out else { return Ok(()) };
@@ -516,6 +524,12 @@ impl ChatRt {
     pub fn chat_owes(core: &ChatCore, meta: &ShardMeta, theirs: &VersionVector) -> bool {
         let held = decode_vv(&meta.vv).unwrap_or_default();
         meta.own.iter().chain(std::iter::once(&core.wid)).any(|p| theirs.get(p).copied().unwrap_or(0) < held.get(p).copied().unwrap_or(0))
+    }
+
+    /// Whether a contact device holding `theirs` of a day lacks any op we hold, whoever wrote it.
+    pub(super) fn chat_lacks(meta: &ShardMeta, theirs: &VersionVector) -> bool {
+        let held = decode_vv(&meta.vv).unwrap_or_default();
+        held.iter().any(|(p, c)| theirs.get(p).copied().unwrap_or(0) < *c)
     }
 
     pub(super) async fn chat_push(self: &Arc<Self>, core: &Arc<ChatCore>, sess: &Arc<Session>, day: &str, writer: &mut ChatWriter) -> Result<(), Error> {

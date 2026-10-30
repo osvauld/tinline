@@ -491,7 +491,9 @@ fun ConversationScreen(
         onSave = { actionsFor = null; saveToPhone(am) },
     )
     if (attachOpen) AttachSheet(
-        first, isSelf, onDismiss = { attachOpen = false },
+        if (isSelf) stringResource(R.string.conv_attach_title_self) else stringResource(R.string.conv_attach_title, first),
+        if (isSelf) stringResource(R.string.conv_attach_hint_self) else stringResource(R.string.conv_attach_hint),
+        onDismiss = { attachOpen = false },
         onPhotos = { attachOpen = false; photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
         onCamera = {
             attachOpen = false
@@ -867,23 +869,41 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
         else -> stringResource(R.string.conv_file_not_downloaded, size)
     }
     val canDownload = !ready && (a.state == TransferState.REMOTE || a.state == TransferState.FAILED) && !asked
-    Row(
-        Modifier.widthIn(min = 240.dp).clip(SmoothCornerShape(8.dp)).combinedClickable(role = Role.Button, onLongClick = onLong) { if (ready) (if (canOpen) onOpen() else onSave()) else if (canDownload) onDownload() },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.size(44.dp).clip(SmoothCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
-            Icon(if (a.isVideo()) PgIcons.Video else PgIcons.File, null, tint = c.pr)
-        }
-        Column(Modifier.weight(1f, fill = false)) {
-            Text(a.name, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold), color = if (out) c.onPrc else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(sub, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = if (out) c.onPrc else c.ink2)
-            if (frac != null && !ready && !paused) Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.Black.copy(alpha = .1f))) {
-                Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().background(c.pr))
-            }
-        }
+    FileCard(a.name, if (a.isVideo()) PgIcons.Video else PgIcons.File, sub, if (!ready && !paused) frac else null, out,
+        Modifier.widthIn(min = 240.dp), onTap = { if (ready) (if (canOpen) onOpen() else onSave()) else if (canDownload) onDownload() }, onLong = onLong) {
         if (canDownload && a.state == TransferState.REMOTE) IconBtn(PgIcons.Download, stringResource(R.string.conv_download_name, a.name), onDownload, tint = c.pr)
         if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(PgIcons.X, stringResource(R.string.conv_cancel_download_name, a.name), onCancel, tint = c.ink2)
         if (ready && canOpen) IconBtn(PgIcons.Save, stringResource(R.string.conv_save_name_to_phone, a.name), onSave, tint = if (out) c.onPrc else c.ink2)
+    }
+}
+
+/**
+ * A file's row (1:1 FileRow, group file posts): the type icon in its tile, the name, a line under it, a progress bar while
+ * [frac] is set, and the [trailing] buttons. [reserveBar] keeps the bar's room when there is no bar, so a download that
+ * starts or ends moves nothing.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+internal fun FileCard(
+    name: String, icon: ImageVector, sub: String, frac: Float?, out: Boolean, modifier: Modifier = Modifier, reserveBar: Boolean = false,
+    onTap: () -> Unit, onLong: () -> Unit, trailing: @Composable RowScope.() -> Unit,
+) {
+    val c = Tin.c
+    Row(
+        modifier.clip(SmoothCornerShape(8.dp)).combinedClickable(role = Role.Button, onLongClick = onLong, onClick = onTap),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(44.dp).clip(SmoothCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = c.pr)
+        }
+        Column(Modifier.weight(1f, fill = reserveBar)) {
+            Text(name, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold), color = if (out) c.onPrc else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(sub, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = if (out) c.onPrc else c.ink2, maxLines = if (reserveBar) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+            if (frac != null) Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.Black.copy(alpha = .1f))) {
+                Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().background(c.pr))
+            } else if (reserveBar) Spacer(Modifier.height(10.dp))
+        }
+        trailing()
     }
 }
 
@@ -932,13 +952,14 @@ private fun SheetAction(icon: ImageVector, label: String, color: Color = Tin.c.i
     }
 }
 
+/** The attach sheet (1:1 and groups): Photos, Camera (when [onCamera] is set) and File, then a note on how files travel. */
 @Composable
-private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, onPhotos: () -> Unit, onCamera: () -> Unit, onFile: () -> Unit) {
+internal fun AttachSheet(title: String, hint: String, onDismiss: () -> Unit, onPhotos: () -> Unit, onCamera: (() -> Unit)?, onFile: () -> Unit, photosLabel: String = stringResource(R.string.conv_attach_photos)) {
     val c = Tin.c
     TinSheet(onDismiss) {
-        Text(if (isSelf) stringResource(R.string.conv_attach_title_self) else stringResource(R.string.conv_attach_title, first), Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
+        Text(title, Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(Triple(PgIcons.Image, stringResource(R.string.conv_attach_photos), onPhotos), Triple(PgIcons.Camera, stringResource(R.string.conv_attach_camera), onCamera), Triple(PgIcons.File, stringResource(R.string.conv_attach_file), onFile)).forEach { (icon, label, go) ->
+            listOfNotNull(Triple(PgIcons.Image, photosLabel, onPhotos), onCamera?.let { Triple(PgIcons.Camera, stringResource(R.string.conv_attach_camera), it) }, Triple(PgIcons.File, stringResource(R.string.conv_attach_file), onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
@@ -947,7 +968,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
         }
         Row(Modifier.padding(start = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
             Icon(PgIcons.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
-            Hint(if (isSelf) stringResource(R.string.conv_attach_hint_self) else stringResource(R.string.conv_attach_hint))
+            Hint(hint)
         }
     }
 }

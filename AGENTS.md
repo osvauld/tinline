@@ -3,7 +3,7 @@
 > **Every build, test and Android build goes through the task manager LoadTable (`loadtable`), and by
 > default to whichever machine is free.** Use
 > `loadtable run --who YOUR_AGENT --anywhere -- <direct command>`
-> (`/home/abe/.local/bin/loadtable`; Claude sessions can use the LoadTable MCP tools (server `tasks2`)
+> (`/home/abe/.local/bin/loadtable`; Claude sessions can use the LoadTable MCP tools (server `loadtable`, tools `mcp__loadtable__*`)
 > `submit`/`wait`/`logs`/`status` instead). The manager syncs your checkout to the peer
 > over iroh (no SSH), runs it under that machine's admission, streams the log back and
 > returns the exit code. The old `tasks` (v1) is retired and removed: do not use

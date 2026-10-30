@@ -1684,4 +1684,17 @@
     <string name="onboarding_linked_lead_unnamed">നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും നിങ്ങളുടെ മറ്റേ ഉപകരണത്തിൽ നിന്ന് എത്തിക്കൊണ്ടിരിക്കുന്നു, രണ്ടിലും അവ ഒരുപോലെ നിലനിൽക്കും.</string>
     <string name="gcall_is_calling_group_unnamed">ഒരാൾ ഗ്രൂപ്പിനെ വിളിക്കുന്നു</string>
     <string name="gcall_started_call_unnamed">ഒരാൾ ഒരു കോൾ ആരംഭിച്ചു</string>
+    <string name="groupsc_file_line">ഫയൽ: %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s-ഉം ഈ ഫയൽ ഹോസ്റ്റ് ചെയ്യുന്നു</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s-നും മറ്റ് %2$d പേർക്കും ഈ ഫയൽ ഉണ്ട്</item>
+        <item quantity="other">%1$s-നും മറ്റ് %2$d പേർക്കും ഈ ഫയൽ ഉണ്ട്</item>
+    </plurals>
+    <string name="groups_file_not_available">ഇപ്പോൾ ലഭ്യമല്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കൂ.</string>
+    <string name="groups_file_try_again_name">%1$s വീണ്ടും ഡൗൺലോഡ് ചെയ്യുക</string>
+    <string name="groups_file_delete_copy_name">%1$s-ന്റെ എന്റെ പകർപ്പ് ഇല്ലാതാക്കുക</string>
+    <string name="groups_attach_title">%1$s-ൽ പങ്കിടുക</string>
+    <string name="groups_attach_hint">ഓരോ ഫയലും 2 GB വരെ. ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകൾ ഒരു പകർപ്പ് സൂക്ഷിക്കുന്നു, അതിനാൽ നിങ്ങൾ ഓഫ്‌ലൈനായിരിക്കുമ്പോഴും അംഗങ്ങൾക്ക് ഇത് ലഭിക്കും.</string>
+    <string name="groups_attach_photo">ഫോട്ടോ</string>
+    <string name="groups_file_no_picker">ഈ ഫോണിൽ ഫയൽ പിക്കർ ഇല്ല.</string>
 </resources>

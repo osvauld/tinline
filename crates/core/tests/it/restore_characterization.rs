@@ -264,9 +264,10 @@ fn sibling_fixture(tag: &str) -> Sib {
     published(&a2);
     call_answered(&b, &a2);
     eventually(20, "A2 knows only B's new key", || a2.node.contact_devices_for_test(b.did.clone()) == vec![new_dev.clone()]);
-    // Since P10b the restored B itself sends A2 its own undelivered `m1` (old writer ID), so A2
-    // may already hold `m1` here; `r1` is A1's and B never forwards a contact's ops.
-    assert!(!has(&a2, &b.did, &r1), "precondition: A2 does not hold r1");
+    // Since P10b the restored B itself sends A2 its own undelivered `m1` (old writer ID). Since
+    // chat/8 (docs/chat.md section 10, P1) B also carries the day's ops of A's devices, so A2
+    // gets A1's `r1` from B while A1 is off.
+    eventually(60, "B carries A1's r1 to A2", || has(&a2, &b.did, &r1));
     Sib { a1, a2, b, m1, r1 }
 }
 

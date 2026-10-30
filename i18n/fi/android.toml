@@ -4808,3 +4808,34 @@ text = "{name} on nyt avoinna tällä puhelimella. Toinen tilisi soi silti tää
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "Tämä tili on nyt avoinna tällä puhelimella. Toinen tilisi soi silti täällä ja kertoo uusista viesteistä. Voit vaihtaa asetuksista."
+
+[groupsc_file_line]
+text = "Tiedosto: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name} myös säilyttää tätä tiedostoa"
+
+[groupsc_file_holders]
+one = "{name} ja {count} muu ovat saaneet tämän tiedoston"
+other = "{name} ja {count} muuta ovat saaneet tämän tiedoston"
+
+[groups_file_not_available]
+text = "Ei saatavilla juuri nyt. Yritä myöhemmin uudelleen."
+
+[groups_file_try_again_name]
+text = "Lataa {name} uudelleen"
+
+[groups_file_delete_copy_name]
+text = "Poista oma kopioni tiedostosta {name}"
+
+[groups_attach_title]
+text = "Jaa ryhmään {name}"
+
+[groups_attach_hint]
+text = "Tiedostot enintään 2 Gt. Ryhmän isännät säilyttävät kopion, joten jäsenet saavat sen, vaikka olisit offline-tilassa."
+
+[groups_attach_photo]
+text = "Kuva"
+
+[groups_file_no_picker]
+text = "Tässä puhelimessa ei ole tiedostovalitsinta."
