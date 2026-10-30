@@ -88,6 +88,19 @@ object ChatMedia {
         } catch (e: Exception) { r.delete(uri, null, null); false }
     }
 
+    /** A group picture's file name when saved or shared: "Tinline-<post>.jpg", the extension by its MIME type. */
+    fun groupPictureName(postId: String, mime: String): String {
+        val ext = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime.lowercase()) ?: "jpg"
+        return "Tinline-${safe(postId).take(12)}.$ext"
+    }
+
+    /** A copy of [file] (a group picture the core opened) in the decrypted-copies folder, which [share] can hand out. Blocking. */
+    fun cacheCopy(ctx: Context, file: File, name: String): File {
+        val f = File(dir(ctx), "g_${safe(name)}")
+        if (!f.exists() || f.length() != file.length()) { f.parentFile?.mkdirs(); file.copyTo(f, overwrite = true) }
+        return f
+    }
+
     fun share(ctx: Context, file: File, mime: String) {
         val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", file)
         val send = Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

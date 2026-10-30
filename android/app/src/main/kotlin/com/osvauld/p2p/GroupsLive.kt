@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -511,6 +510,8 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     var sending by remember { mutableStateOf(false) }
     // The online list (public group §8): open, and whether I hide myself (read before it opens, so its note never pops in).
     var onlineSheet by remember(id) { mutableStateOf<Boolean?>(null) }
+    // The post whose picture is open full-screen (the 1:1 viewer).
+    var viewer by remember(id) { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
     val cantSend = stringResource(R.string.groups_chat_cant_send)
@@ -525,7 +526,11 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             all.sortedWith(compareBy<ThreadRow> { it.at }.thenBy { if (it is ThreadRow.Call) 0 else 1 }.thenBy { (it as? ThreadRow.Post)?.i ?: 0 })
         }
     }
-    LaunchedEffect(rows.size) { if (rows.isNotEmpty()) list.scrollToItem(rows.size - 1 + if (o.older != null) 1 else 0) }
+    // The thread is a reversed list (newest = item 0, at the bottom), as in a 1:1 chat: the keyboard and a growing composer
+    // shorten it from below without hiding the newest post, earlier posts load in above without moving anything, and a new
+    // post is followed when it is mine or I'm reading the bottom (ChatFollow.kt).
+    val newestRow = rows.lastOrNull()
+    FollowNewest(list, newestRow?.key, mine = when (newestRow) { is ThreadRow.Post -> newestRow.m.outgoing; is ThreadRow.Call -> newestRow.r.startedBy == me; null -> false })
     val waiting = GroupText.waitingForHost(d)
     // Unread posts when the group opened: where "n new messages" goes (the count is cleared as it opens).
     val unreadAtOpen = remember(id) { app.groups.list.value.firstOrNull { it.id == id }?.unread?.toInt() ?: 0 }
@@ -560,6 +565,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             res.onFailure { if (draft.isEmpty()) draft = caption; say(it.message ?: cantSend) }
         }
     }
+    Box(Modifier.fillMaxSize()) {
     Page {
         val headDesc = stringResource(R.string.groups_chat_head_desc, d.name, GroupText.status(d))
         // Conversation.svelte `.bar` for a group: back · the head (avatar 36, name 17/22, status 13/18; tap = info) · call · info.
@@ -596,14 +602,12 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
         if (GroupText.active(d.myRole)) OngoingCallBanner(app, d.id, say)
         HostAskCard(app, d, say)
         Box(Modifier.weight(1f).fillMaxWidth().background(c.canvas)) {
-            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp + if (waiting) 33.dp else 0.dp, bottom = 19.dp)) {
-                if (o.older != null) item {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        TinButton(stringResource(R.string.groups_chat_earlier), { exec({ app.groups.older(); Result.success("") }) {} }, style = BtnStyle.Text, fill = false, height = 40.dp)
-                    }
-                }
+            LazyColumn(Modifier.fillMaxSize(), state = list, reverseLayout = true, contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp + if (waiting) 33.dp else 0.dp, bottom = 19.dp)) {
+                // Reversed: emitted newest first, so the first item sits at the bottom and "Earlier messages" (last) at the top.
                 if (rows.isEmpty()) item { Column(Modifier.fillMaxWidth()) { SysLine(stringResource(R.string.groups_chat_no_messages)) } }
-                itemsIndexed(rows, key = { _, r -> r.key }) { k, row ->
+                items(rows.size, key = { j -> rows[rows.size - 1 - j].key }) { j ->
+                    val k = rows.size - 1 - j
+                    val row = rows[k]
                     val prevAt = rows.getOrNull(k - 1)?.at
                     val newDay = prevAt == null || !sameDay(prevAt, row.at)
                     Column(Modifier.fillMaxWidth()) {
@@ -612,9 +616,15 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                             is ThreadRow.Call -> GroupCallPill(row.r, me, GroupText.active(d.myRole)) { app.groupCallUi.call(d.id, say) }
                             is ThreadRow.Post -> {
                                 if (row.m.id == dividerId) PgUnreadDivider(unreadAtOpen)
-                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null, receipt = o.receipts[row.m.id], say = say)
+                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null, receipt = o.receipts[row.m.id], say = say,
+                                    onOpenPhoto = { viewer = row.m.id })
                             }
                         }
+                    }
+                }
+                if (o.older != null) item(key = "older") {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        TinButton(stringResource(R.string.groups_chat_earlier), { exec({ app.groups.older(); Result.success("") }) {} }, style = BtnStyle.Text, fill = false, height = 40.dp)
                     }
                 }
             }
@@ -651,6 +661,27 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                     trailing = { VoiceMicButton(voice) })
             }
         }
+    }
+    val vm = viewer?.let { v -> o.messages.firstOrNull { it.id == v } }
+    val vImg = vm?.image?.takeIf { it.state == uniffi.p2pcore.GroupImageState.READY }
+    if (vm != null && vImg != null) {
+        val savedLine = stringResource(R.string.conv_saved_to_phone)
+        val saveFailed = stringResource(R.string.conv_save_failed)
+        val pictureName = ChatMedia.groupPictureName(vm.id, vImg.mime)
+        fun file() = app.groups.imagePath(d.id, vm.id)?.let { java.io.File(it) }
+        PhotoViewer(vm.id, if (vm.outgoing) stringResource(R.string.common_you) else nameOf(app, vm.authorDid, vm.authorName), vm.at.toLong(),
+            if (vm.text.isEmpty()) stringResource(R.string.groups_photo_desc) else stringResource(R.string.groups_photo_desc_caption, vm.text),
+            load = { file()?.let { ChatMedia.bitmap(it, 2048) } }, onClose = { viewer = null },
+            onSave = {
+                scope.launch {
+                    val ok = withContext(Dispatchers.IO) { runCatching { file()?.let { ChatMedia.saveToPhone(ctx, it, pictureName, vImg.mime) } ?: false }.getOrDefault(false) }
+                    say(if (ok) savedLine else saveFailed)
+                }
+            },
+            onShare = {
+                scope.launch(Dispatchers.IO) { runCatching { file()?.let { ChatMedia.share(ctx, ChatMedia.cacheCopy(ctx, it, pictureName), vImg.mime) } } }
+            })
+    }
     }
     val hidden = onlineSheet
     if (hidden != null && GroupText.showsOnline(d)) OnlineSheet(app, d, o.online, hidden) { onlineSheet = null }
@@ -752,7 +783,7 @@ private fun GroupCallPill(r: uniffi.p2pcore.GroupCallRecord, me: String, enabled
 private fun ColumnScope.GroupItemLive(
     app: P2pApp, all: List<GroupMessage>, i: Int, m: GroupMessage, me: String, d: GroupDetail, authorBlocked: Boolean,
     onRemoval: () -> Unit, onReply: () -> Unit, top: androidx.compose.ui.unit.Dp? = null,
-    receipt: uniffi.p2pcore.GroupReceiptStatus? = null, say: (String) -> Unit = {},
+    receipt: uniffi.p2pcore.GroupReceiptStatus? = null, say: (String) -> Unit = {}, onOpenPhoto: () -> Unit = {},
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -813,7 +844,7 @@ private fun ColumnScope.GroupItemLive(
         m.image?.let { img ->
             if (!m.outgoing && !p) Text(senderName, Modifier.padding(start = 4.dp, bottom = 2.dp),
                 style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold), color = if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid))
-            GroupPhotoBox(app, d.id, m, img, if (m.text.isEmpty()) pos else BubblePos.First, m.outgoing, say, onReply)
+            GroupPhotoBox(app, d.id, m, img, if (m.text.isEmpty()) pos else BubblePos.First, m.outgoing, say, onReply, onOpenPhoto)
             if (m.text.isEmpty()) Text(msClock(m.at.toLong()), Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp), style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp), color = c.ink2)
         }
         m.voice?.let { v ->
@@ -847,11 +878,12 @@ private fun ColumnScope.GroupItemLive(
 /**
  * A post's picture (public group §5), drawn like a 1:1 photo (PhotoBox): its box at the picture's shape from the start,
  * the core's colour preview until it is here, then the picture. Not downloaded (the auto-download setting said wait): its
- * size and "Load photo"; on its way: a ring; failed: retry. A long press replies, as on the text bubble.
+ * size and "Load photo"; on its way: a ring; failed: retry. Here, a tap opens it full-screen (the 1:1 PhotoViewer, with zoom
+ * and Save to phone). A long press replies, as on the text bubble.
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun GroupPhotoBox(app: P2pApp, gid: String, m: GroupMessage, img: uniffi.p2pcore.GroupImage, pos: BubblePos, out: Boolean, say: (String) -> Unit, onLong: () -> Unit) {
+private fun GroupPhotoBox(app: P2pApp, gid: String, m: GroupMessage, img: uniffi.p2pcore.GroupImage, pos: BubblePos, out: Boolean, say: (String) -> Unit, onLong: () -> Unit, onOpen: () -> Unit) {
     val c = Tin.c
     val scope = rememberCoroutineScope()
     val ready = img.state == uniffi.p2pcore.GroupImageState.READY
@@ -866,7 +898,7 @@ private fun GroupPhotoBox(app: P2pApp, gid: String, m: GroupMessage, img: uniffi
     val photoDesc = if (m.text.isEmpty()) stringResource(R.string.groups_photo_desc) else stringResource(R.string.groups_photo_desc_caption, m.text)
     fun load() = scope.launch { withContext(Dispatchers.IO) { app.groups.fetchImage(gid, m.id) }.onFailure { say(it.message ?: cantLoad) } }
     Box(Modifier.size(w, h).clip(bubbleShape(pos, out, 3.dp)).background(c.sf3)
-        .combinedClickable(role = Role.Button, onLongClickLabel = stringResource(R.string.groups_msg_reply), onLongClick = onLong, onClickLabel = if (ready) null else stringResource(R.string.groups_photo_load), onClick = { if (!ready) load() })
+        .combinedClickable(role = Role.Button, onLongClickLabel = stringResource(R.string.groups_msg_reply), onLongClick = onLong, onClickLabel = stringResource(if (ready) R.string.profile_view_photo else R.string.groups_photo_load), onClick = { if (ready) onOpen() else load() })
         .semantics { contentDescription = photoDesc },
         contentAlignment = Alignment.Center) {
         pv?.let {

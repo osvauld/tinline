@@ -26,7 +26,7 @@ pub(super) enum Actor {
 
 impl App {
     /// A DID as the user knows it: their contact name, else what the group calls them.
-    fn live_name(&self, did: &str, fallback: &str) -> String {
+    pub(crate) fn live_name(&self, did: &str, fallback: &str) -> String {
         if self.is_me(did) || did == self.live.me {
             return crate::i18n::tr_str("common_you").into();
         }
@@ -587,7 +587,10 @@ impl App {
         if img.state == St::Ready
             && let Some(path) = self.live.image_paths.get(&m.id)
         {
-            st = st.push(iced::widget::image(iced::widget::image::Handle::from_path(path)).width(bw).height(bh).content_fit(iced::ContentFit::Cover).border_radius(r));
+            // A click opens it full-size in the 1:1 viewer (zoom, Save, Open in default app).
+            st = st.push(mouse_area(iced::widget::image(iced::widget::image::Handle::from_path(path)).width(bw).height(bh).content_fit(iced::ContentFit::Cover).border_radius(r))
+                .interaction(iced::mouse::Interaction::Pointer)
+                .on_press(Msg::Chat(crate::app::chat::Cm::ViewGroup(m.id.clone()))));
         }
         let chip = |s: String| -> El<'a> {
             container(tx(s, 11.0, Color::WHITE).line_height(lh(15.0))).padding([2, 8]).style(ui::plain(Color { a: 0.42, ..Color::BLACK }, 10.0)).into()
