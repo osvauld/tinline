@@ -51,6 +51,12 @@ object ChatMedia {
         return BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
     }
 
+    /** A picked content URI's own name ("Trip plan.pdf"), as the picker shows it; null if it has none. Blocking. */
+    fun displayName(ctx: Context, uri: Uri): String? =
+        ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+            if (it.moveToFirst() && !it.isNull(0)) it.getString(0) else null
+        }?.takeIf { it.isNotBlank() }
+
     /** Copies a picked content URI into app cache under its own name; returns the file and its MIME type. Blocking. */
     fun copyIn(ctx: Context, uri: Uri): Pair<File, String> {
         var name = "file"
@@ -64,10 +70,11 @@ object ChatMedia {
         return out to mime
     }
 
-    /** "Save to phone": copies into the shared gallery / Downloads with MediaStore (Android 10+). Blocking. */
-    fun saveToPhone(ctx: Context, file: File, name: String, mime: String): Boolean {
+    /** "Save to phone": copies into the shared gallery / Downloads with MediaStore (Android 10+); [downloads] always to Downloads. Blocking. */
+    fun saveToPhone(ctx: Context, file: File, name: String, mime: String, downloads: Boolean = false): Boolean {
         if (Build.VERSION.SDK_INT < 29) return false
         val (collection, folder) = when {
+            downloads -> MediaStore.Downloads.EXTERNAL_CONTENT_URI to "Download/Tinline"
             mime.startsWith("image/") -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI to "Pictures/Tinline"
             mime.startsWith("video/") -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI to "Movies/Tinline"
             mime.startsWith("audio/") -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI to "Music/Tinline"

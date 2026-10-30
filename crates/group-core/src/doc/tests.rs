@@ -238,3 +238,30 @@ fn in_place_apply_agrees_and_taints_on_refusal() {
 }
 
 mod upload;
+
+// KIND: unit (group files) — a file post goes in the day doc of its time like any post; a holder
+// announcement goes only in the day doc of the post it names, whenever it is written (days
+// later), never in meta or another day; on arrival the same verdicts.
+#[test]
+fn file_holder_notes_live_in_their_posts_day() {
+    let a = acct();
+    let dev = [1; 32];
+    let peer = writer_id(a.did(), &dev);
+    let rec = |at: i64, body: Body| Record { group: "g".into(), author: a.did().into(), dev, at, seen: vec![], body };
+    let t0 = day_start("2024-05-10").unwrap();
+    let file = FileRef { hash: [5; 32], key: [6; 32], size: 9, name: "a.zip".into(), mime: "application/zip".into() };
+    let fpost = rec(t0 + 5, Body::File { caption: String::new(), reply_to: None, file });
+    let held = |day: &str| rec(t0 + 3 * DAY_MS, Body::FileHeld { post: "ab".into(), day: day.into(), hash: [5; 32], held: true });
+    let day0 = GroupDoc::new_in("g", DocId::Day("2024-05-10".into()), peer);
+    day0.write(&a, &fpost).unwrap();
+    day0.write(&a, &held("2024-05-10")).unwrap();
+    let later = GroupDoc::new_in("g", DocId::Day("2024-05-13".into()), peer);
+    assert_eq!(later.write(&a, &held("2024-05-10")).unwrap_err(), Reject::WrongDoc, "not in the day of its own time");
+    assert_eq!(GroupDoc::new("g", peer).write(&a, &held("2024-05-10")).unwrap_err(), Reject::WrongDoc, "not in meta");
+    assert_eq!(GroupDoc::new("g", peer).write(&a, &fpost).unwrap_err(), Reject::WrongDoc);
+    let bytes = held("2024-05-10").sign(&a).to_bytes();
+    let up = later.raw_insert(&record_id(&bytes), bytes);
+    let mut d = GroupDoc::new_in("g", DocId::Day("2024-05-13".into()), 93);
+    assert_eq!(d.apply_remote(&up, ok), Err(Reject::WrongDoc));
+    assert!(d.entries().unwrap().is_empty());
+}

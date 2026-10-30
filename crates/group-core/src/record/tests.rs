@@ -346,3 +346,81 @@ fn voice_posts_are_bounded() {
     assert_eq!(tag(&Body::AdminsOnly { active: true }), 13);
     assert_eq!(tag(&post(voice(1, 1, 0))), 14);
 }
+
+fn file(size: u64, name: &str) -> FileRef {
+    FileRef { hash: [1; 32], key: [2; 32], size, name: name.into(), mime: "application/pdf".into() }
+}
+
+// KIND: unit (group files) — a file post is a post (day doc, judged per post) whose size (at most
+// 2 GiB), name (one path component, 1..=255 bytes) and type are bounded on every device; a holder
+// announcement names a real day and a post id. Both are new variants at the end (wire tags 15
+// and 16), so older records decode unchanged.
+#[test]
+fn file_posts_are_bounded() {
+    let a = acct();
+    let post = |f: FileRef| Body::File { caption: String::new(), reply_to: None, file: f };
+    assert!(post(file(1, "a")).is_post() && post(file(1, "a")).in_day_doc());
+    let held = |post: &str, day: &str| Body::FileHeld { post: post.into(), day: day.into(), hash: [1; 32], held: true };
+    assert!(!held("p", "2026-10-30").is_post() && held("p", "2026-10-30").in_day_doc());
+    assert_eq!(held("p", "2026-10-30").held_day(), Some("2026-10-30"));
+    assert_eq!(MAX_FILE_BYTES, 2 * 1024 * 1024 * 1024);
+    for ok in [
+        post(file(0, "empty.txt")),
+        post(file(MAX_FILE_BYTES, &"n".repeat(MAX_FILE_NAME))),
+        post(file(5, "résumé (final).pdf")),
+        Body::File { caption: "see this".into(), reply_to: Some("ab".into()), file: file(10, ".hidden") },
+        held("0123456789abcdef0123456789abcdef", "2026-10-30"),
+    ] {
+        let r = rec(&a, "g", ok);
+        assert_eq!(open_record(&r.sign(&a).to_bytes(), "g").unwrap(), r);
+    }
+    let mut bad_mime = file(10, "a");
+    bad_mime.mime = "x".repeat(MAX_FILE_MIME + 1);
+    let mut ctl_mime = file(10, "a");
+    ctl_mime.mime = "text/plain\n".into();
+    for bad in [
+        post(file(MAX_FILE_BYTES + 1, "big.bin")),
+        post(file(1, "")),
+        post(file(1, &"n".repeat(MAX_FILE_NAME + 1))),
+        post(file(1, "../etc/passwd")),
+        post(file(1, "dir/name")),
+        post(file(1, "dir\\name")),
+        post(file(1, "..")),
+        post(file(1, ".")),
+        post(file(1, "nul\0byte")),
+        post(file(1, "line\nbreak")),
+        post(bad_mime),
+        post(ctl_mime),
+        Body::File { caption: "x".repeat(MAX_TEXT + 1), reply_to: None, file: file(1, "a") },
+        Body::File { caption: String::new(), reply_to: Some("x".repeat(65)), file: file(1, "a") },
+        held("", "2026-10-30"),
+        held(&"p".repeat(65), "2026-10-30"),
+        held("p", "2026-13-40"),
+        held("p", "yesterday"),
+    ] {
+        assert_eq!(open_record(&forge(&rec(&a, "g", bad.clone()), &a).to_bytes(), "g"), Err(RecordError::Malformed), "{bad:?}");
+    }
+    let f = file(HOST_KEEP_FILE_MAX, "a");
+    assert!(f.kept_by_hosts() && file(MAX_FILE_BYTES, "a").kept_by_hosts(), "option B: hosts keep every file");
+    let b = f.as_blob();
+    assert_eq!((b.hash, b.key, b.size, b.mime.as_str()), (f.hash, f.key, f.size, FILE_BLOB_MIME));
+    let tag = |b: &Body| cryptography::codec::to_bytes(b).unwrap()[0];
+    assert_eq!(tag(&post(file(1, "a"))), 15);
+    assert_eq!(tag(&held("p", "2026-10-30")), 16);
+}
+
+// KIND: unit (group files, older apps) — what an app that predates a kind does with it: a
+// record whose body variant it does not know is an error (never a panic), so its doc refuses
+// the batch (U22). Simulated with a tag past every variant this build knows.
+#[test]
+fn unknown_body_kind_is_refused_not_a_panic() {
+    let a = acct();
+    let mut body = cryptography::codec::to_bytes(&rec(&a, "g", Body::Leave)).unwrap();
+    let last = body.len() - 1;
+    assert_eq!(body[last], 2, "Leave is a one-byte unit variant at the end");
+    body[last] = 99;
+    let sig = a.sign(&cryptography::sign::input(Record::DOMAIN, &[&body]));
+    let bytes = Signed::<Record>::from_parts(body, sig).to_bytes();
+    assert!(matches!(open_record(&bytes, "g"), Err(RecordError::Undecodable | RecordError::Malformed)));
+    assert!(decode_trusted(&bytes, "g").is_err());
+}

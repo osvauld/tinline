@@ -48,6 +48,7 @@ pub mod admit;
 mod changes;
 mod dialing;
 mod documents;
+pub mod files;
 #[cfg(any(test, feature = "testkit"))]
 mod durability;
 mod history;
@@ -128,6 +129,9 @@ pub struct GroupRt {
     /// G3: invitation events and the DIDs with an invitation delivery task running.
     pub inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationSink>>>,
     pub inv_delivering: Mutex<HashSet<String>>,
+    /// The 1:1 attachment auto-download size limit (the chat store's setting), read when group
+    /// file downloads are planned; p2pcore installs it. `None`: the chat default.
+    pub file_auto_limit: Mutex<Option<Arc<dyn Fn() -> Option<u64> + Send + Sync>>>,
     /// GL: set by `group_close` (stop, lock, account switch), cleared by `start`. While set, only
     /// a call the app made opens the group store (`group_core`); a background task left over
     /// from the stopped session never does. Read and written under `core`'s lock.
@@ -166,6 +170,7 @@ impl GroupRt {
             calls: Default::default(),
             inv_events: Default::default(),
             inv_delivering: Default::default(),
+            file_auto_limit: Default::default(),
             parked: Default::default(),
             fail_fetches: Default::default(),
             fail_dials: Default::default(),
@@ -395,6 +400,8 @@ pub struct Changed {
     pub posts: Vec<PostDiff>,
     /// Arrived for a day older than a session pushes live (history catching up): no new-message events.
     pub history: bool,
+    /// File posts whose holders changed (`FileHeld` records arrived or were written).
+    pub held: Vec<String>,
 }
 
 /// Device `dev` of `did` hosts the group's chat or its calls: the devices whose group endpoint

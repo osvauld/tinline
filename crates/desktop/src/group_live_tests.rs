@@ -76,6 +76,7 @@ fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKi
         before_removal: false,
         image: None,
         voice: None,
+        file: None,
     }
 }
 
@@ -308,6 +309,34 @@ impl GroupApi for Fake {
     }
     fn group_image_path(&self, _id: String, message_id: String) -> Option<String> {
         Some(format!("/pictures/{message_id}.jpg"))
+    }
+    fn group_post_file(&self, id: String, path: String, caption: String) -> Result<GroupMessage, Error> {
+        let mut m = self.group_post(id.clone(), caption, None)?;
+        let name = path.rsplit('/').next().unwrap_or("file").to_string();
+        m.file = Some(p2pcore::GroupFile { name, size: 4096, mime: "application/pdf".into(), state: p2pcore::GroupImageState::Ready, done: 0, kept_by_hosts: true,
+            holders: vec![p2pcore::GroupFileHolder { did: ME.into(), name: "me".into() }] });
+        self.with(&id, |g| {
+            if let Some(last) = g.msgs.last_mut() {
+                *last = m.clone();
+            }
+            Ok(m.clone())
+        })
+    }
+    fn group_fetch_file(&self, _id: String, message_id: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(format!("file:{message_id}"));
+        Ok(())
+    }
+    fn group_cancel_file(&self, _id: String, message_id: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(format!("cancel:{message_id}"));
+        Ok(())
+    }
+    fn group_delete_file_copy(&self, _id: String, message_id: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(format!("delete:{message_id}"));
+        Ok(())
+    }
+    fn group_save_file(&self, _id: String, message_id: String, dest: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(format!("save:{message_id}:{dest}"));
+        Ok(())
     }
     fn group_fetch_voice(&self, _id: String, message_id: String) -> Result<(), Error> {
         self.fetched.borrow_mut().push(format!("voice:{message_id}"));
@@ -1063,6 +1092,9 @@ mod images;
 #[path = "group_voice_tests.rs"]
 mod voice;
 
+#[path = "group_files_tests.rs"]
+mod files;
+
 #[test]
 fn unified_hosting_member_requests_calls_without_self_appointing() {
     let api = Fake::default();
@@ -1119,4 +1151,31 @@ fn unified_hosting_adding_calls_requires_local_review_and_preserves_messages() {
     let d = l.detail.as_ref().unwrap();
     assert!(d.am_host && !d.am_call_host, "withdrawing calls must preserve messages");
     assert_eq!(*api.hosting_writes.borrow(), ["accept calls false"]);
+}
+
+// The bug: open a group, its Group info, go to another chat, click the group again -> it showed
+// the info page. Opening a group from the list always starts on its conversation.
+#[test]
+fn opening_a_group_shows_its_conversation_not_the_info_left_open() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &[]);
+    api.add("b", "did:key:sam", &[], &[]);
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "a fresh open shows the conversation");
+    l.step(&api, Lm::ToggleInfo);
+    assert!(l.info, "the header opens Group info");
+    l.step(&api, Lm::Open("b".into()));
+    assert!(!l.info, "another group opens on its conversation");
+    l.step(&api, Lm::ToggleInfo);
+    l.step(&api, Lm::Close);
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "back to the first group: its conversation");
+    l.step(&api, Lm::Open("a".into()));
+    l.step(&api, Lm::ToggleInfo);
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "the same group clicked again in the list: its conversation");
+    l.step(&api, Lm::OpenInfo("b".into()));
+    assert!(l.info, "OpenInfo still opens the info page");
+    assert_eq!(l.open.as_deref(), Some("b"));
 }

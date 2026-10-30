@@ -5014,3 +5014,28 @@ note = "Open one device hosting permissions."
 [group_hosting_calls_title]
 text = "No host has Calls enabled"
 note = "Call action explanation when no device has call permission and consent."
+
+[group_file_line]
+text = "File: {name}"
+note = "Desktop, group: one-line summary of a file post. {name} is the file name."
+
+[group_file_also_hosting]
+text = "{name} is also hosting this file"
+note = "Desktop, group file card: the one other member who has the file. {name} is their first name."
+
+[group_file_holders]
+one = "{name} and {count} other have this file"
+other = "{name} and {count} others have this file"
+note = "Desktop, group file card: one member who has the file and how many more do. {name} is the first one, {count} the others."
+
+[group_file_not_available]
+text = "Not available right now. Try again later."
+note = "Desktop, group file card when the download could not get the file."
+
+[group_attach_file]
+text = "Share a file"
+note = "Desktop, group composer: tooltip of the button that picks a file to post."
+
+[group_file_delete_copy]
+text = "Delete my copy"
+note = "Desktop, group file card: button that deletes this computer's copy."

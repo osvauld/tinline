@@ -4838,3 +4838,34 @@ text = "{name} est maintenant ouvert sur ce téléphone. Votre autre compte sonn
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "Ce compte est maintenant ouvert sur ce téléphone. Votre autre compte sonne quand même ici et vous signale les nouveaux messages. Vous pouvez changer dans Paramètres."
+
+[groupsc_file_line]
+text = "Fichier : {name}"
+
+[groupsc_file_also_hosting]
+text = "{name} héberge aussi ce fichier"
+
+[groupsc_file_holders]
+one = "{name} et {count} autre personne ont ce fichier"
+other = "{name} et {count} autres personnes ont ce fichier"
+
+[groups_file_not_available]
+text = "Pas disponible pour le moment. Réessaie plus tard."
+
+[groups_file_try_again_name]
+text = "Télécharger {name} à nouveau"
+
+[groups_file_delete_copy_name]
+text = "Supprimer ma copie de {name}"
+
+[groups_attach_title]
+text = "Partager dans {name}"
+
+[groups_attach_hint]
+text = "Fichiers jusqu’à 2 Go. Les hôtes du groupe en gardent une copie, pour que les membres puissent l’avoir même quand tu es hors ligne."
+
+[groups_attach_photo]
+text = "Photo"
+
+[groups_file_no_picker]
+text = "Aucun sélecteur de fichiers sur ce téléphone."

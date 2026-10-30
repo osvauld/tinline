@@ -3307,4 +3307,27 @@
     <string name="group_hosting_calls_missing">No device is hosting calls. Open hosting permissions to request Calls, or grant and accept it if you are an admin.</string>
     <!-- Open one device hosting permissions. -->
     <string name="group_hosting_edit">Permissions</string>
+    <!-- One-line summary of a group file post (list row, notification, reply quote). {name} is the file name. -->
+    <string name="groupsc_file_line">File: %1$s</string>
+    <!-- Under a group file card: the one other member who has the file. {name} is their first name. -->
+    <string name="groupsc_file_also_hosting">%1$s is also hosting this file</string>
+    <!-- Under a group file card: one member who has the file and how many more do. {name} is the first one, {count} the others. -->
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s and %2$d other have this file</item>
+        <item quantity="other">%1$s and %2$d others have this file</item>
+    </plurals>
+    <!-- Group file card when the download could not get the file (no host had it). -->
+    <string name="groups_file_not_available">Not available right now. Try again later.</string>
+    <!-- Retry button on a group file card, for screen readers. {name} is the file name. -->
+    <string name="groups_file_try_again_name">Try downloading %1$s again</string>
+    <!-- Button on a group file card that deletes this phone's copy, for screen readers. {name} is the file name. -->
+    <string name="groups_file_delete_copy_name">Delete my copy of %1$s</string>
+    <!-- Title of the attach sheet in a group. {name} is the group's name. -->
+    <string name="groups_attach_title">Share in %1$s</string>
+    <!-- Note at the bottom of the attach sheet in a group: how files travel. -->
+    <string name="groups_attach_hint">Files up to 2 GB each. The group’s hosts keep a copy, so members can get it while you’re offline.</string>
+    <!-- Attach sheet in a group: the choice that posts a picture. -->
+    <string name="groups_attach_photo">Photo</string>
+    <!-- Shown when the phone has no system file picker. -->
+    <string name="groups_file_no_picker">No file picker on this phone.</string>
 </resources>

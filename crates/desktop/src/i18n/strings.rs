@@ -1276,6 +1276,12 @@ fn en(key: &str) -> Option<Msg> {
         "group_hosting_stop_note" => Msg::Text("This device stops hosting messages and calls for this group. You remain a member."),
         "group_hosting_edit" => Msg::Text("Permissions"),
         "group_hosting_calls_title" => Msg::Text("No host has Calls enabled"),
+        "group_file_line" => Msg::Text("File: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} is also hosting this file"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} and {count} other have this file"), ("other", "{name} and {count} others have this file")]),
+        "group_file_not_available" => Msg::Text("Not available right now. Try again later."),
+        "group_attach_file" => Msg::Text("Share a file"),
+        "group_file_delete_copy" => Msg::Text("Delete my copy"),
         _ => return None,
     })
 }
@@ -2498,6 +2504,12 @@ fn fi(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("Toinen laite linkitetty"),
         "link_linked_to_account" => Msg::Text("Linkitetty tiliisi"),
         "chat_you_blocked_on" => Msg::Text("Estit henkilön {name} · {when}"),
+        "group_file_line" => Msg::Text("Tiedosto: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} myös säilyttää tätä tiedostoa"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} ja {count} muu ovat saaneet tämän tiedoston"), ("other", "{name} ja {count} muuta ovat saaneet tämän tiedoston")]),
+        "group_file_not_available" => Msg::Text("Ei saatavilla juuri nyt. Yritä myöhemmin uudelleen."),
+        "group_attach_file" => Msg::Text("Jaa tiedosto"),
+        "group_file_delete_copy" => Msg::Text("Poista kopioni"),
         _ => return None,
     })
 }
@@ -3720,6 +3732,12 @@ fn fr(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("Autre appareil associé"),
         "link_linked_to_account" => Msg::Text("Associé à votre compte"),
         "chat_you_blocked_on" => Msg::Text("Vous avez bloqué {name} · {when}"),
+        "group_file_line" => Msg::Text("Fichier : {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} héberge aussi ce fichier"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} et {count} autre personne ont ce fichier"), ("other", "{name} et {count} autres personnes ont ce fichier")]),
+        "group_file_not_available" => Msg::Text("Pas disponible pour le moment. Réessaie plus tard."),
+        "group_attach_file" => Msg::Text("Partager un fichier"),
+        "group_file_delete_copy" => Msg::Text("Supprimer ma copie"),
         _ => return None,
     })
 }
@@ -4942,6 +4960,12 @@ fn de(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("Anderes Gerät verknüpft"),
         "link_linked_to_account" => Msg::Text("Mit deinem Konto verknüpft"),
         "chat_you_blocked_on" => Msg::Text("Du hast {name} blockiert · {when}"),
+        "group_file_line" => Msg::Text("Datei: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} stellt diese Datei auch bereit"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} und {count} weitere Person haben diese Datei"), ("other", "{name} und {count} weitere Personen haben diese Datei")]),
+        "group_file_not_available" => Msg::Text("Gerade nicht verfügbar. Versuch es später noch einmal."),
+        "group_attach_file" => Msg::Text("Datei teilen"),
+        "group_file_delete_copy" => Msg::Text("Meine Kopie löschen"),
         _ => return None,
     })
 }
@@ -6164,6 +6188,12 @@ fn bn(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("অন্য ডিভাইসটি লিঙ্ক হয়েছে"),
         "link_linked_to_account" => Msg::Text("আপনার অ্যাকাউন্টে লিঙ্ক হয়েছে"),
         "chat_you_blocked_on" => Msg::Text("আপনি {name}-কে ব্লক করেছেন · {when}"),
+        "group_file_line" => Msg::Text("ফাইল: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name}-ও এই ফাইলটি হোস্ট করছেন"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে"), ("other", "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে")]),
+        "group_file_not_available" => Msg::Text("এখন পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।"),
+        "group_attach_file" => Msg::Text("ফাইল শেয়ার করুন"),
+        "group_file_delete_copy" => Msg::Text("আমার কপি মুছুন"),
         _ => return None,
     })
 }
@@ -7386,6 +7416,12 @@ fn hi(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("दूसरा डिवाइस लिंक हो गया"),
         "link_linked_to_account" => Msg::Text("आपके खाते से लिंक हो गया"),
         "chat_you_blocked_on" => Msg::Text("आपने {name} को ब्लॉक किया · {when}"),
+        "group_file_line" => Msg::Text("फ़ाइल: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} भी यह फ़ाइल होस्ट कर रहे हैं"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} और {count} अन्य के पास यह फ़ाइल है"), ("other", "{name} और {count} अन्य के पास यह फ़ाइल है")]),
+        "group_file_not_available" => Msg::Text("अभी उपलब्ध नहीं है। बाद में फिर कोशिश करें।"),
+        "group_attach_file" => Msg::Text("फ़ाइल शेयर करें"),
+        "group_file_delete_copy" => Msg::Text("मेरी कॉपी हटाएँ"),
         _ => return None,
     })
 }
@@ -8608,6 +8644,12 @@ fn ml(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("മറ്റേ ഉപകരണം ലിങ്ക് ചെയ്തു"),
         "link_linked_to_account" => Msg::Text("നിങ്ങളുടെ അക്കൗണ്ടുമായി ലിങ്ക് ചെയ്തു"),
         "chat_you_blocked_on" => Msg::Text("നിങ്ങൾ {name} എന്നയാളെ ബ്ലോക്ക് ചെയ്തു · {when}"),
+        "group_file_line" => Msg::Text("ഫയൽ: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name}-ഉം ഈ ഫയൽ ഹോസ്റ്റ് ചെയ്യുന്നു"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്"), ("other", "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്")]),
+        "group_file_not_available" => Msg::Text("ഇപ്പോൾ ലഭ്യമല്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കൂ."),
+        "group_attach_file" => Msg::Text("ഫയൽ പങ്കിടുക"),
+        "group_file_delete_copy" => Msg::Text("എന്റെ പകർപ്പ് ഇല്ലാതാക്കുക"),
         _ => return None,
     })
 }
@@ -9830,6 +9872,12 @@ fn mr(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("दुसरे डिव्हाइस लिंक केले"),
         "link_linked_to_account" => Msg::Text("तुमच्या खात्याशी लिंक झाले"),
         "chat_you_blocked_on" => Msg::Text("तुम्ही {name} ला ब्लॉक केले · {when}"),
+        "group_file_line" => Msg::Text("फाइल: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name} देखील ही फाइल होस्ट करत आहेत"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} आणि आणखी {count} जणांकडे ही फाइल आहे"), ("other", "{name} आणि आणखी {count} जणांकडे ही फाइल आहे")]),
+        "group_file_not_available" => Msg::Text("आत्ता उपलब्ध नाही. नंतर पुन्हा प्रयत्न करा."),
+        "group_attach_file" => Msg::Text("फाइल शेअर करा"),
+        "group_file_delete_copy" => Msg::Text("माझी प्रत हटवा"),
         _ => return None,
     })
 }
@@ -11052,6 +11100,12 @@ fn ta(key: &str) -> Option<Msg> {
         "link_linked_other" => Msg::Text("மற்றச் சாதனம் இணைக்கப்பட்டது"),
         "link_linked_to_account" => Msg::Text("உங்கள் கணக்குடன் இணைக்கப்பட்டது"),
         "chat_you_blocked_on" => Msg::Text("{name} அவர்களை நீங்கள் தடுத்தீர்கள் · {when}"),
+        "group_file_line" => Msg::Text("கோப்பு: {name}"),
+        "group_file_also_hosting" => Msg::Text("{name}-உம் இந்தக் கோப்பை ஹோஸ்ட் செய்கிறார்"),
+        "group_file_holders" => Msg::Plural(&[("one", "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது"), ("other", "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது")]),
+        "group_file_not_available" => Msg::Text("இப்போது கிடைக்கவில்லை. பிறகு மீண்டும் முயலுங்கள்."),
+        "group_attach_file" => Msg::Text("கோப்பைப் பகிர்"),
+        "group_file_delete_copy" => Msg::Text("என் நகலை நீக்கு"),
         _ => return None,
     })
 }

@@ -16,6 +16,7 @@ use crate::Error;
 use crate::chat::doc::day_of;
 use crate::node::{Node, now_ms};
 
+mod files;
 mod hooks;
 mod hosts;
 mod images;

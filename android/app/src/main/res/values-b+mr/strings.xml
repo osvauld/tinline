@@ -1684,4 +1684,17 @@
     <string name="onboarding_linked_lead_unnamed">तुमचे संपर्क आणि चॅट तुमच्या दुसऱ्या डिव्हाइसवरून येत आहेत आणि दोन्हीकडे जुळलेले राहतील.</string>
     <string name="gcall_is_calling_group_unnamed">कोणीतरी ग्रुपला कॉल करत आहे</string>
     <string name="gcall_started_call_unnamed">कोणीतरी कॉल सुरू केला</string>
+    <string name="groupsc_file_line">फाइल: %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s देखील ही फाइल होस्ट करत आहेत</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s आणि आणखी %2$d जणांकडे ही फाइल आहे</item>
+        <item quantity="other">%1$s आणि आणखी %2$d जणांकडे ही फाइल आहे</item>
+    </plurals>
+    <string name="groups_file_not_available">आत्ता उपलब्ध नाही. नंतर पुन्हा प्रयत्न करा.</string>
+    <string name="groups_file_try_again_name">%1$s पुन्हा डाउनलोड करा</string>
+    <string name="groups_file_delete_copy_name">%1$s ची माझी प्रत हटवा</string>
+    <string name="groups_attach_title">%1$s मध्ये शेअर करा</string>
+    <string name="groups_attach_hint">प्रत्येक फाइल 2 GB पर्यंत. ग्रुपचे होस्ट एक प्रत ठेवतात, त्यामुळे तुम्ही ऑफलाइन असतानाही सदस्यांना ती मिळू शकते.</string>
+    <string name="groups_attach_photo">फोटो</string>
+    <string name="groups_file_no_picker">या फोनवर फाइल पिकर नाही.</string>
 </resources>

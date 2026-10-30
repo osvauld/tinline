@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureAlwaysOn(this)
         chatFrom(intent)
+        groupFrom(intent)
         if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
         groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
@@ -99,6 +100,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** A tap on a group's post notification opens that group's conversation (once past unlock; Root waits). */
+    private fun groupFrom(intent: android.content.Intent?) {
+        val gid = intent?.getStringExtra(OpenChat.EXTRA_GROUP) ?: return
+        intent.removeExtra(OpenChat.EXTRA_GROUP)
+        OpenChat.groupRequest.value = gid
+    }
+
     /** The group-call notification: Join takes the ringing call; a tap on the ongoing one returns to its screen. */
     private fun groupCallFrom(intent: android.content.Intent?) {
         val app = P2pApp.get(this)
@@ -114,6 +122,7 @@ class MainActivity : ComponentActivity() {
         requestFrom(intent)
         groupCallFrom(intent)
         chatFrom(intent)
+        groupFrom(intent)
         if (intent.getBooleanExtra(Notifications.EXTRA_GROUPS, false)) OpenChat.groupsTab.value = true
         CardInbox.take(intent)
         GroupLinkInbox.take(intent)
@@ -223,6 +232,16 @@ private fun Root(app: P2pApp) {
         if (has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
             OpenChat.request.value = null
             if ((stack.last() as? Route.Chat)?.did != did) stack.add(Route.Chat(did))
+        }
+    }
+
+    // A tap on a group's post notification: that group's conversation, never its Group info left in front.
+    val openGroupReq by OpenChat.groupRequest.collectAsState()
+    LaunchedEffect(openGroupReq, has, lock, termsOk) {
+        val gid = openGroupReq ?: return@LaunchedEffect
+        if (has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
+            OpenChat.groupRequest.value = null
+            GroupNav.open(stack, { it is Route.Group && it.id == gid }) { Route.Group(gid) }
         }
     }
 

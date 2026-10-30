@@ -22,6 +22,10 @@
 //!   more than 1 MB, and keeps at most 2 GB of image blobs per group: over that, the blobs no
 //!   visible post references go first, then the oldest (`group_core::store::plan_eviction`).
 //!   Both limits have test knobs.
+//! - **Files** (`docs/design/group-files.md`, runtime in `engine/files.rs`) ride the same rows,
+//!   gate and fetch: a host keeps every file (up to `HOST_KEEP_FILE_MAX`, the 2 GiB maximum)
+//!   like a picture; a member auto-downloads one only within the 1:1 size limit; progress is reported; a source that sends bytes not matching the signed hash
+//!   is given up at that chunk.
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -31,11 +35,16 @@ use transfer::{BlobHub, Gate, UploadEnd, UploadProgress, crypt};
 
 use super::*;
 use chat_core::store::PictureDownload;
-use crate::record::{ImageRef, MAX_IMAGE_BYTES, MAX_VOICE_BYTES, VoiceRef};
+use crate::record::{FileRef, ImageRef, MAX_IMAGE_BYTES, MAX_VOICE_BYTES, VoiceRef};
 use crate::store::{ImgRow, plan_eviction};
 
-/// A host keeps at most this many bytes of image blobs per group.
-pub const MAX_GROUP_IMAGE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// The start of the error a fetch ends with when sources sent bytes that do not match the
+/// author-signed hash.
+pub const CORRUPT: &str = "data does not match the signed hash";
+
+/// A host keeps at most this many bytes of image blobs per group (pictures, voice, files): 2 GiB
+/// plus the cipher tags of a 2 GiB file (16 bytes per 64 KiB chunk), so the largest file fits.
+pub const MAX_GROUP_IMAGE_BYTES: u64 = MAX_FILE_BYTES + MAX_FILE_BYTES / 4096;
 /// Waits between fetch attempts of one image; after the last, it is given up (`failed`).
 const RETRY_S: [u64; 5] = [2, 5, 15, 30, 60];
 /// Image fetches running at once per account.
@@ -47,13 +56,15 @@ pub struct ImagesRt {
     dir: PathBuf,
     hub: tokio::sync::OnceCell<Arc<BlobHub>>,
     /// Images to fetch (not ready, not dropped, not given up), by `(group, hash)`.
-    pending: Mutex<HashMap<(String, [u8; 32]), Pend>>,
+    pub(super) pending: Mutex<HashMap<(String, [u8; 32]), Pend>>,
     /// `pending` was filled from the store once.
     loaded: AtomicBool,
     /// `(largest blob a host takes, bytes a host keeps per group)`.
     pub limits: Mutex<(u64, u64)>,
     /// One budget pass at a time.
     budget: tokio::sync::Mutex<()>,
+    /// Group files: auto-download limit, progress and running fetches (`engine/files.rs`).
+    pub files: super::files::FilesRt,
 }
 
 impl Default for ImagesRt {
@@ -63,11 +74,16 @@ impl Default for ImagesRt {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct Pend {
-    wanted: bool,
+pub(super) struct Pend {
+    pub(super) wanted: bool,
     busy: bool,
     tries: usize,
     next: Option<Instant>,
+    /// A file's plaintext size (auto-download applies the 1:1 size limit to it).
+    pub(super) file: Option<u64>,
+    /// Verified bytes we held after the last attempt: an attempt that got further starts the
+    /// retries over (a long download goes on while it moves).
+    best: u64,
 }
 
 impl ImagesRt {
@@ -79,14 +95,20 @@ impl ImagesRt {
             loaded: AtomicBool::new(false),
             limits: Mutex::new((MAX_IMAGE_BYTES, MAX_GROUP_IMAGE_BYTES)),
             budget: Default::default(),
+            files: Default::default(),
         }
+    }
+
+    /// The account's directory (blobs, opened pictures and files live under it).
+    pub fn dir(&self) -> &std::path::Path {
+        &self.dir
     }
 
     pub fn hub_now(&self) -> Option<Arc<BlobHub>> {
         self.hub.get().cloned()
     }
 
-    fn opened(&self, hash: &[u8; 32], mime: &str) -> PathBuf {
+    pub(super) fn opened(&self, hash: &[u8; 32], mime: &str) -> PathBuf {
         let ext = match mime {
             "image/png" => "png",
             "image/webp" => "webp",
@@ -100,7 +122,7 @@ impl ImagesRt {
 }
 
 /// The blob store tag of `gid`'s claim on its images.
-fn owner_of(gid: &str) -> String {
+pub(super) fn owner_of(gid: &str) -> String {
     format!("group/{gid}")
 }
 
@@ -168,6 +190,12 @@ impl GroupCore {
         gids.iter().any(|g| self.image_peer_allowed(g, ep))
     }
 
+    /// Auto-download allows fetching a blob of this kind now: the group mode, and for a file
+    /// (`Some(size)`) also the 1:1 size limit.
+    pub(super) fn blob_auto(&self, file: Option<u64>) -> bool {
+        self.image_auto() && file.is_none_or(|n| n <= self.images.files.auto_max())
+    }
+
     /// Auto-download allows fetching now (this device as a member).
     fn image_auto(&self) -> bool {
         match self.store.image_download() {
@@ -211,7 +239,7 @@ impl GroupCore {
             .get(&(gid.to_string(), img.hash))
             .copied();
         match pend {
-            Some(p) if p.busy || p.wanted || self.am_host(gid) || self.image_auto() => {
+            Some(p) if p.busy || p.wanted || self.am_host(gid) || self.blob_auto(p.file) => {
                 ImgState::Loading
             }
             _ => ImgState::Remote,
@@ -227,9 +255,11 @@ impl GroupCore {
         let mut p = self.images.pending.lock();
         for gid in gids {
             for r in self.store.images(&gid).unwrap_or_default() {
-                if !r.ready && !r.dropped && !r.failed {
+                // A file a host does not keep is fetched only when its own user asks.
+                if !r.ready && !r.dropped && !r.failed && !r.deleted && (r.wanted || !self.host_skips(&gid, &r)) {
                     p.entry((gid.clone(), r.image.hash)).or_insert(Pend {
                         wanted: r.wanted,
+                        file: r.file.as_ref().map(|f| f.size),
                         ..Default::default()
                     });
                 }
@@ -253,8 +283,8 @@ impl GroupRt {
             .hub
             .get_or_try_init(|| async move {
                 let gate: Gate = Arc::new(move |ep, hash| {
-                    weak.upgrade()
-                        .is_some_and(|c| c.image_may_serve(ep, hash.as_bytes()))
+                    let Some(c) = weak.upgrade() else { return false };
+                    c.image_may_serve(ep, hash.as_bytes())
                 });
                 let progress: UploadProgress = Arc::new(|_, _, _, _| {});
                 let ended: UploadEnd = Arc::new(|_, _, _| {});
@@ -297,7 +327,14 @@ impl GroupRt {
         let max_blob = core.images.limits.lock().0;
         for i in posts.iter().flat_map(|d| d.put.iter()) {
             // A voice post's recording rides the same path: sealed blob, rows, fetch, serve.
-            let Some(img) = &i.image.clone().or_else(|| i.voice.as_ref().map(VoiceRef::as_blob)) else { continue };
+            let Some(img) = &i
+                .image
+                .clone()
+                .or_else(|| i.voice.as_ref().map(VoiceRef::as_blob))
+                .or_else(|| i.file.as_ref().map(FileRef::as_blob))
+            else {
+                continue;
+            };
             match core.store.image(gid, &img.hash) {
                 Ok(Some(row)) => {
                     if row.post != i.id {
@@ -311,7 +348,14 @@ impl GroupRt {
                     continue;
                 }
             }
-            let limit = if i.voice.is_some() { MAX_VOICE_BYTES } else { max_blob };
+            // A file is never refused by size here: the record check bounds it (2 GiB).
+            let limit = if i.voice.is_some() {
+                MAX_VOICE_BYTES
+            } else if i.file.is_some() {
+                u64::MAX
+            } else {
+                max_blob
+            };
             let refused = host && img.size > limit;
             if refused {
                 self.log(format!(
@@ -330,16 +374,18 @@ impl GroupRt {
                 failed: false,
                 dropped: refused,
                 referenced: true,
+                file: i.file.clone(),
+                deleted: false,
             };
             if let Err(e) = core.store.put_image(gid, &row) {
                 tracing::warn!("group {}: image row: {e}", crate::short(gid));
                 continue;
             }
-            if !refused {
-                core.images
-                    .pending
-                    .lock()
-                    .insert((gid.to_string(), img.hash), Pend::default());
+            if !refused && !core.host_skips(gid, &row) {
+                core.images.pending.lock().insert(
+                    (gid.to_string(), img.hash),
+                    Pend { file: row.file.as_ref().map(|f| f.size), ..Default::default() },
+                );
                 any = true;
             }
         }
@@ -352,13 +398,14 @@ impl GroupRt {
     pub(super) fn group_images_on_session(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
         core.images_load();
         for mut r in core.store.images(gid).unwrap_or_default() {
-            if r.failed && !r.dropped && !r.ready {
+            if r.failed && !r.dropped && !r.ready && !r.deleted && (r.wanted || !core.host_skips(gid, &r)) {
                 r.failed = false;
                 if core.store.put_image(gid, &r).is_ok() {
                     core.images.pending.lock().insert(
                         (gid.to_string(), r.image.hash),
                         Pend {
                             wanted: r.wanted,
+                            file: r.file.as_ref().map(|f| f.size),
                             ..Default::default()
                         },
                     );
@@ -380,6 +427,8 @@ impl GroupRt {
             return;
         }
         core.images_load();
+        let limit = self.file_auto_limit.lock().clone().and_then(|f| f());
+        core.images.files.set_auto_max(limit.unwrap_or(chat_core::store::DEFAULT_AUTO_DOWNLOAD));
         let keys: Vec<((String, [u8; 32]), Pend)> = core
             .images
             .pending
@@ -404,7 +453,7 @@ impl GroupRt {
             }
             if p.busy
                 || p.next.is_some_and(|t| t > now)
-                || !(p.wanted || auto || hosts.contains(&gid))
+                || !(p.wanted || (auto && core.blob_auto(p.file)) || hosts.contains(&gid))
             {
                 continue;
             }
@@ -416,11 +465,18 @@ impl GroupRt {
                 }
             }
             running += 1;
-            let (this, core) = (self.clone(), core.clone());
-            self.handle.spawn(async move {
-                let res = this.group_image_fetch(&core, &gid, hash).await;
-                this.group_image_done(&core, &gid, hash, res);
+            let (this, core2) = (self.clone(), core.clone());
+            let g2 = gid.clone();
+            let task = self.handle.spawn(async move {
+                let res = this.group_image_fetch(&core2, &g2, hash).await;
+                let have = match this.group_hub(&core2).await {
+                    Ok(hub) => hub.local_bytes(&Hash::from_bytes(hash)).await,
+                    Err(_) => 0,
+                };
+                core2.images.files.task_end(&g2, &hash);
+                this.group_image_done(&core2, &g2, hash, res, have);
             });
+            core.images.files.task_start(&gid, hash, task.abort_handle());
         }
     }
 
@@ -431,8 +487,10 @@ impl GroupRt {
         gid: &str,
         hash: [u8; 32],
         res: Result<(), Error>,
+        have: u64,
     ) {
         let key = (gid.to_string(), hash);
+        core.images.files.progress_clear(gid, &hash);
         let err = match res {
             Ok(()) => {
                 core.images.pending.lock().remove(&key);
@@ -442,12 +500,19 @@ impl GroupRt {
         };
         // A blob larger than its post says can never match (the hash fixes the bytes).
         let hopeless = matches!(err, Error::Protocol(_));
+        // Every source sent bytes that do not match the signed hash: stop now (a tap tries again).
+        let corrupt = matches!(&err, Error::Rejected(m) if m.starts_with(CORRUPT));
         let give_up = {
             let mut pend = core.images.pending.lock();
             let Some(p) = pend.get_mut(&key) else { return };
             p.busy = false;
+            if have > p.best {
+                // It moved: keep going from here.
+                p.best = have;
+                p.tries = 0;
+            }
             p.tries += 1;
-            if hopeless || p.tries > RETRY_S.len() {
+            if hopeless || corrupt || p.tries > RETRY_S.len() {
                 pend.remove(&key);
                 true
             } else {
@@ -468,6 +533,9 @@ impl GroupRt {
             // A host refuses for good what cannot match its post.
             row.dropped |= hopeless && core.am_host(gid);
             core.store.put_image(gid, &row).or_log("saving the failed state of an image");
+            if corrupt && let Some(p) = core.images.pending.lock().get_mut(&key) {
+                p.best = 0;
+            }
             self.group_image_event(gid, &row.post);
             let (this, core, gid) = (self.clone(), core.clone(), gid.to_string());
             self.handle.spawn(async move {
@@ -501,7 +569,11 @@ impl GroupRt {
         }
         let ep = self.group_endpoint().ok_or(Error::NotStarted)?;
         let mut err = Error::NotFound;
-        for (dev, relay) in self.group_image_sources(core, gid, &row.author) {
+        let mut corrupt = 0usize;
+        let mut tried = 0usize;
+        let sources = self.group_image_sources(core, gid, &row.author, row.file.as_ref().map(|_| row.post.as_str()));
+        for (dev, relay) in sources {
+            tried += 1;
             let conn = match addr_for(&dev, relay.as_deref()) {
                 Ok(addr) => {
                     match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, iroh_blobs::ALPN))
@@ -523,24 +595,53 @@ impl GroupRt {
                     continue;
                 }
             };
-            let res = hub.fetch_owned(&owner, conn.clone(), h, total).await;
+            let res = if row.file.is_some() {
+                let (this, g, p) = (self.clone(), gid.to_string(), row.post.clone());
+                let files = core.clone();
+                hub.fetch_owned_progress(&owner, conn.clone(), h, total, move |n, t| {
+                    if files.images.files.progress(&g, &hash, n, t) {
+                        this.group_image_event(&g, &p);
+                    }
+                })
+                .await
+            } else {
+                hub.fetch_owned(&owner, conn.clone(), h, total).await
+            };
             conn.close(0u32.into(), b"done");
             match res {
                 Ok(()) => return self.group_image_ready(core, gid, row).await,
                 Err(transfer::Error::Protocol(e)) => return Err(Error::Protocol(e)),
+                Err(transfer::Error::Corrupt(e)) => {
+                    corrupt += 1;
+                    self.log(format!(
+                        "group {}: blob {} from {}: {CORRUPT}: {e}",
+                        crate::short(gid),
+                        &hex::encode(hash)[..12],
+                        crate::short(&hex::encode(dev))
+                    ));
+                    // Drop what came from that source: the next one starts clean.
+                    let _ = hub.release_owned(&owner, &h).await;
+                    err = Error::Rejected(format!("{CORRUPT}: {e}"));
+                }
                 Err(e) => err = e.into(),
             }
+        }
+        if corrupt > 0 && corrupt == tried {
+            return Err(Error::Rejected(format!("{CORRUPT} (every source)")));
         }
         Err(err)
     }
 
     /// Where to fetch an image of `gid` from: as a host, the author's live sessions with us, then
-    /// the other hosts; as a member, the hosts (live sessions first). Never another member (U7).
-    fn group_image_sources(
+    /// (for a file post `file_post`) the members who say they hold it and every other member
+    /// session we host, then the other hosts; as a member, the hosts (live sessions first).
+    /// Never another member directly (U7).
+    pub(super) fn group_image_sources(
         &self,
         core: &GroupCore,
         gid: &str,
         author: &str,
+        file_post: Option<&str>,
     ) -> Vec<([u8; 32], Option<String>)> {
         let mut out: Vec<([u8; 32], Option<String>)> = Vec::new();
         let mut add = |d: [u8; 32], r: Option<String>| {
@@ -551,6 +652,15 @@ impl GroupRt {
         let sessions = core.sessions_of(gid);
         for s in sessions.iter().filter(|s| s.hosting && s.did == author) {
             add(s.ep, None);
+        }
+        if let Some(post) = file_post {
+            let holders = core.file_holders_of(gid, post);
+            for s in sessions.iter().filter(|s| s.hosting && holders.contains(&s.did)) {
+                add(s.ep, None);
+            }
+            for s in sessions.iter().filter(|s| s.hosting) {
+                add(s.ep, None);
+            }
         }
         let hosts: Vec<HostAddr> = core
             .chat_host_addrs(gid)
@@ -582,13 +692,16 @@ impl GroupRt {
         row.failed = false;
         core.store.put_image(gid, &row)?;
         self.group_image_event(gid, &row.post);
+        if row.file.is_some() {
+            self.group_file_announce(core, gid, &row, true);
+        }
         if core.am_host(gid) {
             self.group_images_budget(core, gid).await;
         }
         Ok(())
     }
 
-    fn group_image_event(&self, gid: &str, post: &str) {
+    pub(super) fn group_image_event(&self, gid: &str, post: &str) {
         if let Some(ev) = self.group_ev() {
             let (g, p) = (gid.to_string(), post.to_string());
             self.handle.spawn_blocking(move || ev.on_group_image(g, p));
@@ -605,7 +718,7 @@ impl GroupRt {
             .images(gid)
             .unwrap_or_default()
             .into_iter()
-            .filter(|r| r.ready && !r.dropped)
+            .filter(|r| r.ready && !r.dropped && !core.over_keep(r))
             .collect();
         let total: u64 = rows.iter().map(|r| crypt::cipher_len(r.image.size)).sum();
         if total <= budget {
@@ -702,11 +815,12 @@ impl GroupRt {
         }
         if row.dropped {
             return Err(Error::Rejected(
-                "this picture is no longer kept here".into(),
+                if row.file.is_some() { "this file is no longer kept here" } else { "this picture is no longer kept here" }.into(),
             ));
         }
         row.wanted = true;
         row.failed = false;
+        row.deleted = false;
         core.store.put_image(gid, &row)?;
         core.images_load();
         core.images
@@ -720,6 +834,7 @@ impl GroupRt {
             })
             .or_insert(Pend {
                 wanted: true,
+                file: row.file.as_ref().map(|f| f.size),
                 ..Default::default()
             });
         self.group_image_event(gid, post);
@@ -740,6 +855,9 @@ impl GroupRt {
         };
         if !row.ready {
             return Ok(None);
+        }
+        if row.file.is_some() {
+            return self.group_file_open(core, gid, &row).await;
         }
         let path = core.images.opened(&row.image.hash, &row.image.mime);
         if path.exists() {
@@ -795,7 +913,7 @@ impl GroupRt {
 
     /// Seals `bytes` under a fresh key into the group's blob store and keeps the plain copy
     /// opened (`hash`, `key`).
-    async fn group_blob_add(
+    pub(super) async fn group_blob_add(
         self: &Arc<Self>,
         core: &Arc<GroupCore>,
         gid: &str,

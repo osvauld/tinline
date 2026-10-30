@@ -3672,3 +3672,22 @@ text = "இன்னும் முயல்கிறது. {name} அவர�
 
 [signup_that_doesnt_look_like]
 text = "இது Tinline குறியீடு போலத் தெரியவில்லை. பழைய பதிப்புகளின் குறியீடுகள் வேலை செய்யாது, எனவே புதியதைக் கேளுங்கள்."
+
+[group_file_line]
+text = "கோப்பு: {name}"
+
+[group_file_also_hosting]
+text = "{name}-உம் இந்தக் கோப்பை ஹோஸ்ட் செய்கிறார்"
+
+[group_file_holders]
+one = "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது"
+other = "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது"
+
+[group_file_not_available]
+text = "இப்போது கிடைக்கவில்லை. பிறகு மீண்டும் முயலுங்கள்."
+
+[group_attach_file]
+text = "கோப்பைப் பகிர்"
+
+[group_file_delete_copy]
+text = "என் நகலை நீக்கு"

@@ -3672,3 +3672,22 @@ text = "Wird weiter versucht. Wenn das Handy von {name} schläft, weckt Tinline 
 
 [signup_that_doesnt_look_like]
 text = "Das sieht nicht nach einem Tinline-Code aus. Codes aus älteren Versionen funktionieren nicht, also frag die Person nach einem neuen."
+
+[group_file_line]
+text = "Datei: {name}"
+
+[group_file_also_hosting]
+text = "{name} stellt diese Datei auch bereit"
+
+[group_file_holders]
+one = "{name} und {count} weitere Person haben diese Datei"
+other = "{name} und {count} weitere Personen haben diese Datei"
+
+[group_file_not_available]
+text = "Gerade nicht verfügbar. Versuch es später noch einmal."
+
+[group_attach_file]
+text = "Datei teilen"
+
+[group_file_delete_copy]
+text = "Meine Kopie löschen"

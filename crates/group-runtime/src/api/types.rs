@@ -59,6 +59,38 @@ pub struct GroupMessage {
     pub image: Option<GroupImage>,
     /// A voice post's recording; `text` and `image` are then empty.
     pub voice: Option<GroupVoice>,
+    /// A file post's file (`docs/design/group-files.md`); `text` is then its caption.
+    pub file: Option<GroupFile>,
+}
+
+/// A file post's file: what the card shows and where it is (`Node::group_fetch_file` loads it,
+/// `Node::group_file_path` opens it, `on_group_image` reports changes).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GroupFile {
+    /// The file name as the sender gave it (one path component).
+    pub name: String,
+    /// Bytes.
+    pub size: u64,
+    pub mime: String,
+    /// `Ready` here; `Loading` on its way (`done` bytes so far); `Remote` tap to download;
+    /// `Failed` could not be fetched ("Not available right now. Try again later."; a tap tries
+    /// again).
+    pub state: GroupImageState,
+    /// Bytes arrived so far while `Loading` (0 otherwise).
+    pub done: u64,
+    /// The group's hosts keep this file (it is at most `HOST_KEEP_FILE_MAX`, today the 2 GiB
+    /// maximum, so always true).
+    pub kept_by_hosts: bool,
+    /// Who has a copy now: the author first (unless they deleted it), then members who
+    /// downloaded it, in that order. Empty in open groups apart from the author.
+    pub holders: Vec<GroupFileHolder>,
+}
+
+/// One member holding a file.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GroupFileHolder {
+    pub did: String,
+    pub name: String,
 }
 
 /// A voice post's recording: what the bubble draws before it is here, and where it is (the same

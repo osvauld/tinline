@@ -565,6 +565,27 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             res.onFailure { if (draft.isEmpty()) draft = caption; say(it.message ?: cantSend) }
         }
     }
+    // Group files: the attach sheet's File picks any document (OpenDocument); it is copied into the app's cache, posted (the
+    // core seals it from there, keeping its own copy) and the copy is deleted. The draft goes with it as its caption.
+    var attachOpen by remember(id) { mutableStateOf(false) }
+    val cantReadFile = stringResource(R.string.conv_read_file_failed)
+    val noFilePicker = stringResource(R.string.groups_file_no_picker)
+    val filePicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null || sending) return@rememberLauncherForActivityResult
+        val caption = draft
+        draft = ""; replyTo = null; sending = true
+        exec({
+            withContext(Dispatchers.IO) {
+                val picked = runCatching { ChatMedia.copyIn(ctx, uri) }.getOrNull() ?: return@withContext Result.failure(GroupFailure(cantReadFile))
+                val (tmp, mime) = picked
+                val name = runCatching { ChatMedia.displayName(ctx, uri) }.getOrNull() ?: tmp.name
+                try { app.groups.postFile(id, tmp.path, name, mime, caption).map { "" } } finally { tmp.parentFile?.deleteRecursively() }
+            }
+        }) { res ->
+            sending = false
+            res.onFailure { if (draft.isEmpty()) draft = caption; say(it.message ?: cantSend) }
+        }
+    }
     Box(Modifier.fillMaxSize()) {
     Page {
         val headDesc = stringResource(R.string.groups_chat_head_desc, d.name, GroupText.status(d))
@@ -654,14 +675,19 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                         sending = false
                         res.onFailure { if (draft.isEmpty()) draft = text; say(it.message ?: cantSend) }
                     }
-                }, onAttach = {
-                    if (!sending) try { picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                        catch (_: Exception) { say(noPicker) }
-                }, field = if (voice.recording) { modifier -> VoiceRecordingBar(voice, modifier) } else null,
+                }, onAttach = { if (!sending) attachOpen = true }, field = if (voice.recording) { modifier -> VoiceRecordingBar(voice, modifier) } else null,
                     trailing = { VoiceMicButton(voice) })
             }
         }
     }
+    if (attachOpen) AttachSheet(stringResource(R.string.groups_attach_title, d.name), stringResource(R.string.groups_attach_hint), onDismiss = { attachOpen = false },
+        onPhotos = {
+            attachOpen = false
+            try { picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            catch (_: Exception) { say(noPicker) }
+        }, onCamera = null,
+        onFile = { attachOpen = false; try { filePicker.launch(arrayOf("*/*")) } catch (_: Exception) { say(noFilePicker) } },
+        photosLabel = stringResource(R.string.groups_attach_photo))
     val vm = viewer?.let { v -> o.messages.firstOrNull { it.id == v } }
     val vImg = vm?.image?.takeIf { it.state == uniffi.p2pcore.GroupImageState.READY }
     if (vm != null && vImg != null) {
@@ -854,7 +880,14 @@ private fun ColumnScope.GroupItemLive(
                         onClickLabel = if (lines != null) stringResource(R.string.groups_msg_who_has_it) else null, onClick = { if (lines != null) info = !info }))
             }
         }
-        if ((m.image == null && m.voice == null) || m.text.isNotEmpty()) Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
+        m.file?.let { f ->
+            Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
+                GroupFileBubble(app, d, m, f, me, pos, meta, if (m.outgoing || p) null else senderName,
+                    if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid), quote, say, onLong = onReply)
+            }
+        }
+        // A file post's caption sits in its own bubble (GroupFileBubble).
+        if (m.file == null && ((m.image == null && m.voice == null) || m.text.isNotEmpty())) Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
             PgTextBubble(androidx.compose.ui.text.AnnotatedString(m.text), pos, m.outgoing, meta,
                 Modifier.combinedClickable(enabled = GroupText.active(d.myRole) || lines != null, onLongClickLabel = replyLabel, onLongClick = onReply,
                     onClickLabel = if (lines != null) stringResource(R.string.groups_msg_who_has_it) else null, onClick = { if (lines != null) info = !info }),
@@ -950,6 +983,89 @@ private fun GroupVoiceBubble(
                 failed = v.state == uniffi.p2pcore.GroupImageState.FAILED, outgoing = m.outgoing, onDownload = { load() })
             PgMeta(meta, bubbleMetaColor(m.outgoing), Modifier.align(Alignment.End))
         }
+    }
+}
+
+/**
+ * A file post (docs/design/group-files.md): the 1:1 file row in a group bubble, with the sender's name and the quote above
+ * it, and under the bubble who else has the file. Not downloaded: its size and Download; on its way: progress and Cancel;
+ * here: a tap opens it in another app (FileProvider; a type no app should open is saved instead), Save to phone (Downloads)
+ * and Delete my copy (not on a host, which keeps it for the group); failed: "Not available right now" and Try again. The
+ * card keeps one size in every state and the holder line keeps its room, so nothing moves when either changes.
+ */
+@Composable
+private fun GroupFileBubble(
+    app: P2pApp, d: GroupDetail, m: GroupMessage, f: uniffi.p2pcore.GroupFile, me: String, pos: BubblePos, meta: BubbleMeta, sender: String?, senderColor: Color,
+    quote: (@Composable () -> Unit)?, say: (String) -> Unit, onLong: () -> Unit,
+) {
+    val c = Tin.c
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val gid = d.id
+    val st = f.state
+    val size = sizeText(f.size.toLong())
+    val plan = remember(f.name, f.mime) { FileOpen.plan(f.name, f.mime) }
+    val canOpen = plan.kind != OpenKind.NONE
+    val type = f.name.substringAfterLast('.', "").takeIf { it.length in 1..5 }?.uppercase() ?: f.mime.substringAfter('/', "").uppercase().take(5)
+    val sub = when (st) {
+        uniffi.p2pcore.GroupImageState.READY -> stringResource(if (canOpen) R.string.conv_file_tap_open else R.string.conv_file_tap_save, size, type)
+        uniffi.p2pcore.GroupImageState.LOADING -> stringResource(R.string.conv_file_downloading, sizeText(f.done.toLong()), size)
+        uniffi.p2pcore.GroupImageState.FAILED -> stringResource(R.string.groups_file_not_available)
+        uniffi.p2pcore.GroupImageState.REMOTE -> stringResource(R.string.conv_file_not_downloaded, size)
+    }
+    val frac = if (st == uniffi.p2pcore.GroupImageState.LOADING && f.size > 0UL) f.done.toFloat() / f.size.toFloat() else null
+    val icon = when {
+        f.mime.startsWith("image/") -> PgIcons.Image
+        f.mime.startsWith("video/") -> PgIcons.Video
+        f.mime.startsWith("audio/") -> PgIcons.Mic
+        else -> PgIcons.File
+    }
+    val tryAgain = stringResource(R.string.common_try_again)
+    val savedLine = stringResource(R.string.conv_saved_to_phone)
+    val saveFailed = stringResource(R.string.conv_save_failed)
+    val noApp = stringResource(R.string.conv_no_app_opens, FileOpen.extOf(f.name))
+    fun io(block: () -> Result<Unit>) = scope.launch { withContext(Dispatchers.IO) { block() }.onFailure { say(it.message ?: tryAgain) } }
+    fun local(): java.io.File? = app.groups.filePath(gid, m.id)?.let { java.io.File(it) }?.takeIf { it.exists() }
+    fun save() = scope.launch {
+        val ok = withContext(Dispatchers.IO) { runCatching { local()?.let { ChatMedia.saveToPhone(ctx, it, f.name, f.mime, downloads = true) } ?: false }.getOrDefault(false) }
+        say(if (ok) savedLine else saveFailed)
+    }
+    fun open() {
+        if (!canOpen) { save(); return }
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching { local()?.let { FileOpen.openExternally(ctx, ChatMedia.cacheCopy(ctx, it, "${m.id.take(12)}_${f.name}"), plan.mime) } ?: false }.getOrDefault(false)
+            }
+            if (!ok) say(noApp)
+        }
+    }
+    val fetch = { io { app.groups.fetchFile(gid, m.id) } }
+    Column(horizontalAlignment = if (m.outgoing) Alignment.End else Alignment.Start) {
+        PgBubble(pos, m.outgoing, Modifier.fillMaxWidth()) {
+            Column {
+                sender?.let { Text(it, Modifier.padding(bottom = 1.dp), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
+                    color = senderColor, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                quote?.invoke()
+                FileCard(f.name, icon, sub, frac, m.outgoing, Modifier.fillMaxWidth(), reserveBar = true,
+                    onTap = { when (st) { uniffi.p2pcore.GroupImageState.READY -> open(); uniffi.p2pcore.GroupImageState.LOADING -> {}; else -> fetch() } }, onLong = onLong) {
+                    val ink = if (m.outgoing) c.onPrc else c.ink2
+                    when (st) {
+                        uniffi.p2pcore.GroupImageState.REMOTE -> IconBtn(PgIcons.Download, stringResource(R.string.conv_download_name, f.name), { fetch() }, tint = c.pr)
+                        uniffi.p2pcore.GroupImageState.LOADING -> IconBtn(PgIcons.X, stringResource(R.string.conv_cancel_download_name, f.name), { io { app.groups.cancelFile(gid, m.id) } }, tint = ink)
+                        uniffi.p2pcore.GroupImageState.FAILED -> IconBtn(PgIcons.Retry, stringResource(R.string.groups_file_try_again_name, f.name), { fetch() }, tint = c.pr)
+                        uniffi.p2pcore.GroupImageState.READY -> {
+                            IconBtn(PgIcons.Save, stringResource(R.string.conv_save_name_to_phone, f.name), { save() }, tint = ink)
+                            if (!d.amHost) IconBtn(PgIcons.Trash, stringResource(R.string.groups_file_delete_copy_name, f.name), { io { app.groups.deleteFileCopy(gid, m.id) } }, tint = ink)
+                        }
+                    }
+                }
+                if (m.text.isNotEmpty()) Text(m.text, Modifier.padding(top = 6.dp), style = PgBodyText, color = bubbleInk(m.outgoing))
+                PgMeta(meta, bubbleMetaColor(m.outgoing), Modifier.align(Alignment.End))
+            }
+        }
+        // Who else has it; the line keeps its room while nobody else does, so it never pushes the thread when it appears.
+        Text(GroupText.holdersLine(f, me) { h -> nameOf(app, h.did, h.name) } ?: "", Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp),
+            style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

@@ -10,6 +10,7 @@ pub mod calllog;
 pub mod code;
 pub mod doc;
 mod error;
+pub mod files;
 pub mod invitations;
 pub mod mail;
 pub mod record;

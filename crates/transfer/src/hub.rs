@@ -11,6 +11,8 @@
 mod owned_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod verify_tests;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -145,6 +147,43 @@ impl BlobHub {
             }
         };
         let added = self.import_tmp(&tmp).await;
+        let _ = std::fs::remove_file(&tmp);
+        Ok((added?, size))
+    }
+
+    /// Like `add_file` (streams from disk, never the whole file in memory), but protected by
+    /// `owner`'s own tag instead of the shared one.
+    pub async fn add_file_owned(
+        &self,
+        owner: &str,
+        key: [u8; 32],
+        src: PathBuf,
+        progress: impl FnMut(u64) + Send + 'static,
+    ) -> Result<(Hash, u64), Error> {
+        let tmp = self.tmp("enc");
+        let out = tmp.clone();
+        let size = tokio::task::spawn_blocking(move || -> std::io::Result<u64> {
+            let r = std::io::BufReader::with_capacity(1 << 20, std::fs::File::open(&src)?);
+            let w = std::io::BufWriter::with_capacity(1 << 20, std::fs::File::create(&out)?);
+            crypt::encrypt_stream(&key, r, w, progress)
+        })
+        .await
+        .map_err(io_err)?;
+        let size = match size {
+            Ok(n) => n,
+            Err(e) => {
+                let _ = std::fs::remove_file(&tmp);
+                return Err(Error::Io(e.to_string()));
+            }
+        };
+        let added = async {
+            let tag = self.store.add_path(&tmp).temp_tag().await.map_err(io_err)?;
+            let hash = tag.hash();
+            self.keep_for(Some(owner), &hash).await?;
+            drop(tag);
+            Ok::<_, Error>(hash)
+        }
+        .await;
         let _ = std::fs::remove_file(&tmp);
         Ok((added?, size))
     }
@@ -292,6 +331,18 @@ impl BlobHub {
         self.fetch_for(Some(owner), conn, hash, cipher_total, STALL, |_, _| {}).await
     }
 
+    /// `fetch_owned` with progress: `(ciphertext bytes so far, total)`.
+    pub async fn fetch_owned_progress(
+        &self,
+        owner: &str,
+        conn: Connection,
+        hash: Hash,
+        cipher_total: u64,
+        progress: impl FnMut(u64, u64) + Send,
+    ) -> Result<(), Error> {
+        self.fetch_for(Some(owner), conn, hash, cipher_total, STALL, progress).await
+    }
+
     async fn fetch_for(
         &self, owner: Option<&str>, conn: Connection, hash: Hash, cipher_total: u64,
         stall: Duration, mut progress: impl FnMut(u64, u64) + Send,
@@ -309,7 +360,7 @@ impl BlobHub {
                 Ok(Some(GetProgressItem::Progress(n))) if n > cipher_total => break Err(Error::Protocol("blob exceeds its declared size".into())),
                 Ok(Some(GetProgressItem::Progress(n))) => progress(n, cipher_total),
                 Ok(Some(GetProgressItem::Done(_))) => break Ok(()),
-                Ok(Some(GetProgressItem::Error(e))) => break Err(Error::Net(e.to_string())),
+                Ok(Some(GetProgressItem::Error(e))) => break Err(get_error(&e.to_string())),
             }
         };
         // The request future lives inside `stream`; dropping it drops the stream pair, and
@@ -369,6 +420,16 @@ impl BlobHub {
 
     pub async fn shutdown(&self) {
         let _ = self.store.shutdown().await;
+    }
+}
+
+/// A failed get: bao verification failures (a chunk or parent hash that does not match the hash
+/// asked for) are `Corrupt`, everything else is a network failure.
+fn get_error(msg: &str) -> Error {
+    if msg.contains("hash mismatch") {
+        Error::Corrupt(msg.to_string())
+    } else {
+        Error::Net(msg.to_string())
     }
 }
 

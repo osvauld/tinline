@@ -359,7 +359,7 @@ pub(super) fn mime_of(path: &std::path::Path) -> String {
 }
 
 /// A free file name in `dir` for `name`: "a.pdf", then "a (2).pdf", ...
-fn free_path(dir: &std::path::Path, name: &str) -> PathBuf {
+pub(super) fn free_path(dir: &std::path::Path, name: &str) -> PathBuf {
     let safe = std::path::Path::new(name)
         .file_name()
         .and_then(|n| n.to_str())

@@ -4808,3 +4808,34 @@ text = "{name} এখন এই ফোনে খোলা আছে। আপন
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "এই অ্যাকাউন্টটি এখন এই ফোনে খোলা আছে। আপনার অন্য অ্যাকাউন্টের কল এখনও এখানে রিং হয় আর নতুন মেসেজের খবর আসে। সেটিংসে গিয়ে বদলাতে পারবেন।"
+
+[groupsc_file_line]
+text = "ফাইল: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name}-ও এই ফাইলটি হোস্ট করছেন"
+
+[groupsc_file_holders]
+one = "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে"
+other = "{name} এবং আরও {count} জনের কাছে এই ফাইলটি আছে"
+
+[groups_file_not_available]
+text = "এখন পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।"
+
+[groups_file_try_again_name]
+text = "{name} আবার ডাউনলোড করুন"
+
+[groups_file_delete_copy_name]
+text = "{name}-এর আমার কপি মুছুন"
+
+[groups_attach_title]
+text = "{name}-এ শেয়ার করুন"
+
+[groups_attach_hint]
+text = "প্রতিটি ফাইল 2 GB পর্যন্ত। গ্রুপের হোস্টরা একটি কপি রাখেন, তাই আপনি অফলাইনে থাকলেও সদস্যরা এটি পেতে পারেন।"
+
+[groups_attach_photo]
+text = "ছবি"
+
+[groups_file_no_picker]
+text = "এই ফোনে কোনো ফাইল পিকার নেই।"

@@ -4808,3 +4808,34 @@ text = "இப்போது {name} இந்த ஃபோனில் தி�
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "இப்போது இந்தக் கணக்கு இந்த ஃபோனில் திறந்துள்ளது. உங்கள் மற்றொரு கணக்கு இங்கே இன்னும் ஒலிக்கும், புதிய செய்திகளையும் தெரிவிக்கும். அமைப்புகளில் மாறலாம்."
+
+[groupsc_file_line]
+text = "கோப்பு: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name}-உம் இந்தக் கோப்பை ஹோஸ்ட் செய்கிறார்"
+
+[groupsc_file_holders]
+one = "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது"
+other = "{name} மற்றும் இன்னும் {count} பேரிடம் இந்தக் கோப்பு உள்ளது"
+
+[groups_file_not_available]
+text = "இப்போது கிடைக்கவில்லை. பிறகு மீண்டும் முயலுங்கள்."
+
+[groups_file_try_again_name]
+text = "{name}-ஐ மீண்டும் பதிவிறக்கு"
+
+[groups_file_delete_copy_name]
+text = "{name}-இன் என் நகலை நீக்கு"
+
+[groups_attach_title]
+text = "{name}-இல் பகிர்"
+
+[groups_attach_hint]
+text = "ஒவ்வொரு கோப்பும் 2 GB வரை. குழுவின் ஹோஸ்ட்கள் ஒரு நகலை வைத்திருப்பார்கள், எனவே நீங்கள் ஆஃப்லைனில் இருந்தாலும் உறுப்பினர்கள் அதைப் பெறலாம்."
+
+[groups_attach_photo]
+text = "புகைப்படம்"
+
+[groups_file_no_picker]
+text = "இந்த ஃபோனில் கோப்புத் தேர்வி இல்லை."

@@ -8703,6 +8703,7 @@ dependencies = [
 name = "transfer"
 version = "0.2.8"
 dependencies = [
+ "bao-tree",
  "cryptography",
  "hex",
  "iroh",

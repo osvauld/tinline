@@ -136,7 +136,7 @@ impl Shards {
 
 /// What a chat-list row keeps of a post.
 pub fn brief(i: &Item) -> PostBrief {
-    PostBrief { id: i.id.clone(), author: i.author.clone(), at: i.at, text: i.text.clone(), reply_to: i.reply_to.clone(), image: i.image.clone(), voice: i.voice.clone(), peer: i.peer, counter: i.counter }
+    PostBrief { id: i.id.clone(), author: i.author.clone(), at: i.at, text: i.text.clone(), reply_to: i.reply_to.clone(), image: i.image.clone(), voice: i.voice.clone(), file: i.file.clone(), peer: i.peer, counter: i.counter }
 }
 
 pub fn brief_item(b: &PostBrief, st: &GroupState) -> Item {
@@ -150,6 +150,7 @@ pub fn brief_item(b: &PostBrief, st: &GroupState) -> Item {
         reply_to: b.reply_to.clone(),
         image: b.image.clone(),
         voice: b.voice.clone(),
+        file: b.file.clone(),
         before_removal: st.removed.contains_key(&b.author),
         peer: b.peer,
         counter: b.counter,

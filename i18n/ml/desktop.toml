@@ -3672,3 +3672,22 @@ text = "ഇപ്പോഴും ശ്രമിക്കുന്നു. {name}
 
 [signup_that_doesnt_look_like]
 text = "ഇത് ഒരു Tinline കോഡ് പോലെ തോന്നുന്നില്ല. പഴയ പതിപ്പുകളിലെ കോഡുകൾ പ്രവർത്തിക്കില്ല, അതിനാൽ പുതിയത് ചോദിക്കുക."
+
+[group_file_line]
+text = "ഫയൽ: {name}"
+
+[group_file_also_hosting]
+text = "{name}-ഉം ഈ ഫയൽ ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_file_holders]
+one = "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്"
+other = "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്"
+
+[group_file_not_available]
+text = "ഇപ്പോൾ ലഭ്യമല്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കൂ."
+
+[group_attach_file]
+text = "ഫയൽ പങ്കിടുക"
+
+[group_file_delete_copy]
+text = "എന്റെ പകർപ്പ് ഇല്ലാതാക്കുക"

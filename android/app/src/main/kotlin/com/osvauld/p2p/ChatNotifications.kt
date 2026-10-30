@@ -24,6 +24,22 @@ object OpenChat {
     val request = MutableStateFlow<String?>(null)
     /** A tap on a group invitation notification asks Home to show the Groups tab. */
     val groupsTab = MutableStateFlow(false)
+    /** A tap on a group's post notification asks the UI to open that group's conversation. */
+    val groupRequest = MutableStateFlow<String?>(null)
+    const val EXTRA_GROUP = "chat_group"
+}
+
+/**
+ * Opening a group's conversation on a screen stack (a post notification): if the group's conversation is already on the
+ * stack, go back to it, dropping what lies over it (its Group info, a chat opened from there); otherwise put it on top.
+ * Never leaves the Group info page in front of the conversation that was asked for.
+ */
+object GroupNav {
+    fun <T> open(stack: MutableList<T>, isIt: (T) -> Boolean, make: () -> T) {
+        val at = stack.indexOfLast(isIt)
+        if (at < 0) { stack.add(make()); return }
+        while (stack.size > at + 1) stack.removeAt(stack.lastIndex)
+    }
 }
 
 /** One MessagingStyle notification per conversation, with an inline reply. Hooked to `on_message_added`. */
@@ -167,7 +183,9 @@ object GroupNotifier {
         lines[gid]?.let { synchronized(it) { it.forEach { l ->
             style.addMessage(l.text, l.at, Person.Builder().setName(l.who).setKey(l.did).setIcon(NotifFaces.icon(NotifFaces.cached(l.did))).build())
         } } }
-        val open = PendingIntent.getActivity(app, id(gid), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        // A tap opens this group's conversation (not whatever screen was last in front, e.g. its Group info).
+        val open = PendingIntent.getActivity(app, id(gid), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(OpenChat.EXTRA_GROUP, gid),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
             .setSilent(AlertPrefs.quiet(app) || AppVisible.resumed)   // in front, the app plays the `received` cue itself

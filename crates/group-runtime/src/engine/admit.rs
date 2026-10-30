@@ -72,7 +72,7 @@ impl SessPolicy {
                 Body::OpenJoin { .. } if e.rec.author != did => {
                     return Err("an open join must come from its own author".into());
                 }
-                Body::Post { .. } | Body::Voice { .. } if refused_admins_only(state, did, &e.rec.author, &e.rec.seen) => {
+                Body::Post { .. } | Body::Voice { .. } | Body::File { .. } if refused_admins_only(state, did, &e.rec.author, &e.rec.seen) => {
                     return Err(ADMINS_ONLY.into());
                 }
                 _ => {}
@@ -90,7 +90,8 @@ pub fn upload_cut(state: &GroupState, meta: &GroupMeta, me: &str, day: &str, row
     if state.admins_only && !state.is_admin(me) {
         for r in rows {
             let e = &r.entry;
-            if theirs.get(&e.peer).copied().unwrap_or(0) <= e.counter && refused_admins_only(state, me, &e.rec.author, &e.rec.seen) {
+            // Only posts are refused in a channel (a file holder announcement is not a post).
+            if e.rec.body.is_post() && theirs.get(&e.peer).copied().unwrap_or(0) <= e.counter && refused_admins_only(state, me, &e.rec.author, &e.rec.seen) {
                 cut.push((e.peer, e.counter));
             }
         }
@@ -121,7 +122,8 @@ impl GroupCore {
                 if e.rec.author != self.did || acks.iter().any(|vv| vv.get(&e.peer).copied().unwrap_or(0) > e.counter) {
                     continue;
                 }
-                let refused = if told { post_visible(state, &e.rec.author, &e.rec.seen) != Vis::Hidden } else { refused_admins_only(state, &self.did, &e.rec.author, &e.rec.seen) };
+                // Only posts can be refused as posts; a file holder announcement is just owed.
+                let refused = e.rec.body.is_post() && if told { post_visible(state, &e.rec.author, &e.rec.seen) != Vis::Hidden } else { refused_admins_only(state, &self.did, &e.rec.author, &e.rec.seen) };
                 if e.peer == self.wid && (refused || next.failed_posts.contains_key(&e.id)) {
                     next.failed_posts.entry(e.id.clone()).or_insert_with(|| FailedPost { day: day.clone(), peer: e.peer, counter: e.counter, reason: NOT_POSTED.into() });
                 } else if !refused {

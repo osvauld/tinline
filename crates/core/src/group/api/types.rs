@@ -66,6 +66,40 @@ pub struct GroupMessage {
     /// empty.
     #[uniffi(default = None)]
     pub voice: Option<GroupVoice>,
+    /// A file post's file (`docs/design/group-files.md`); `text` is then its caption.
+    #[uniffi(default = None)]
+    pub file: Option<GroupFile>,
+}
+
+/// A file post's file: what the card shows and where it is. `Node::group_fetch_file` loads it,
+/// `Node::group_file_path` opens it, `Node::group_save_file` saves it, `on_group_image` reports
+/// every change (state, progress at most every 500 ms, holders).
+#[uniffi::remote(Record)]
+pub struct GroupFile {
+    /// The file name as the sender gave it (one path component).
+    pub name: String,
+    /// Bytes.
+    pub size: u64,
+    pub mime: String,
+    /// `Ready` here; `Loading` on its way (`done` bytes so far); `Remote` tap to download;
+    /// `Failed` could not be fetched (say "Not available right now. Try again later."; a tap
+    /// tries again).
+    pub state: GroupImageState,
+    /// Bytes arrived so far while `Loading` (0 otherwise).
+    pub done: u64,
+    /// The group's hosts keep this file (`HOST_KEEP_FILE_MAX`, today the 2 GiB maximum, so
+    /// always true).
+    pub kept_by_hosts: bool,
+    /// Who has a copy now: the author first (unless they deleted it), then members who
+    /// downloaded it ("Anoop and 2 others have this file").
+    pub holders: Vec<GroupFileHolder>,
+}
+
+/// One member who holds a file.
+#[uniffi::remote(Record)]
+pub struct GroupFileHolder {
+    pub did: String,
+    pub name: String,
 }
 
 /// A voice post's recording: what the bubble draws before it is here, and where it is (the

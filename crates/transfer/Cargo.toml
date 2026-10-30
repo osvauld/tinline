@@ -15,3 +15,7 @@ parking_lot = "0.12"
 hex = "0.4"
 thiserror.workspace = true
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
+
+[dev-dependencies]
+# A tampering provider in tests: the bao encoding iroh-blobs speaks, with altered data.
+bao-tree = "0.16"

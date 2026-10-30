@@ -289,6 +289,11 @@ fn build_slot(
     let search: Arc<search_ix::SearchIx> = Default::default();
     let chat = Arc::new(chat_runtime::ChatRt::new(ctx.clone(), search.clone()));
     let group = Arc::new(group_runtime::GroupRt::new(ctx.clone(), search.clone()));
+    {
+        // Group files auto-download within the 1:1 attachment size limit (docs/design/group-files.md §3).
+        let chat = Arc::downgrade(&chat);
+        *group.file_auto_limit.lock() = Some(Arc::new(move || chat.upgrade()?.chat_core().ok().map(|c| c.store.auto_download())));
+    }
     let sync = Arc::new(sync_runtime::SyncRt::new(ctx.clone(), chat.clone(), group.clone(), selfsync));
     let inner = Arc::new(Inner { ctx, chat, group, sync, search, slot: gate.clone() });
     inner.ctx.join_floor();

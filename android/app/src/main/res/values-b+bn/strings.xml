@@ -1684,4 +1684,17 @@
     <string name="onboarding_linked_lead_unnamed">আপনার পরিচিতি আর চ্যাট আপনার অন্য ডিভাইস থেকে আসছে, আর দুটিতেই মিলিয়ে রাখা হবে।</string>
     <string name="gcall_is_calling_group_unnamed">কেউ একজন গ্রুপে কল করছেন</string>
     <string name="gcall_started_call_unnamed">কেউ একজন একটি কল শুরু করেছেন</string>
+    <string name="groupsc_file_line">ফাইল: %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s-ও এই ফাইলটি হোস্ট করছেন</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s এবং আরও %2$d জনের কাছে এই ফাইলটি আছে</item>
+        <item quantity="other">%1$s এবং আরও %2$d জনের কাছে এই ফাইলটি আছে</item>
+    </plurals>
+    <string name="groups_file_not_available">এখন পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।</string>
+    <string name="groups_file_try_again_name">%1$s আবার ডাউনলোড করুন</string>
+    <string name="groups_file_delete_copy_name">%1$s-এর আমার কপি মুছুন</string>
+    <string name="groups_attach_title">%1$s-এ শেয়ার করুন</string>
+    <string name="groups_attach_hint">প্রতিটি ফাইল 2 GB পর্যন্ত। গ্রুপের হোস্টরা একটি কপি রাখেন, তাই আপনি অফলাইনে থাকলেও সদস্যরা এটি পেতে পারেন।</string>
+    <string name="groups_attach_photo">ছবি</string>
+    <string name="groups_file_no_picker">এই ফোনে কোনো ফাইল পিকার নেই।</string>
 </resources>
