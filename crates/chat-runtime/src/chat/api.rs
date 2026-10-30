@@ -103,7 +103,8 @@ pub struct DayPage {
     pub day: String,
     pub messages: Vec<Message>,
     /// The next older day that has messages on this device, to ask for next; `None` at the
-    /// start of what we hold (`fetch_older_history` can ask the peer for more).
+    /// start of what we hold (the contact sends older days by itself; `fetch_older_history`
+    /// opens a link and waits for them).
     pub older_day: Option<String>,
 }
 

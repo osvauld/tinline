@@ -58,7 +58,7 @@ use support::*;
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 7 since postcard.
-const CHAT_ALPN: &[u8] = b"tinline/chat/7";
+const CHAT_ALPN: &[u8] = b"tinline/chat/8";
 const WAIT: Duration = Duration::from_secs(30);
 const S: Suite = Suite("w2c");
 

@@ -28,10 +28,11 @@ pub struct Versioned {
     pub old: &'static [&'static [u8]],
 }
 
-/// 1:1 chat (`tinline/chat/7`; 1 = before P9c, 2 = before P10's per-writer versions and P6's
+/// 1:1 chat (`tinline/chat/8`; 1 = before P9c, 2 = before P10's per-writer versions and P6's
 /// message tokens; 3 = before profiles; 4 = before signed photo sizes and previews; 5 = before
-/// recipient-signed delivered/read receipt frames; 6 = bincode frames, before postcard).
-pub const CHAT: Versioned = Versioned { name: "chat", current: chat_core::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2", b"tinline/chat/3", b"tinline/chat/4", b"tinline/chat/5", b"tinline/chat/6"] };
+/// recipient-signed delivered/read receipt frames; 6 = bincode frames, before postcard; 7 = the
+/// history request, before day inventories).
+pub const CHAT: Versioned = Versioned { name: "chat", current: chat_core::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2", b"tinline/chat/3", b"tinline/chat/4", b"tinline/chat/5", b"tinline/chat/6", b"tinline/chat/7"] };
 /// Own-device sync, which relays chat docs and the account doc (`tinline/self/5`; 1 = before
 /// P9c, 2 = before P10 and P6's call tokens, call permissions and cut-offs; 3 = before signed photo sizes, which
 /// an older own device would reject when it relays a /5 photo message; 4 = bincode frames).
@@ -56,7 +57,8 @@ pub fn superseded(alpn: &[u8]) -> Option<&'static Versioned> {
 pub fn reason(v: &Versioned, alpn: &[u8]) -> String {
     // Profiles (chat/4), photo sizes (chat/5, self/4) and receipts (chat/6) only add to what is
     // stored: updating is enough. Postcard (chat/7, self/5) changed every stored format: wipe.
-    let wipe = if matches!(alpn, b"tinline/chat/3" | b"tinline/chat/4" | b"tinline/chat/5" | b"tinline/self/3") {
+    // Day inventories (chat/8) change only the wire.
+    let wipe = if matches!(alpn, b"tinline/chat/3" | b"tinline/chat/4" | b"tinline/chat/5" | b"tinline/chat/7" | b"tinline/self/3") {
         ""
     } else {
         " (and wipe its data)"

@@ -30,10 +30,12 @@ impl Node {
         self.open().group.fail_fetches.store(n, std::sync::atomic::Ordering::SeqCst);
     }
 
-    /// Pauses (or resumes) the background fetch of older days: the platform sets it while the
-    /// network is metered or the battery low, the inputs group call hosting uses.
+    /// Pauses (or resumes) the background exchange of older days, in groups and with contacts:
+    /// the platform sets it while the network is metered or the battery low, the inputs group
+    /// call hosting uses.
     pub fn group_set_backfill_paused(&self, paused: bool) {
         self.open().group.backfill_paused.store(paused, std::sync::atomic::Ordering::SeqCst);
+        self.open().chat.backfill_paused.store(paused, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Pause between two history fetches, ms (0 = the default 200).

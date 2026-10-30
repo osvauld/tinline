@@ -60,7 +60,7 @@ messages/<id> = { id, author, at, reply_to?, file?,
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-ALPN `tinline/chat/7` (postcard frames; `/1` to `/6` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/8` (postcard frames; `/1` to `/7` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -70,8 +70,8 @@ stream.
   `ChatSync` for what the sender lacks (an empty update is fine).
 - `ChatPush { doc, update, sig }`: live, after a local write, while connected.
 - `ChatAck { doc, vv }`: "I now hold up to here" — this drives the ticks.
-- Older shards: `ChatHistory { before: day, limit }` → the peer lists `(day, vv, snapshot
-  hash)`; we fetch only what the user scrolls to, closed days as blobs over iroh-blobs.
+- Older shards: each side sends its inventory of days (`Days`), and the other sends every day
+  it lacks in the background, newest first (section 10).
 
 ### Delivery and offline
 1:1 has no third member to relay through, so **a message is sent when both devices are
@@ -210,14 +210,15 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/7` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/8` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
 
 ### API (Kotlin-visible, additive; voice recording/encoding is the apps' job)
 `Node.set_chat_events(ChatEvents)`, `chats()`, `chat_day(peer_did, day?)` -> `DayPage{day,
-messages (oldest first), older_day}`, `fetch_older_history(peer_did, before_day)`,
+messages (oldest first), older_day}`, `fetch_older_history(peer_did, before_day)` (opens a
+link to the contact and waits ~10 s for older days to arrive; returns how many did),
 `send_text(peer_did, text, reply_to?)`, `edit_message`, `delete_message`, `mark_read`,
 `send_file(peer_did, path, mime, text?)`, `send_voice(peer_did, path, duration_ms, waveform)`,
 `download_attachment(peer_did, message_id)`, `cancel_download(peer_did, message_id)`, `save_attachment(peer_did, message_id, dest)`,
@@ -228,16 +229,28 @@ Records: `Chat`, `Message`, `Attachment` (state `Remote|Downloading|Ready|Failed
 UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `duration_ms` and a
 ~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
 
-### Wire (`tinline/chat/4`)
+### Wire (`tinline/chat/8`)
 One bidirectional stream, opened by the dialer; frames are u32 BE length + postcard via `cryptography::codec` (cap 16 MiB; the first frame, before `Auth` is checked, 64 KiB).
 `Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
 id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
 Then `Hello{shards:[(day, vv)]}` (last 7 days + days with unacknowledged ops; also acts as an
-ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`,
-`HistoryReq{before, limit}` / `HistoryResp{days:[{day, vv, hash, key, size}]}`.
+ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`, and
+`Days{after, days:[(day, vv)]}`: the inventory of every day held, ascending, in pages of 64, an
+empty page ends it; it also acts as an ack. Each side sends it when the session starts, 3 s later
+and then every 5 minutes while the session lasts (and at once when the user asks for older
+messages). On the end of the other's inventory a side sends a `Sync` for every day the other lacks
+or is behind on, newest first, one at a time with 200 ms between, paused while the platform says
+so (`group_set_backfill_paused`). Each sent day counts as activity, so the link stays up while days remain. Days later than
+tomorrow (UTC) are refused. Messages of days older than the 7 live ones raise no message event.
 `sig` = Ed25519 by the device key over `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`.
-For chat day shards, a device only ever sends **its own** ops (export from the peer's vv with other peers' counters
-masked), so a receiver can require that every op of a live chat batch is the signer's own.
+For chat day shards, a device sends every op the contact device lacks, whoever wrote it, once that
+device has told it what it holds of the day (its `Hello`, `Days`, `Sync` or `Ack`); before that,
+only its own (export from the peer's vv with other peers' counters masked). The receiver proves
+every op by its author's DID signature; new messages may be the signer's or the receiver's own
+(section 10, P1).
+**Version 8 (day inventories, 2026-10-30).** `Days` replaces `HistoryReq`/`HistoryResp`; batches
+carry the receiver's own messages too (section 10). `/7` is refused with the update-app reason,
+no wipe.
 **Version 3 (P6 too).** `Auth` presents the peer's *message* token (a call token does not open
 chat; a token taken back by a block is refused).
 **Version 5 (photo sizes, 2026-10-14).** A file record of a picture adds `width`, `height` (the size it is
@@ -275,11 +288,11 @@ Blobs travel on the stock iroh-blobs ALPN of the same endpoint (iroh-blobs 0.103
 `Shard::apply_remote` imports into a scratch fork and rejects the whole batch (nothing stored,
 session closed) if: ops are not self-contained; the doc has anything but `messages`; a message has
 an unknown, missing or ill-typed field (each version's `dev` and `did_sig` included); a new message's
-`author` is not the signer; `at` is outside the shard's day ±1 h (live pushes: also |at − now| <
-24 h); an existing message changed `id`, `author`, `at`, `reply_to` or `file`; someone but the
+`author` is neither the signer nor the receiver; `at` is outside the shard's day ±1 h; an existing message changed `id`, `author`, `at`, `reply_to` or `file`; someone but the
 author changed the version; a message disappeared; a deleted message kept text; any op is not
-proven by its author's DID signature under the author's writer ID (section 7; live: only the
-signer's own ops); a writer's version goes back (older `edited_at` or an undone delete, judged per
+proven by its author's DID signature under the author's writer ID (section 7; authors only the
+conversation's two DIDs); a new message of the signer's on a live push has |at − now| ≥ 24 h (the
+receiver's own messages a contact carries may be old); a writer's version goes back (older `edited_at` or an undone delete, judged per
 span against that writer's previous version); a touched message does not end as one of the
 proven versions. The verdict
 depends on nothing but the batch, the doc and the session's DID, so every device reaches the same
@@ -319,8 +332,8 @@ are sealed in the account store; see [profile-sync.md](design/profile-sync.md).
 - Serving a blob: only to a device that is a contact's (or in an authenticated session) AND only
   if a message of that conversation names the hash (`ref/{hash}/{pair}`). Push/observe refused.
 - Closed days: days 8+ days old are compacted into an encrypted snapshot blob (`closed` in the
-  shard meta) by a periodic task; opening one decrypts the blob. A peer's `HistoryReq` is
-  answered with such a blob (made on demand, cached) and its key, inside the authenticated link.
+  shard meta) by a periodic task; opening one decrypts the blob. Backfill sends a closed day as a
+  `Sync` like any other.
 - **Per-version author signatures.** Every version carries `did_sig`, the author's DID signature
   (section 7). Creating, editing and deleting all write a new signed version under the writer's
   version key. Every apply path (live
@@ -328,9 +341,9 @@ are sealed in the account store; see [profile-sync.md](design/profile-sync.md).
   unsigned or mis-signed op rejects the whole batch. Because the doc id is signed a message cannot
   be replayed into another day or pair, and because the span is signed an old version cannot be
   written again as a new op; a writer's version may not move `edited_at` backwards or un-delete.
-- **Vouched import.** History snapshots (older days, or a day whose batch depends on ops of ours
-  that we lost, e.g. after a reinstall) may hold ops of either party, but every op must be proven
-  by its author's DID signature. A contact therefore cannot put words in our mouth or occupy a
+- **Vouched import.** A contact's batches (and own-device relays) may hold ops of either party,
+  ours from our other devices or from before a reinstall, but every op must be proven by its
+  author's DID signature. A contact therefore cannot put words in our mouth or occupy a
   writer ID of ours; the worst it can do is withhold messages.
 - **Writer counters never repeat (P10).** Loro identifies an op by (peer id, counter) and drops
   an op whose id it already holds, so two different ops under one (writer ID, counter) make the
@@ -413,11 +426,12 @@ learns how many devices we have.
   from the contact verifies against the contact's DID, not against the relay. A rejected batch
   is dropped (nothing stored) and the session goes on; the usual per-field rules (immutable
   `id/author/at/reply_to/file`, no un-delete, no removal, day window) hold.
-- A device still sends the **contact** only its own ops (`export_own_since`), and the contact
-  accepts a live batch only with ops of the session's DID. So each of our devices
-  syncs its own writes with the contact itself; a contact keeps one session per *device* (a person's
-  devices no longer replace each other's sessions). Messages the contact wrote reach our second
-  device through the first, with the contact offline. Duplicates cannot happen: a message is a
+- A device sends the **contact** every op it lacks, ours from any of our devices included
+  (section 10, P1), and each of our devices also syncs its own writes with the contact itself; a
+  contact keeps one session per *device* (a person's devices no longer replace each other's
+  sessions). Messages the contact wrote reach our second device through the first, with the
+  contact offline, and our first device's messages reach the second through the contact, with the
+  first offline. Duplicates cannot happen: a message is a
   map entry keyed by its random id.
 
 ### Read state
@@ -486,7 +500,7 @@ outbox marker; `fetch_older_history` is a no-op returning 0.
 ### Blocking
 A block keeps the conversation on every device (U19). The blocker's devices refuse the blocked
 DID's `Auth` with its signed notice (`ChatMsg::Notice`), so no session, sync, push or history
-request happens. The blocked person's app, once it holds the notice, deletes its contact entry
+backfill happens. The blocked person's app, once it holds the notice, deletes its contact entry
 for the blocker but keeps the conversation read-only (`chat_day`, `chats()` still show it; writes
 and `fetch_older_history` fail with `Rejected("blocked")`), stops retrying, and reports its
 unacknowledged messages with `not_delivered_reason = "blocked"`. Messages written before the notice
@@ -527,3 +541,101 @@ Full design, limits and validation: [message receipt runtime slice](design/messa
 - Not yet: group message receipts, a user setting to disable read receipts (open product
   question).
 
+
+## 10. The contact carries the whole day (decided 2026-10-30)
+
+Status: **decided 2026-10-30 (below); P1–P3 built on `sim/chat-longrun` (chat/8). The
+own-device `Hello` paging (end of P2) is not built yet.** Found by the
+two-device long-run simulation (`crates/core/tests/it/chat_longrun.rs`, branch
+`sim/chat-longrun`), which fails today on G1 + G3.
+
+### What goes wrong today
+Example: Asha (one device) and Bilal (phone B, laptop B2). The laptop is shut for days 21–26
+while Bilal chats from the phone; on day 27 the phone is off and the laptop opens.
+
+- **G1: a batch the laptop cannot place.** Asha sends the laptop only Asha's ops (§7 Wire,
+  §8 last rule). Asha's "Yes!" was written on top of the phone's "Dinner Friday?", which the
+  laptop lacks, so Loro reports missing dependencies and the batch is `Reject::Pending`
+  (`chat-core/src/doc.rs`). The code then asks for the whole day as a vouched snapshot
+  (`chat_pull_day`); the comment there expects this only after a reinstall.
+- **G2: only 7 days.** `Hello` lists the last 7 days plus days with unacknowledged ops, so a
+  device back after a longer absence gets older days only from its own siblings (§8). If they
+  are away too, it has none of them.
+- **G3: one reply slot.** A session holds one `hist` slot for "the reply I am waiting for";
+  every `HistoryReq` overwrites it and `HistoryResp` carries no request id. Two or more pulls at
+  once: the earlier ones fail ("session closed"), the first reply lands with a request that
+  wanted another day and is dropped without a log, the rest find an empty slot. The same burst
+  repeats on every new session, so the days arrive only when the sibling returns.
+  `chat_fetch_history` (scroll back) shares the slot.
+- **G4: caps.** `Hello` carries at most 64 days; the own-device `Hello` at most 4096 docs, so a
+  freshly linked device gets at most ~4093 contact-days.
+
+### Proposal
+**P1. Live batches carry every writer's ops of the day.** `Sync`/`Push` to a contact export
+everything beyond the peer's vector (`export_all_since`, as own devices do), not only our own.
+The receiver validates them like a vouched snapshot (§7 "Vouched import"): authors only the
+two DIDs of the conversation, and every op proven by its author's DID signature under the
+author's writer ID. The live rules stay for the signer's own new messages (|at − now| < 24 h,
+day ±1 h); the only thing new on the live path is that the **receiver's own** messages may ride
+along, judged by the day ±1 h rule. So Asha can hand the laptop the phone's "Dinner Friday?"
+but cannot forge it (our DID signature), move it to another day (the doc id is signed), roll
+an edit back (`edited_at`) or occupy one of our writer IDs. As today, Asha can only withhold.
+Our own messages that arrive this way raise no notification and keep their delivery state
+(the contact holds them, so they are delivered). Symmetric: Bilal's devices carry Asha's
+other devices' messages to Asha the same way.
+
+With P1 a batch is causally complete against the receiver's vector, so G1 disappears; a
+pending batch would then mean a vector that claims ops the device does not hold.
+
+**P2. Day inventory after `Hello`, as groups do** (`docs/group-shards.md` "Inventory sync").
+`Hello` stays the quick part (last 7 days). Then each side sends `Days{after, days:[(day, vv)]}`
+pages (64 days, ascending, an empty page ends it) for every day of the conversation it holds,
+and sends `Sync` for every day the peer lacks or is behind on, newest first, one every 200 ms,
+paused on a metered network or low battery (`group_set_backfill_paused`'s rule). A closed day
+reopens on import until the next compaction, as now. Updates for days older than the 7 live
+days raise no new-message events. Days later than tomorrow (UTC) are refused. This closes G2
+and G4 for contacts; the own-device `Hello` moves to the same paging to drop its 4096 cap.
+
+A consequence worth naming: a person who restores from the recovery phrase with none of their
+own devices left gets their 1:1 history back from each contact (every op is DID-signed, so it
+verifies after the restore).
+
+**P3. Remove `HistoryReq`/`HistoryResp`.** After P1 + P2 every day both sides hold is synced in
+the background, so `chat_pull_day`, `chat_fetch_history` and the `hist` slot go, and G3 with
+them. "Load older" pages local days only (as `group_messages`). If P3 is not taken, the minimum
+fix for G3 is a request id echoed by the reply (or one request in flight per session, re-asked
+when a reply names another day).
+
+**Wire.** The frame types of P1 do not change but their meaning does, and P2 adds `Days`:
+`tinline/chat/8`; `/7` peers are refused with 426, update the app, **no wipe** (stored data is
+unchanged).
+
+### What this changes in the text above
+- §7 Wire: "a device only ever sends **its own** ops ... a receiver can require that every op
+  of a live chat batch is the signer's own" → every op is proven by its author's DID; new
+  messages are the signer's or the receiver's own.
+- §7 Validation: "live: only the signer's own ops" → as P1.
+- §8 last rule ("A device still sends the contact only its own ops ...") → replaced by P1;
+  "Messages the contact wrote reach our second device through the first" stays true and is no
+  longer the only way.
+- §8 `Hello` "up to 4096" → paged (P2).
+
+### Acceptance tests
+1. Doc unit tests (`chat::doc_tests`): a contact's live batch carrying our sibling's signed
+   message is accepted; one carrying a forged message of ours is refused (`BadSignature`); the
+   signer's own new message with |at − now| > 24 h is still refused live, while our relayed
+   message from 30 days ago is accepted; a batch naming a third DID is refused.
+2. `chat_longrun` (30 and 180 days, run by hand; ignored in CI) passes with the handover check tightened:
+   a device that comes back while its sibling is away holds everything the contact holds for
+   the days the contact has, within one inventory pass, and never logs `Pending`.
+3. A device away 60 days with its sibling off gets all 60 days from the contact.
+4. Restore from the phrase with no own device left: history comes back from the contact.
+5. A conversation with 5 000 days syncs completely to a fresh device (no cap).
+6. A `/7` peer is refused with 426 and the update-app reason.
+
+### Decisions (user, 2026-10-30)
+1. P1: yes, our own signed messages may ride along on live batches from the contact.
+2. P2: yes, day inventory for 1:1; a backfill keeps the link open while days remain to send,
+   then the 60 s idle rule applies.
+3. P3: remove `HistoryReq`/`HistoryResp`; wire `tinline/chat/8`, no wipe.
+4. History coming back from contacts after a restore is fine by default.
