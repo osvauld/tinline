@@ -264,10 +264,9 @@ fun ConversationScreen(
     // A new newest message: follow it when we sent it, or when the reader is already at the bottom. requestScrollToItem,
     // not scrollToItem: the list keeps its first visible row by key when a row is inserted before it, so a scroll that
     // measures before the new row is composed leaves the new message just below the screen.
+    // It also holds the newest message above the keyboard and a growing composer (ChatFollow.kt, shared with groups).
     val newest = msgs.lastOrNull()
-    LaunchedEffect(newest?.id) {
-        if (newest != null && !find.open && (newest.outgoing || (searchHit == null && listState.firstVisibleItemIndex <= 2))) listState.requestScrollToItem(0)
-    }
+    FollowNewest(listState, newest?.id, mine = newest?.outgoing == true, enabled = !find.open, followTheirs = searchHit == null)
     suspend fun jumpTo(hit: FindHit) {
         if (hit.day.isNotBlank()) {
             val page = withContext(Dispatchers.IO) { source.day(peerDid, hit.day) }
@@ -474,7 +473,8 @@ fun ConversationScreen(
             scope.launch(Dispatchers.IO) { runCatching { ChatMedia.share(ctx, ChatMedia.decrypt(ctx, source, dm), dm.attachment?.mime ?: "*/*") } }
         })
         val vm = viewer?.let { byId[it] }
-        if (vm != null) PhotoViewer(vm, name, source, onClose = { viewer = null }, onSave = { saveToPhone(vm) }, onShare = {
+        if (vm != null) PhotoViewer(vm.id, if (vm.outgoing) stringResource(R.string.common_you) else name, vm.at.toLong(), vm.attachment?.name,
+            load = { ChatMedia.bitmap(ChatMedia.decrypt(ctx, source, vm), 2048) }, onClose = { viewer = null }, onSave = { saveToPhone(vm) }, onShare = {
             scope.launch(Dispatchers.IO) { runCatching { ChatMedia.share(ctx, ChatMedia.decrypt(ctx, source, vm), vm.attachment?.mime ?: "image/*") } }
         })
     }
@@ -953,34 +953,6 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
 }
 
 // ------------------------------------------------------------------ photo viewer
-
-/** Full-screen photo, always dark. Share and Save decrypt a copy; the original stays encrypted in the core. */
-@Composable
-private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: () -> Unit, onSave: () -> Unit, onShare: () -> Unit) {
-    val ctx = LocalContext.current
-    BackHandler(onBack = onClose)
-    val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, m.id) {
-        value = withContext(Dispatchers.IO) { runCatching { ChatMedia.bitmap(ChatMedia.decrypt(ctx, source, m), 2048) }.getOrNull() }
-    }
-    Column(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
-        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            IconBtn(PgIcons.X, stringResource(R.string.common_close), onClose, tint = Color.White)
-            Column(Modifier.weight(1f)) {
-                Text(if (m.outgoing) stringResource(R.string.common_you) else name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
-                Text(viewerWhen(m.at.toLong(), System.currentTimeMillis()), style = TinType.caption, color = Color(0xFFA6B2AD))
-            }
-            IconBtn(PgIcons.Share, stringResource(R.string.common_share), onShare, tint = Color.White)
-            IconBtn(PgIcons.Save, stringResource(R.string.conv_save_to_phone), onSave, tint = Color.White)
-        }
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            bmp?.let { Image(it, m.attachment?.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
-        }
-        Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-            Icon(PgIcons.Lock, null, tint = Color(0xFFA6B2AD), modifier = Modifier.size(18.dp))
-            Text(stringResource(R.string.conv_viewer_note), style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Color(0xFFA6B2AD))
-        }
-    }
-}
 
 /** Voice message body: decrypts the attachment to the cache once, then hands the file to the player. */
 @Composable
