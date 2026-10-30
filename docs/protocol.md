@@ -381,13 +381,26 @@ frame, the peer's `Auth`, is capped at 64 KiB, `node_runtime::frames::FIRST_FRAM
   session with no stream data either way for the idle time (60 s, `wire::IDLE_CLOSE`) finishes
   its stream and closes; the other side sees a clean end. Each device remembers, per other device,
   the local change generation that device is known to hold (`SelfSync::synced`, set when a
-  session ends idle, or ends cleanly from the other side, with no newer local change unseen). Any
+  session has carried no stream data for half the idle time (30 s, `settle_quiet`: longer than
+  the transport's 20 s idle timeout, so a peer that vanished with data in flight is not counted),
+  when it ends idle, or when it ends cleanly from the other side, each with no newer local change
+  unseen; a session that ends by the peer going away keeps the last such mark). Any
   local change (account doc, calls, profile, chats, read cursors, groups) bumps the generation,
   so the devices behind it are owed a sync. Dial loop: every 15 s (`P2P_SELF_SYNC_SECS`) and at
   once on a change, it dials only owed devices without a session; start, a link,
   `network_changed` and endpoint rotation (`sync_kick`) owe every device. Per device exponential
   backoff 20 s..300 s, cleared by a kick. A device with a change dials the others, so devices in
   sync stay unconnected; `last_seen` in the registry therefore means "last synced".
+- **Own devices wake each other (2026-10-29, `docs/push.md` "Own devices").** `OwnWake { token,
+  exp_ms }` (appended `SelfMsg` variant) carries the sender's `msg` wake token for the receiver
+  (`token: None`: it has none, drop the one held). It is sent only when both `Hello`s list the
+  marker `cap/own-wake/v1` (empty version vector, like the group caps), after `Hello` and again
+  when the token changes; an older device never lists the marker and never gets the message (it
+  would end the session). The catalog keeps four marker slots, so `Hello` stays within an older
+  peer's `MAX_OWN_DOCS + 4`. Kept only from a live (not removed, not rotated) device of our
+  registry. A dial of an owed device that fails (generation above what it is known to hold;
+  not a bare start) sends that device one content-free `msg` wake on the contact schedule
+  (`wake::msg_wake_due`); the woken device dials its own devices (`sync_kick`).
 
 What syncs: one Loro doc `account` (peer id = `BLAKE3("tinline-loro-peer-v1" || device || "account")`),
 sealed in `account.redb` under `sync/account`, with maps:
@@ -461,6 +474,19 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
   two ticks on our messages only once the contact holds them (each message of ours is ticked against
   the writer ID it was created under, recorded when written or when it arrives: `mo/` in
   docs/chat.md).
+- `DmReceiptHello { days: [(doc, vv)] }`, `DmReceipts { doc, vv, update }`, `DmReceiptAck { doc, vv }`
+  (appended `SelfMsg` variants, unsigned frames; only after both `Hello`s carried the marker
+  `cap/dm-receipts/v1` with an empty vector, so an older own device never receives one). `doc` =
+  `dm/{pair}/{day}`; the payload is the original signed receipt-ledger ops of that day (the
+  `tinline/chat/6` ledger), never re-signed. Hello: held days with receipts, newest first, at most
+  1024 (more: `too many receipt days`); vectors at most 64 KiB / 4096 writers. The receiver admits
+  exactly as from the contact's own session (issuer DID signature under its writer ID, issuer = that
+  contact or our DID, Delivered/Read, a day we hold) plus: the conversation's contact is in good
+  standing (no block either way). A refused `DmReceipts` is logged and dropped, the ack says what
+  the receiver holds, the session continues. Pushed when a ledger grows (`!receipts/{doc}` dirty
+  mark). docs/chat.md section 8. The Hello catalog now reserves four marker slots (content,
+  history, group receipts, dm receipts), so `Hello.docs` stays within an older peer's
+  `MAX_OWN_DOCS + 4`.
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.

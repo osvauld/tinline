@@ -181,3 +181,58 @@ fn receipts_survive_restart_and_are_not_reissued() {
         "the same original statement, no reissue after restart"
     );
 }
+
+// KIND: acceptance (bug on v0.2.6 devices: the phone sent, the laptop got the contact's signed
+// read, the phone kept its clock. Signed ledgers now cross the own-device link as the original
+// statements; a device that never met the contact shows the contact's own read.)
+#[test]
+fn an_own_device_that_never_met_the_contact_gets_the_signed_read_at_session_start() {
+    let (a, c) = Peer::pair(TAG, "od");
+    let id = a
+        .node
+        .send_text(c.did.clone(), "read on the other side".into(), None)
+        .unwrap()
+        .id;
+    eventually(90, "c holds a's message", || holds(&c, &a.did, &id));
+    c.node.mark_read(a.did.clone()).unwrap();
+    eventually(60, "a sees c's signed read", || {
+        tick(&a, &c.did, &id) == ReceiptTick::Read
+    });
+    let at_a = a
+        .node
+        .chat_message_receipts(c.did.clone(), id.clone())
+        .unwrap();
+    // The contact goes away for good: whatever b learns comes from a, over the own-device link.
+    c.node.stop();
+
+    let b = a.link_fresh(TAG, "od-a2", LinkAs::default());
+    eventually(90, "b holds the message", || holds(&b, &c.did, &id));
+    eventually(60, "b shows the contact's signed read", || {
+        tick(&b, &c.did, &id) == ReceiptTick::Read
+    });
+    assert_eq!(list_tick(&b, &c.did), Some(ReceiptTick::Read));
+    let at_b = b
+        .node
+        .chat_message_receipts(c.did.clone(), id.clone())
+        .unwrap();
+    assert_eq!(at_b.version, at_a.version, "the same signed version");
+    assert_eq!(at_b.recipients[0].did, c.did);
+    let ids = |s: &p2pcore::MessageReceiptStatus| {
+        let mut v: Vec<String> = s.recipients[0]
+            .proofs
+            .iter()
+            .map(|p| {
+                assert_eq!(p.signer_did, c.did, "signed by the contact, not relayed as ours");
+                p.receipt_id.clone()
+            })
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(ids(&at_b), ids(&at_a), "the original statements, byte-identical");
+    assert!(
+        !b.logged("rejected own-device receipts"),
+        "nothing refused: {:?}",
+        b.refusals()
+    );
+}

@@ -1,6 +1,7 @@
 //! Account profiles: existing own-device Loro sync + authenticated chat control + encrypted blobs.
 // Field validation is `account_model::profile`.
 pub use account_model::profile as model;
+pub mod fetch_log;
 mod pictures;
 #[cfg(test)]
 mod tests;

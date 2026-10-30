@@ -4,12 +4,15 @@ use super::*;
 use node_runtime::OrLog;
 
 impl SyncRt {
-    /// A session with `device` ends with nothing in flight: it holds everything up to
-    /// generation `seen` (unless a change came after: `changes` then has an unseen value).
+    /// A session with `device` is quiet (or ends) with nothing in flight: it holds everything up
+    /// to generation `seen` (unless a change came after: `changes` then has an unseen value).
     pub fn selfsync_settled(&self, device: [u8; 32], changes: &tokio::sync::watch::Receiver<u64>) {
         let seen = *changes.borrow();
         if !changes.has_changed().unwrap_or(true) {
             self.selfsync.synced.lock().insert(device, seen);
+            let mut held = self.selfsync.held.lock();
+            let h = held.entry(device).or_insert(seen);
+            *h = (*h).max(seen);
         }
     }
 
