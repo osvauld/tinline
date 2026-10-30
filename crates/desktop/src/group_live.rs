@@ -105,6 +105,28 @@ pub trait GroupApi {
     fn group_post_voice(&self, _id: String, _path: String, _waveform: Vec<u8>) -> Result<GroupMessage, Error> {
         Err(Error::NotFound)
     }
+    // File posts (docs/design/group-files.md). Defaults for test fakes.
+    /// Post the file at `path` (its own name; the core streams and seals it). Blocking: only from a job.
+    fn group_post_file(&self, _id: String, _path: String, _caption: String) -> Result<GroupMessage, Error> {
+        Err(Error::NotFound)
+    }
+    fn group_fetch_file(&self, _id: String, _message_id: String) -> Result<(), Error> {
+        Ok(())
+    }
+    fn group_cancel_file(&self, _id: String, _message_id: String) -> Result<(), Error> {
+        Ok(())
+    }
+    /// Blocking the first time (the core decrypts the file once): only from a job.
+    fn group_file_path(&self, _id: String, _message_id: String) -> Option<String> {
+        None
+    }
+    /// Decrypts the file to `dest`. Blocking: only from a job.
+    fn group_save_file(&self, _id: String, _message_id: String, _dest: String) -> Result<(), Error> {
+        Err(Error::NotFound)
+    }
+    fn group_delete_file_copy(&self, _id: String, _message_id: String) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 impl GroupApi for Node {
@@ -152,6 +174,24 @@ impl GroupApi for Node {
     }
     fn group_post_voice(&self, id: String, path: String, waveform: Vec<u8>) -> Result<GroupMessage, Error> {
         Node::group_post_voice(self, id, path, waveform)
+    }
+    fn group_post_file(&self, id: String, path: String, caption: String) -> Result<GroupMessage, Error> {
+        Node::group_post_file(self, id, path, None, None, (!caption.is_empty()).then_some(caption))
+    }
+    fn group_fetch_file(&self, id: String, message_id: String) -> Result<(), Error> {
+        Node::group_fetch_file(self, id, message_id)
+    }
+    fn group_cancel_file(&self, id: String, message_id: String) -> Result<(), Error> {
+        Node::group_cancel_file(self, id, message_id)
+    }
+    fn group_file_path(&self, id: String, message_id: String) -> Option<String> {
+        Node::group_file_path(self, id, message_id)
+    }
+    fn group_save_file(&self, id: String, message_id: String, dest: String) -> Result<(), Error> {
+        Node::group_save_file(self, id, message_id, dest)
+    }
+    fn group_delete_file_copy(&self, id: String, message_id: String) -> Result<(), Error> {
+        Node::group_delete_file_copy(self, id, message_id)
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         Node::group_flag(self, id, did)
@@ -360,6 +400,14 @@ pub(super) enum Job {
     PostVoice { gid: String, path: String, waveform: Vec<u8> },
     /// Open the pictures of these posts into files (the first time decrypts them).
     ImagePaths { gid: String, ids: Vec<String> },
+    /// File posts: post the picked file with the composer's text as its caption; download, stop,
+    /// delete my copy; open in the default app; save to `dest` (in Downloads, never overwriting).
+    PostFile { gid: String, path: String, caption: String },
+    FetchFile { gid: String, id: String },
+    CancelFile { gid: String, id: String },
+    DeleteFile { gid: String, id: String },
+    OpenFile { gid: String, id: String },
+    SaveFile { gid: String, id: String, dest: String },
     Flag { gid: String, did: String },
     SetAdmin { gid: String, did: String, admin: bool },
     Leave(String),
@@ -437,6 +485,18 @@ impl Job {
                 let paths = ids.into_iter().map(|id| (id.clone(), api.group_image_path(gid.clone(), id))).collect();
                 Lm::ImagePaths(paths)
             }
+            Job::PostFile { gid, path, caption } => {
+                let r = api.group_post_file(gid, path, caption.clone()).map_err(gerr);
+                Lm::Posted(r, caption)
+            }
+            Job::FetchFile { gid, id } => Lm::ImageAsked(api.group_fetch_file(gid, id).map_err(gerr)),
+            Job::CancelFile { gid, id } => Lm::ImageAsked(api.group_cancel_file(gid, id).map_err(gerr)),
+            Job::DeleteFile { gid, id } => Lm::ImageAsked(api.group_delete_file_copy(gid, id).map_err(gerr)),
+            Job::OpenFile { gid, id } => Lm::ImageAsked(match api.group_file_path(gid, id) {
+                Some(p) => crate::media::open_external(std::path::Path::new(&p)),
+                None => Err(crate::i18n::tr("common_try_again")),
+            }),
+            Job::SaveFile { gid, id, dest } => Lm::FileSaved(api.group_save_file(gid, id, dest.clone()).map(|_| dest).map_err(gerr)),
             Job::Flag { gid, did: who } => did(api.group_flag(gid, who), crate::i18n::tr_str("group_flag_recorded_it_is").into()),
             Job::SetAdmin { gid, did: who, admin } => did(
                 api.group_set_admin(gid, who, admin),
@@ -563,6 +623,17 @@ pub(super) enum Lm {
     VoiceToggle(String),
     VoiceSeek(String, f32),
     VoiceReady(String, Result<std::path::PathBuf, String>),
+    /// File posts (docs/design/group-files.md): the composer's file button (the app opens the
+    /// file picker), the picked file, and a file card's Download, Cancel, Open, Save and Delete
+    /// my copy; a save's outcome (the path, or why not).
+    AttachFile,
+    PickedFile(Option<std::path::PathBuf>),
+    LoadFile(String),
+    CancelFile(String),
+    OpenFile(String),
+    SaveFile(String),
+    DeleteFile(String),
+    FileSaved(Result<String, String>),
 }
 
 /// What a step asks of the app around it.
@@ -889,6 +960,59 @@ impl GroupsLive {
             Lm::LoadImage(id) => {
                 let Some(gid) = self.open.clone() else { return out };
                 out.job = Some(Job::FetchImage { gid, id });
+            }
+            Lm::AttachFile => {}
+            Lm::PickedFile(path) => {
+                let (Some(path), Some(gid)) = (path, self.open.clone()) else { return out };
+                if self.sending {
+                    return out;
+                }
+                if !self.can_post() {
+                    out.notice = Some(crate::i18n::tr("group_notice_cant_send"));
+                    return out;
+                }
+                if self.admins_only_locked() {
+                    out.notice = Some(crate::i18n::tr("group_only_admins_post_here_2"));
+                    return out;
+                }
+                // The composer's text goes with the file as its caption.
+                let caption = self.input.trim().to_string();
+                self.input.clear();
+                self.reply = None;
+                self.sending = true;
+                out.job = Some(Job::PostFile { gid, path: path.to_string_lossy().into_owned(), caption });
+            }
+            Lm::LoadFile(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::FetchFile { gid, id });
+            }
+            Lm::CancelFile(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::CancelFile { gid, id });
+            }
+            Lm::DeleteFile(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::DeleteFile { gid, id });
+            }
+            Lm::OpenFile(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::OpenFile { gid, id });
+            }
+            Lm::SaveFile(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                let Some(name) = self.by_id(&id).and_then(|m| m.file.as_ref()).map(|f| f.name.clone()) else { return out };
+                // Files land in Downloads, never overwriting (as 1:1 attachments).
+                let dir = directories::UserDirs::new()
+                    .and_then(|d| d.download_dir().map(|p| p.to_path_buf()))
+                    .unwrap_or_else(std::env::temp_dir);
+                let dest = super::chat::free_path(&dir, &name).to_string_lossy().into_owned();
+                out.job = Some(Job::SaveFile { gid, id, dest });
+            }
+            Lm::FileSaved(r) => {
+                out.notice = Some(match r {
+                    Ok(p) => crate::i18n::tr_args("chat_saved_to", &[("p", &p)]),
+                    Err(e) => crate::i18n::tr_args("chat_could_not_save", &[("error", &e)]),
+                });
             }
             Lm::LoadVoice(id) => {
                 let Some(gid) = self.open.clone() else { return out };
@@ -1593,11 +1717,29 @@ pub(super) fn post_line(m: &GroupMessage) -> String {
     if m.voice.is_some() {
         return crate::i18n::tr("chat_voice_message");
     }
+    if let Some(f) = &m.file {
+        return crate::i18n::tr_args("group_file_line", &[("name", &f.name)]);
+    }
     match (&m.image, m.text.is_empty()) {
         (Some(_), true) => crate::i18n::tr("group_post_photo"),
         (Some(_), false) => crate::i18n::tr_args("group_post_photo_caption", &[("caption", &m.text)]),
         (None, _) => m.text.clone(),
     }
+}
+
+/// Under a file card: who else has the file ("Anoop is also hosting this file", "Anoop and 2
+/// others have this file"), from the core's holders (the author first). I am never named; nobody
+/// else: `None`. Same words as Android.
+pub(super) fn holders_line(f: &p2pcore::GroupFile, me: &str, name: impl Fn(&p2pcore::GroupFileHolder) -> String) -> Option<String> {
+    let others: Vec<&p2pcore::GroupFileHolder> = f.holders.iter().filter(|h| h.did != me).collect();
+    let first = others.first()?;
+    let n = name(first);
+    let who = if n.trim().is_empty() { crate::i18n::tr("common_someone") } else { first_name(&n).to_string() };
+    Some(if others.len() == 1 {
+        crate::i18n::tr_args("group_file_also_hosting", &[("name", &who)])
+    } else {
+        crate::i18n::tr_count("group_file_holders", (others.len() - 1) as u64, &[("name", &who)])
+    })
 }
 
 /// The state line of a request we sent ("Waiting for Leo · via Hike"), and whether it is bad news.
@@ -1631,6 +1773,15 @@ impl super::App {
                         .map(|h| h.path().to_path_buf())
                 },
                 |p| super::Msg::Live(Lm::Picked(p)),
+            );
+        }
+        if matches!(m, Lm::AttachFile) {
+            if self.live.open.is_none() || self.live.sending {
+                return Task::none();
+            }
+            return Task::perform(
+                async { rfd::AsyncFileDialog::new().set_title(crate::i18n::tr("group_attach_file")).pick_file().await.map(|h| h.path().to_path_buf()) },
+                |p| super::Msg::Live(Lm::PickedFile(p)),
             );
         }
         match m {

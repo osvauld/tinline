@@ -426,7 +426,12 @@ impl App {
         let attach = button(container(crate::pg_icons::pgi("image", 24.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
             .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))
             .on_press_maybe((!busy).then_some(l(Lm::Attach)));
-        c = c.push(row![attach, container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
+        // Group files: any file up to 2 GB, next to the picture button.
+        let attach_file = button(container(ui::icon(Icon::File, 22.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
+            .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))
+            .on_press_maybe((!busy).then_some(l(Lm::AttachFile)));
+        let attach_file = iced::widget::tooltip(attach_file, iced::widget::text(crate::i18n::tr("group_attach_file")).size(13), iced::widget::tooltip::Position::Top);
+        c = c.push(row![attach, attach_file, container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
         container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
@@ -526,6 +531,9 @@ impl App {
         if let Some(v) = &m.voice {
             c = c.push(container(self.live_voice(t, m, v)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
         }
+        if let Some(f) = &m.file {
+            c = c.push(container(self.live_file(t, m, f, fg, inner)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
+        }
         let te = message_body(&m.text, fg);
         let (lines, last) = live_wrap(&m.text, inner);
         let fits = last + 10.0 + meta_w <= inner;
@@ -557,6 +565,13 @@ impl App {
         } else { Space::new().width(28).height(28).into() };
         let line = if m.outgoing { row![Space::new().width(Fill), reply_btn, b] } else { row![b, reply_btn, Space::new().width(Fill)] }.spacing(4).align_y(Alignment::Center);
         let mut col = column![line];
+        // A file post: who else has it, under the bubble. The line keeps its room while nobody else
+        // does, so it never pushes the thread when it appears.
+        if let Some(f) = &m.file {
+            let who = gl::holders_line(f, &self.live.me, |h| self.live_name(&h.did, &h.name)).unwrap_or_default();
+            let line = container(tx(who, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).height(19).padding(Padding { top: 3.0, left: 4.0, right: 4.0, ..Padding::ZERO });
+            col = col.push(if m.outgoing { El::from(container(line).align_right(Fill)) } else { El::from(line) });
+        }
         // MessageRow `.wait`: under my post while no host has it, gold, with a clock.
         if m.outgoing && m.delivery == GroupDelivery::Waiting {
             col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi(crate::i18n::tr_str("group_waiting_for_a_host"), 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
@@ -638,6 +653,61 @@ impl App {
             _ => container(tx(crate::i18n::tr_str("common_loading"), 13.0, ink)).center_y(32).into(),
         };
         row![what, tx(present::time::clock_ms(v.duration_ms), 12.0, ink).font(ui::MONO)].spacing(10).align_y(Alignment::Center).width(Length::Fixed(260.0)).into()
+    }
+
+    /// A file post's card (docs/design/group-files.md): type icon, name, a state line and the
+    /// actions. Not downloaded: its size and Download; on its way: progress and Cancel; here: Open
+    /// (default app, for types we let open), Save (to Downloads) and Delete my copy (not on a host,
+    /// which keeps it for the group); failed: "Not available right now. Try again later." and Try
+    /// again. One width in every state and the progress bar's room always kept, so nothing moves.
+    fn live_file<'a>(&'a self, t: Tok, m: &'a GroupMessage, f: &'a p2pcore::GroupFile, fg: Color, inner: f32) -> El<'a> {
+        use p2pcore::GroupImageState as St;
+        let dim = if m.outgoing { ui::alpha(fg, 0.8) } else { t.ink2 };
+        let size = present::time::bytes(f.size);
+        let kind = std::path::Path::new(&f.name).extension().and_then(|e| e.to_str()).map(|e| e.to_uppercase()).unwrap_or_default();
+        let status: String = match f.state {
+            St::Ready if kind.is_empty() => size.clone(),
+            St::Ready => format!("{size} \u{b7} {kind}"),
+            St::Remote => crate::i18n::tr_args("chat_not_downloaded", &[("value", &size)]),
+            St::Loading => crate::i18n::tr_args("chat_downloading_of", &[("value", &present::time::bytes(f.done)), ("value2", &size)]),
+            St::Failed => crate::i18n::tr("group_file_not_available"),
+        };
+        let id = m.id.clone();
+        let chip = |i: Icon, label_: &'static str, msg: Lm| self.chip_btn(i, label_, fg, l(msg));
+        let mut actions = row![].spacing(6);
+        match f.state {
+            St::Remote => actions = actions.push(chip(Icon::Download, crate::i18n::tr_str("chat_download"), Lm::LoadFile(id.clone()))),
+            St::Loading => actions = actions.push(chip(Icon::X, crate::i18n::tr_str("common_cancel"), Lm::CancelFile(id.clone()))),
+            St::Failed => actions = actions.push(chip(Icon::RotateCw, crate::i18n::tr_str("common_try_again"), Lm::LoadFile(id.clone()))),
+            St::Ready => {
+                if crate::media::classify(&f.name, &f.mime).openable() {
+                    actions = actions.push(chip(Icon::ExternalLink, crate::i18n::tr_str("common_open"), Lm::OpenFile(id.clone())));
+                }
+                actions = actions.push(chip(Icon::Download, crate::i18n::tr_str("common_save"), Lm::SaveFile(id.clone())));
+                if !self.live.detail.as_ref().is_some_and(|d| d.am_host) {
+                    actions = actions.push(chip(Icon::Trash, crate::i18n::tr_str("group_file_delete_copy"), Lm::DeleteFile(id.clone())));
+                }
+            }
+        }
+        let w = inner.min(320.0);
+        let head = row![
+            container(ui::icon(Icon::File, 22.0, fg)).padding(8).style(ui::plain(ui::alpha(fg, 0.12), 10.0)),
+            column![
+                semi(crate::fit::ellipsize(&f.name, ui::SANS_SEMI, 14.0, w - 52.0), 14.0, fg).wrapping(iced::widget::text::Wrapping::None),
+                tx(crate::fit::ellipsize(&status, ui::SANS, 12.0, w - 52.0), 12.0, dim).wrapping(iced::widget::text::Wrapping::None),
+            ].spacing(1),
+        ].spacing(10).align_y(Alignment::Center);
+        let bar: El = if f.state == St::Loading {
+            let v = if f.size > 0 { (f.done as f32 / f.size as f32).clamp(0.0, 1.0) } else { 0.0 };
+            iced::widget::progress_bar(0.0..=1.0, v).girth(5).style(move |_: &iced::Theme| iced::widget::progress_bar::Style {
+                background: iced::Background::Color(ui::alpha(fg, 0.15)),
+                bar: iced::Background::Color(t.primary),
+                border: Border { radius: 3.0.into(), ..Default::default() },
+            }).into()
+        } else {
+            Space::new().height(5).into()
+        };
+        column![head, bar, actions].spacing(6).width(w).into()
     }
 
     /// In the removed person's chat: when, why and by whom, plainly.

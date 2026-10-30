@@ -3696,3 +3696,22 @@ text = "Nouvel essai en cours. Si le téléphone de {name} est en veille, Tinlin
 
 [signup_that_doesnt_look_like]
 text = "Cela ne ressemble pas à un code Tinline. Les codes des anciennes versions ne fonctionnent pas : demandez-en un nouveau à cette personne."
+
+[group_file_line]
+text = "Fichier : {name}"
+
+[group_file_also_hosting]
+text = "{name} héberge aussi ce fichier"
+
+[group_file_holders]
+one = "{name} et {count} autre personne ont ce fichier"
+other = "{name} et {count} autres personnes ont ce fichier"
+
+[group_file_not_available]
+text = "Pas disponible pour le moment. Réessaie plus tard."
+
+[group_attach_file]
+text = "Partager un fichier"
+
+[group_file_delete_copy]
+text = "Supprimer ma copie"

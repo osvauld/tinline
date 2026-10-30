@@ -3672,3 +3672,22 @@ text = "अजून प्रयत्न सुरू आहे. {name} चा
 
 [signup_that_doesnt_look_like]
 text = "हा Tinline चा कोड वाटत नाही. जुन्या आवृत्त्यांचे कोड चालत नाहीत, म्हणून त्यांच्याकडे नवीन कोड मागा."
+
+[group_file_line]
+text = "फाइल: {name}"
+
+[group_file_also_hosting]
+text = "{name} देखील ही फाइल होस्ट करत आहेत"
+
+[group_file_holders]
+one = "{name} आणि आणखी {count} जणांकडे ही फाइल आहे"
+other = "{name} आणि आणखी {count} जणांकडे ही फाइल आहे"
+
+[group_file_not_available]
+text = "आत्ता उपलब्ध नाही. नंतर पुन्हा प्रयत्न करा."
+
+[group_attach_file]
+text = "फाइल शेअर करा"
+
+[group_file_delete_copy]
+text = "माझी प्रत हटवा"

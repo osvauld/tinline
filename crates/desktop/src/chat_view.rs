@@ -1006,7 +1006,7 @@ impl App {
         )
     }
 
-    fn chip_btn<'a>(&self, i: Icon, label_: &'static str, fg: Color, msg: Msg) -> El<'a> {
+    pub(super) fn chip_btn<'a>(&self, i: Icon, label_: &'static str, fg: Color, msg: Msg) -> El<'a> {
         button(row![ui::icon(i, 14.0, fg), semi(label_, 13.0, fg)].spacing(6).align_y(Alignment::Center))
             .padding([5, 12])
             .style(move |_: &Theme, st| button::Style {

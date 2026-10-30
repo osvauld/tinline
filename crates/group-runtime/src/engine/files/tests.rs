@@ -8,7 +8,10 @@ use crate::store::plan_eviction;
 #[test]
 fn the_largest_file_fits_a_hosts_group_budget() {
     let sealed = crypt::cipher_len(MAX_FILE_BYTES);
-    assert!(sealed <= MAX_GROUP_IMAGE_BYTES, "{sealed} > {MAX_GROUP_IMAGE_BYTES}");
+    assert!(
+        sealed <= MAX_GROUP_IMAGE_BYTES,
+        "{sealed} > {MAX_GROUP_IMAGE_BYTES}"
+    );
     assert!(plan_eviction(&[([1; 32], sealed, 10, true)], MAX_GROUP_IMAGE_BYTES).is_empty());
     // Anything next to it goes first, the oldest first, and the file stays.
     let held = [([2; 32], 1000, 5, true), ([1; 32], sealed, 10, true)];
