@@ -17,10 +17,22 @@ use crate::shard::PostRow;
 use crate::state::{GroupState, Vis};
 
 /// The latest holding statement per `(did, dev)` for `post`/`hash` among a day doc's `rows`: `(at, id, held)`.
-fn latest(rows: &[PostRow], post: &str, hash: &[u8; 32]) -> BTreeMap<(String, [u8; 32]), (i64, String, bool)> {
+fn latest(
+    rows: &[PostRow],
+    post: &str,
+    hash: &[u8; 32],
+) -> BTreeMap<(String, [u8; 32]), (i64, String, bool)> {
     let mut out: BTreeMap<(String, [u8; 32]), (i64, String, bool)> = BTreeMap::new();
     for r in rows.iter().filter(|r| r.vis == Vis::Visible) {
-        let Body::FileHeld { post: p, hash: h, held, .. } = &r.entry.rec.body else { continue };
+        let Body::FileHeld {
+            post: p,
+            hash: h,
+            held,
+            ..
+        } = &r.entry.rec.body
+        else {
+            continue;
+        };
         if p != post || h != hash {
             continue;
         }
@@ -38,7 +50,13 @@ fn latest(rows: &[PostRow], post: &str, hash: &[u8; 32]) -> BTreeMap<(String, [u
 
 /// The DIDs holding the file of post `post` (by `author`) now: the author first (unless they
 /// let it go), then the others in the order they last said they hold it.
-pub fn holders(rows: &[PostRow], st: &GroupState, post: &str, author: &str, file: &FileRef) -> Vec<String> {
+pub fn holders(
+    rows: &[PostRow],
+    st: &GroupState,
+    post: &str,
+    author: &str,
+    file: &FileRef,
+) -> Vec<String> {
     let current = |did: &str| st.is_member(did) && !st.is_removed(did);
     let mut by_did: BTreeMap<String, (bool, i64, bool)> = BTreeMap::new();
     for ((did, _), (at, _, held)) in latest(rows, post, &file.hash) {
@@ -65,8 +83,16 @@ pub fn holders(rows: &[PostRow], st: &GroupState, post: &str, author: &str, file
 }
 
 /// What this device (`did`, `dev`) last said about holding the file, if anything.
-pub fn own_statement(rows: &[PostRow], post: &str, hash: &[u8; 32], did: &str, dev: &[u8; 32]) -> Option<bool> {
-    latest(rows, post, hash).get(&(did.to_string(), *dev)).map(|(_, _, held)| *held)
+pub fn own_statement(
+    rows: &[PostRow],
+    post: &str,
+    hash: &[u8; 32],
+    did: &str,
+    dev: &[u8; 32],
+) -> Option<bool> {
+    latest(rows, post, hash)
+        .get(&(did.to_string(), *dev))
+        .map(|(_, _, held)| *held)
 }
 
 #[cfg(test)]

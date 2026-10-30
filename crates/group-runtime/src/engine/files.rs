@@ -86,17 +86,26 @@ impl FilesRt {
     }
 
     /// Test knobs: what hosts keep, how long and how much they relay. `None`: the defaults.
-    pub fn set_limits_for_test(&self, keep_max: Option<u64>, relay_ttl: Option<Duration>, relay_max: Option<u64>) {
-        self.keep_max.store(keep_max.unwrap_or(HOST_KEEP_FILE_MAX), Ordering::Relaxed);
+    pub fn set_limits_for_test(
+        &self,
+        keep_max: Option<u64>,
+        relay_ttl: Option<Duration>,
+        relay_max: Option<u64>,
+    ) {
+        self.keep_max
+            .store(keep_max.unwrap_or(HOST_KEEP_FILE_MAX), Ordering::Relaxed);
         *self.relay_ttl.lock() = relay_ttl.unwrap_or(RELAY_TTL);
-        self.relay_max.store(relay_max.unwrap_or(RELAY_CACHE_MAX), Ordering::Relaxed);
+        self.relay_max
+            .store(relay_max.unwrap_or(RELAY_CACHE_MAX), Ordering::Relaxed);
     }
 
     /// Notes progress; true when an event is due.
     pub(super) fn progress(&self, gid: &str, hash: &[u8; 32], done: u64, total: u64) -> bool {
         let mut p = self.progress.lock();
         let now = Instant::now();
-        let e = p.entry((gid.to_string(), *hash)).or_insert((0, total, now - PROGRESS_EVERY));
+        let e = p
+            .entry((gid.to_string(), *hash))
+            .or_insert((0, total, now - PROGRESS_EVERY));
         e.0 = done;
         e.1 = total;
         if now.duration_since(e.2) >= PROGRESS_EVERY || done == total {
@@ -114,7 +123,9 @@ impl FilesRt {
     /// Plaintext bytes of `size` that arrived so far (0 if not running).
     pub fn done_of(&self, gid: &str, hash: &[u8; 32], size: u64) -> u64 {
         match self.progress.lock().get(&(gid.to_string(), *hash)) {
-            Some(&(n, t, _)) if t > 0 => ((n as u128 * size as u128) / t as u128).min(size as u128) as u64,
+            Some(&(n, t, _)) if t > 0 => {
+                ((n as u128 * size as u128) / t as u128).min(size as u128) as u64
+            }
             _ => 0,
         }
     }
@@ -143,7 +154,9 @@ fn relay_owner(gid: &str) -> String {
 impl GroupCore {
     /// A file over what hosts keep.
     pub(super) fn over_keep(&self, row: &ImgRow) -> bool {
-        row.file.as_ref().is_some_and(|f| f.size > self.images.files.keep_max())
+        row.file
+            .as_ref()
+            .is_some_and(|f| f.size > self.images.files.keep_max())
     }
 
     /// We host `gid` and relay this file instead of keeping it (unless our user fetched it).
@@ -165,10 +178,16 @@ impl GroupCore {
 
     /// The DIDs holding the file of post `post` now (group files §6).
     pub fn file_holders_of(&self, gid: &str, post: &str) -> Vec<String> {
-        let Ok(Some(row)) = self.store.image_of_post(gid, post) else { return Vec::new() };
-        let Some(file) = row.file else { return Vec::new() };
+        let Ok(Some(row)) = self.store.image_of_post(gid, post) else {
+            return Vec::new();
+        };
+        let Some(file) = row.file else {
+            return Vec::new();
+        };
         let mut groups = self.groups.lock();
-        let Some(live) = groups.get_mut(gid) else { return Vec::new() };
+        let Some(live) = groups.get_mut(gid) else {
+            return Vec::new();
+        };
         let Live { state, shards, .. } = live;
         match shards.get(&self.store, gid, self.wid, &day_of(row.at), state) {
             Ok(shard) => crate::files::holders(&shard.rows, state, post, &row.author, &file),
@@ -181,8 +200,16 @@ impl GroupCore {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid)?;
         let Live { state, shards, .. } = live;
-        let shard = shards.get(&self.store, gid, self.wid, &day_of(row.at), state).ok()?;
-        crate::files::own_statement(&shard.rows, &row.post, &row.image.hash, &self.did, &self.dev)
+        let shard = shards
+            .get(&self.store, gid, self.wid, &day_of(row.at), state)
+            .ok()?;
+        crate::files::own_statement(
+            &shard.rows,
+            &row.post,
+            &row.image.hash,
+            &self.did,
+            &self.dev,
+        )
     }
 }
 
@@ -204,22 +231,48 @@ impl GroupRt {
         }
         let hub = self.group_hub(core).await?;
         let key = crypt::new_key();
-        let (hash, size) = hub.add_file_owned(&owner_of(gid), key, path, |_| {}).await?;
-        let file = FileRef { hash: *hash.as_bytes(), key, size, name, mime };
+        let (hash, size) = hub
+            .add_file_owned(&owner_of(gid), key, path, |_| {})
+            .await?;
+        let file = FileRef {
+            hash: *hash.as_bytes(),
+            key,
+            size,
+            name,
+            mime,
+        };
         if !file.well_formed() {
             let _ = hub.release_owned(&owner_of(gid), &hash).await;
-            return Err(Error::Rejected("this file cannot be posted (too large, or a bad name)".into()));
+            return Err(Error::Rejected(
+                "this file cannot be posted (too large, or a bad name)".into(),
+            ));
         }
         let blob = file.as_blob();
-        let body = Body::File { caption, reply_to: None, file: file.clone() };
-        self.group_post_blob(core, gid, blob, Some(file), body).await
+        let body = Body::File {
+            caption,
+            reply_to: None,
+            file: file.clone(),
+        };
+        self.group_post_blob(core, gid, blob, Some(file), body)
+            .await
     }
 
     /// Writes our holder announcement for `row` if it changes what we last said. Never in open
     /// groups (no receipts there either), never for a host's kept copy (that is
     /// `kept_by_hosts`), and the author says only `false` (holding is the author's default).
-    pub(super) fn group_file_announce(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, row: &ImgRow, held: bool) {
-        if core.with_state(gid, |st| st.open || !st.is_member(&core.did) || st.is_removed(&core.did)).unwrap_or(true) {
+    pub(super) fn group_file_announce(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        row: &ImgRow,
+        held: bool,
+    ) {
+        if core
+            .with_state(gid, |st| {
+                st.open || !st.is_member(&core.did) || st.is_removed(&core.did)
+            })
+            .unwrap_or(true)
+        {
             return;
         }
         if held && core.am_host(gid) && !core.over_keep(row) {
@@ -227,11 +280,20 @@ impl GroupRt {
         }
         let said = core.file_own_statement(gid, row);
         let author = row.author == core.did;
-        let need = if held { said != Some(true) && !(author && said.is_none()) } else { said == Some(true) || (author && said.is_none()) };
+        let need = if held {
+            said != Some(true) && !(author && said.is_none())
+        } else {
+            said == Some(true) || (author && said.is_none())
+        };
         if !need {
             return;
         }
-        let body = Body::FileHeld { post: row.post.clone(), day: day_of(row.at), hash: row.image.hash, held };
+        let body = Body::FileHeld {
+            post: row.post.clone(),
+            day: day_of(row.at),
+            hash: row.image.hash,
+            held,
+        };
         match core.write(gid, body) {
             Ok((_, changed)) => self.group_after(core, changed, None),
             Err(e) => tracing::warn!("group {}: file holder note: {e}", crate::short(gid)),
@@ -240,8 +302,15 @@ impl GroupRt {
 
     /// A member asked us (a host) for a file we relay: pull it into the relay cache unless that
     /// is already running or done (then the request only keeps it longer).
-    pub(super) fn group_relay_kick(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, hash: [u8; 32]) {
-        let Ok(Some(row)) = core.store.image(gid, &hash) else { return };
+    pub(super) fn group_relay_kick(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        hash: [u8; 32],
+    ) {
+        let Ok(Some(row)) = core.store.image(gid, &hash) else {
+            return;
+        };
         let bytes = crypt::cipher_len(row.image.size);
         let key = (gid.to_string(), hash);
         {
@@ -254,7 +323,11 @@ impl GroupRt {
             let max = files.relay_max.load(Ordering::Relaxed);
             let mut used: u64 = relay.values().map(|r| r.bytes).sum();
             // Make room: idle entries, oldest first. Their tags go below.
-            let mut idle: Vec<(Instant, Key)> = relay.iter().filter(|(_, r)| !r.busy).map(|(k, r)| (r.last, k.clone())).collect();
+            let mut idle: Vec<(Instant, Key)> = relay
+                .iter()
+                .filter(|(_, r)| !r.busy)
+                .map(|(k, r)| (r.last, k.clone()))
+                .collect();
             idle.sort();
             let mut evict = Vec::new();
             for (_, k) in idle {
@@ -267,16 +340,29 @@ impl GroupRt {
                 }
             }
             if used + bytes > max {
-                self.log(format!("group {}: relay cache full, file {} waits", crate::short(gid), &hex::encode(hash)[..12]));
+                self.log(format!(
+                    "group {}: relay cache full, file {} waits",
+                    crate::short(gid),
+                    &hex::encode(hash)[..12]
+                ));
                 return;
             }
-            relay.insert(key.clone(), Relay { bytes, last: Instant::now(), busy: true });
+            relay.insert(
+                key.clone(),
+                Relay {
+                    bytes,
+                    last: Instant::now(),
+                    busy: true,
+                },
+            );
             if !evict.is_empty() {
                 let (this, core) = (self.clone(), core.clone());
                 self.handle.spawn(async move {
                     if let Ok(hub) = this.group_hub(&core).await {
                         for (g, h) in evict {
-                            let _ = hub.release_owned(&relay_owner(&g), &Hash::from_bytes(h)).await;
+                            let _ = hub
+                                .release_owned(&relay_owner(&g), &Hash::from_bytes(h))
+                                .await;
                         }
                     }
                 });
@@ -300,9 +386,15 @@ impl GroupRt {
             if let Err(e) = res {
                 // Nobody who has it is online (or every copy was bad): the next request tries
                 // again.
-                this.log(format!("group {}: relay of file {} failed: {e}", crate::short(&gid), &hex::encode(hash)[..12]));
+                this.log(format!(
+                    "group {}: relay of file {} failed: {e}",
+                    crate::short(&gid),
+                    &hex::encode(hash)[..12]
+                ));
                 if let Ok(hub) = this.group_hub(&core).await {
-                    let _ = hub.release_owned(&relay_owner(&gid), &Hash::from_bytes(hash)).await;
+                    let _ = hub
+                        .release_owned(&relay_owner(&gid), &Hash::from_bytes(hash))
+                        .await;
                 }
             }
         });
@@ -310,7 +402,12 @@ impl GroupRt {
 
     /// One relay pull: every source in turn until one sends the whole blob, verified against
     /// the signed hash.
-    async fn group_relay_pull(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, row: &ImgRow) -> Result<(), Error> {
+    async fn group_relay_pull(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        row: &ImgRow,
+    ) -> Result<(), Error> {
         let hub = self.group_hub(core).await?;
         let h = Hash::from_bytes(row.image.hash);
         let total = crypt::cipher_len(row.image.size);
@@ -322,17 +419,21 @@ impl GroupRt {
         let mut err = Error::NotFound;
         for (dev, relay) in self.group_image_sources(core, gid, &row.author, Some(&row.post)) {
             let conn = match addr_for(&dev, relay.as_deref()) {
-                Ok(addr) => match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, iroh_blobs::ALPN)).await {
-                    Ok(Ok(c)) => c,
-                    Ok(Err(e)) => {
-                        err = Error::net(e);
-                        continue;
+                Ok(addr) => {
+                    match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, iroh_blobs::ALPN))
+                        .await
+                    {
+                        Ok(Ok(c)) => c,
+                        Ok(Err(e)) => {
+                            err = Error::net(e);
+                            continue;
+                        }
+                        Err(_) => {
+                            err = Error::Timeout;
+                            continue;
+                        }
                     }
-                    Err(_) => {
-                        err = Error::Timeout;
-                        continue;
-                    }
-                },
+                }
                 Err(e) => {
                     err = e;
                     continue;
@@ -357,7 +458,11 @@ impl GroupRt {
         let ttl = *core.images.files.relay_ttl.lock();
         let gone: Vec<Key> = {
             let mut relay = core.images.files.relay.lock();
-            let gone: Vec<Key> = relay.iter().filter(|(_, r)| !r.busy && r.last.elapsed() >= ttl).map(|(k, _)| k.clone()).collect();
+            let gone: Vec<Key> = relay
+                .iter()
+                .filter(|(_, r)| !r.busy && r.last.elapsed() >= ttl)
+                .map(|(k, _)| k.clone())
+                .collect();
             for k in &gone {
                 relay.remove(k);
             }
@@ -370,7 +475,9 @@ impl GroupRt {
         self.handle.spawn(async move {
             if let Ok(hub) = this.group_hub(&core).await {
                 for (g, h) in gone {
-                    let _ = hub.release_owned(&relay_owner(&g), &Hash::from_bytes(h)).await;
+                    let _ = hub
+                        .release_owned(&relay_owner(&g), &Hash::from_bytes(h))
+                        .await;
                 }
             }
         });
@@ -379,12 +486,25 @@ impl GroupRt {
     /// Where the opened copy of a file goes: `group-files/<hash>/<name>` in the account dir.
     fn group_file_dest(core: &GroupCore, row: &ImgRow) -> Option<PathBuf> {
         let f = row.file.as_ref()?;
-        Some(core.images.dir().join("group-files").join(hex::encode(f.hash)).join(&f.name))
+        Some(
+            core.images
+                .dir()
+                .join("group-files")
+                .join(hex::encode(f.hash))
+                .join(&f.name),
+        )
     }
 
     /// The opened file of a file post (decrypted once), if its blob is here.
-    pub(super) async fn group_file_open(self: &Arc<Self>, core: &Arc<GroupCore>, _gid: &str, row: &ImgRow) -> Result<Option<PathBuf>, Error> {
-        let Some(path) = Self::group_file_dest(core, row) else { return Ok(None) };
+    pub(super) async fn group_file_open(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        _gid: &str,
+        row: &ImgRow,
+    ) -> Result<Option<PathBuf>, Error> {
+        let Some(path) = Self::group_file_dest(core, row) else {
+            return Ok(None);
+        };
         if path.exists() {
             return Ok(Some(path));
         }
@@ -396,25 +516,51 @@ impl GroupRt {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        hub.export_plain(h, row.image.key, path.clone(), |_| {}).await?;
+        hub.export_plain(h, row.image.key, path.clone(), |_| {})
+            .await?;
         Ok(Some(path))
     }
 
     /// Decrypts the file of `post` to `dest` (a place the user picked).
-    pub async fn group_file_save(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, post: &str, dest: PathBuf) -> Result<(), Error> {
-        let row = core.store.image_of_post(gid, post)?.filter(|r| r.file.is_some()).ok_or(Error::NotFound)?;
+    pub async fn group_file_save(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        post: &str,
+        dest: PathBuf,
+    ) -> Result<(), Error> {
+        let row = core
+            .store
+            .image_of_post(gid, post)?
+            .filter(|r| r.file.is_some())
+            .ok_or(Error::NotFound)?;
         if !row.ready {
             return Err(Error::Rejected("the file is not on this device yet".into()));
         }
         let hub = self.group_hub(core).await?;
-        hub.export_plain(Hash::from_bytes(row.image.hash), row.image.key, dest, |_| {}).await?;
+        hub.export_plain(
+            Hash::from_bytes(row.image.hash),
+            row.image.key,
+            dest,
+            |_| {},
+        )
+        .await?;
         Ok(())
     }
 
     /// Stops a download of the file of `post` (running, waiting to retry or failed): the
     /// partial bytes are released and the file is `Remote` again. A ready file is left alone.
-    pub async fn group_file_cancel(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, post: &str) -> Result<(), Error> {
-        let mut row = core.store.image_of_post(gid, post)?.filter(|r| r.file.is_some()).ok_or(Error::NotFound)?;
+    pub async fn group_file_cancel(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        post: &str,
+    ) -> Result<(), Error> {
+        let mut row = core
+            .store
+            .image_of_post(gid, post)?
+            .filter(|r| r.file.is_some())
+            .ok_or(Error::NotFound)?;
         if row.ready {
             return Ok(());
         }
@@ -429,7 +575,9 @@ impl GroupRt {
         row.deleted = true;
         core.store.put_image(gid, &row)?;
         if let Ok(hub) = self.group_hub(core).await {
-            let _ = hub.release_owned(&owner_of(gid), &Hash::from_bytes(row.image.hash)).await;
+            let _ = hub
+                .release_owned(&owner_of(gid), &Hash::from_bytes(row.image.hash))
+                .await;
         }
         self.group_image_event(gid, post);
         Ok(())
@@ -438,16 +586,29 @@ impl GroupRt {
     /// Deletes this device's copy of the file of `post` (and its opened copy); if we had said
     /// we hold it, the group learns we no longer do. A host keeps the files it keeps for the
     /// group.
-    pub async fn group_file_delete(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, post: &str) -> Result<(), Error> {
-        let mut row = core.store.image_of_post(gid, post)?.filter(|r| r.file.is_some()).ok_or(Error::NotFound)?;
+    pub async fn group_file_delete(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        gid: &str,
+        post: &str,
+    ) -> Result<(), Error> {
+        let mut row = core
+            .store
+            .image_of_post(gid, post)?
+            .filter(|r| r.file.is_some())
+            .ok_or(Error::NotFound)?;
         if core.am_host(gid) && !core.over_keep(&row) {
-            return Err(Error::Rejected("this device hosts the group and keeps this file for it".into()));
+            return Err(Error::Rejected(
+                "this device hosts the group and keeps this file for it".into(),
+            ));
         }
         if !row.ready {
             return self.group_file_cancel(core, gid, post).await;
         }
         let hub = self.group_hub(core).await?;
-        let _ = hub.release_owned(&owner_of(gid), &Hash::from_bytes(row.image.hash)).await;
+        let _ = hub
+            .release_owned(&owner_of(gid), &Hash::from_bytes(row.image.hash))
+            .await;
         if let Some(dest) = Self::group_file_dest(core, &row)
             && let Some(dir) = dest.parent()
         {
