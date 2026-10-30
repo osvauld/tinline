@@ -187,6 +187,9 @@ pub(super) struct Viewer {
     pub id: String,
     pub name: String,
     pub body: ViewBody,
+    /// A group post's picture: the file the core opened it into. Save and Open read it from
+    /// there, and the arrows step through the open group's pictures. `None` for a 1:1 file.
+    pub group_file: Option<PathBuf>,
 }
 
 impl Default for ChatState {
@@ -285,6 +288,8 @@ pub(super) enum Cm {
     View(String),
     /// The viewer's picture at full size.
     Viewed(String, Result<Pixels, String>),
+    /// Open a group post's picture (in the open group, already opened into a file) in the viewer.
+    ViewGroup(String),
     /// Documents: text in the app, anything else in the default app.
     Open(String),
     /// Always the default app.
@@ -465,6 +470,21 @@ pub(super) const COMPOSER_ID: &str = "composer";
 impl App {
     pub(super) fn src(&self) -> Source {
         Source::Node(self.node.clone())
+    }
+
+    /// The pictures the viewer steps through: the open group's opened pictures (`group`), else
+    /// the open 1:1 chat's decoded ones. Oldest first.
+    pub(super) fn viewable_images(&self, group: bool) -> Vec<String> {
+        if !group {
+            return self.chat.viewable_images();
+        }
+        self.live
+            .msgs
+            .iter()
+            .filter(|m| m.image.as_ref().is_some_and(|i| i.state == p2pcore::GroupImageState::Ready))
+            .filter(|m| self.live.image_paths.contains_key(&m.id))
+            .map(|m| m.id.clone())
+            .collect()
     }
 
     /// A Ready file in the open conversation: where to read it from, and what it is.
@@ -919,6 +939,19 @@ impl App {
                     },
                 );
             }
+            Cm::Save(id) if self.chat.viewer.as_ref().is_some_and(|v| v.id == id && v.group_file.is_some()) => {
+                let Some(file) = self.chat.viewer.as_ref().and_then(|v| v.group_file.clone()) else { return Task::none() };
+                let ext = file.extension().and_then(|e| e.to_str()).unwrap_or("jpg").to_string();
+                let short: String = id.chars().filter(|c| c.is_ascii_alphanumeric()).take(12).collect();
+                let dir = directories::UserDirs::new()
+                    .and_then(|d| d.download_dir().map(|p| p.to_path_buf()))
+                    .unwrap_or_else(std::env::temp_dir);
+                let shown = free_path(&dir, &format!("Tinline-{short}.{ext}")).to_string_lossy().into_owned();
+                return blocking(
+                    move || std::fs::copy(&file, &shown).map(|_| shown).map_err(|e| e.to_string()),
+                    |r| Msg::Chat(Cm::Saved(r)),
+                );
+            }
             Cm::Save(id) => {
                 let Some(peer) = self.chat.peer.clone() else { return Task::none() };
                 let Some(name) = self.chat.find(&id).and_then(|m| m.attachment.as_ref()).map(|a| a.name.clone()) else {
@@ -1092,7 +1125,7 @@ impl App {
                     Some(Thumb::Ready { handle, .. }) => ViewBody::Image { handle: handle.clone() },
                     _ => ViewBody::Loading,
                 };
-                self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body });
+                self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body, group_file: None });
                 self.chat.menu = None;
                 return blocking(
                     move || {
@@ -1104,6 +1137,14 @@ impl App {
                         Err(e) => Msg::Chat(Cm::Viewed(String::new(), Err(e))),
                     },
                 );
+            }
+            Cm::ViewGroup(id) => {
+                let Some(m) = self.live.msgs.iter().find(|m| m.id == id) else { return Task::none() };
+                let Some(path) = self.live.image_paths.get(&id).map(PathBuf::from) else { return Task::none() };
+                // The picture is already a file: shown at full size straight from it.
+                let name = self.live_name(&m.author_did, &m.author_name);
+                let body = ViewBody::Image { handle: iced::widget::image::Handle::from_path(&path) };
+                self.chat.viewer = Some(Viewer { id, name, body, group_file: Some(path) });
             }
             Cm::Viewed(id, r) => {
                 if let Some(v) = self.chat.viewer.as_mut() {
@@ -1120,7 +1161,7 @@ impl App {
                 let Some((src, peer, a)) = self.attachment_job(&id) else { return Task::none() };
                 match media::classify(&a.name, &a.mime) {
                     Class::Text(ext) if a.size <= media::TEXT_MAX => {
-                        self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body: ViewBody::Loading });
+                        self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body: ViewBody::Loading, group_file: None });
                         return blocking(
                             move || cache_attachment(&src, peer, id, &a, ext).and_then(|p| media::read_text(&p)),
                             |r| Msg::Chat(Cm::TextShown(r)),
@@ -1128,6 +1169,10 @@ impl App {
                     }
                     _ => return self.update_chat(Cm::OpenExt(id)),
                 }
+            }
+            Cm::OpenExt(id) if self.chat.viewer.as_ref().is_some_and(|v| v.id == id && v.group_file.is_some()) => {
+                let Some(file) = self.chat.viewer.as_ref().and_then(|v| v.group_file.clone()) else { return Task::none() };
+                return blocking(move || media::open_external(&file), |r| Msg::Chat(Cm::Opened(r)));
             }
             Cm::OpenExt(id) => {
                 let Some((src, peer, a)) = self.attachment_job(&id) else { return Task::none() };
@@ -1158,12 +1203,13 @@ impl App {
             }
             Cm::CloseView => self.chat.viewer = None,
             Cm::Step(d) => {
-                let Some(cur) = self.chat.viewer.as_ref().map(|v| v.id.clone()) else { return Task::none() };
-                let ids = self.chat.viewable_images();
+                let Some((cur, group)) = self.chat.viewer.as_ref().map(|v| (v.id.clone(), v.group_file.is_some())) else { return Task::none() };
+                let ids = self.viewable_images(group);
                 if let Some(i) = ids.iter().position(|x| *x == cur) {
                     let n = i as i32 + d;
                     if n >= 0 && (n as usize) < ids.len() {
-                        return self.update_chat(Cm::View(ids[n as usize].clone()));
+                        let next = ids[n as usize].clone();
+                        return self.update_chat(if group { Cm::ViewGroup(next) } else { Cm::View(next) });
                     }
                 }
             }
