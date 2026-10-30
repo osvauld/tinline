@@ -80,12 +80,32 @@ pub enum Body {
     /// `Post` (day docs, U11 visibility, admins-only); see [`Body::is_post`]. A new variant at
     /// the end, so records written before it still decode.
     Voice { reply_to: Option<String>, voice: VoiceRef },
+    /// A file post (`docs/design/group-files.md`): any file up to 2 GB as one sealed blob, named
+    /// by its author-signed hash; `caption` may be empty. A post like `Post` and `Voice`.
+    File { caption: String, reply_to: Option<String>, file: FileRef },
+    /// "This device holds (or no longer holds) the file of post `post`" (group files §6). Not a
+    /// shown post: it lives in the day doc of the file post (`day`), so it loads with the post;
+    /// `hash` must be the post's `FileRef::hash` (otherwise it counts for nothing).
+    FileHeld { post: String, day: String, hash: [u8; 32], held: bool },
 }
 
 impl Body {
-    /// A conversation post (`Post` or `Voice`): lives in a day doc and is judged per post.
+    /// A conversation post (`Post`, `Voice` or `File`): lives in a day doc and is judged per post.
     pub fn is_post(&self) -> bool {
-        matches!(self, Body::Post { .. } | Body::Voice { .. })
+        matches!(self, Body::Post { .. } | Body::Voice { .. } | Body::File { .. })
+    }
+
+    /// Lives in a day doc: a post, or a file holder announcement (in its post's day).
+    pub fn in_day_doc(&self) -> bool {
+        self.is_post() || matches!(self, Body::FileHeld { .. })
+    }
+
+    /// The day doc a `FileHeld` belongs in (posts go by their own time).
+    pub fn held_day(&self) -> Option<&str> {
+        match self {
+            Body::FileHeld { day, .. } => Some(day),
+            _ => None,
+        }
     }
 }
 
@@ -167,6 +187,65 @@ impl VoiceRef {
     }
 }
 
+/// Largest file a post may name, plaintext bytes: 1:1's `transfer::crypt::MAX_FILE` (2 GiB).
+pub const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// Longest file name, bytes.
+pub const MAX_FILE_NAME: usize = 255;
+/// Longest file type.
+pub const MAX_FILE_MIME: usize = 100;
+/// THE switch of group files §4: hosts keep files up to this many bytes (like pictures, within
+/// the group budget) and relay bigger ones on demand without keeping them. Option A (default):
+/// 100 MB. Option B (hosts keep everything): `MAX_FILE_BYTES`. Option C (hosts never keep
+/// files): 0. One value on every device, so members can show `kept_by_hosts`.
+pub const HOST_KEEP_FILE_MAX: u64 = 100 * 1024 * 1024;
+/// The local row mime of a file blob in the image runtime (never on the wire).
+pub const FILE_BLOB_MIME: &str = "application/x-tinline-file";
+
+/// The file of a file post. Sealed as 1:1 attachments are (`transfer::crypt` under `key`, a
+/// fresh key for this blob); `hash` is the BLAKE3 (bao) root of the sealed blob, computed by the
+/// sender while sealing and signed with the post: every download is verified against it chunk
+/// by chunk. `size` is the plaintext length.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileRef {
+    pub hash: [u8; 32],
+    pub key: [u8; 32],
+    pub size: u64,
+    pub name: String,
+    pub mime: String,
+}
+
+/// A file name every device accepts: 1..=255 bytes, a single path component (no `/`, `\`,
+/// NUL or other control characters, not `.` or `..`).
+pub fn file_name_ok(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= MAX_FILE_NAME
+        && name != "."
+        && name != ".."
+        && !name.chars().any(|c| c == '/' || c == '\\' || c.is_control())
+}
+
+impl FileRef {
+    /// Within the bounds every device checks (`Record::check_shape`).
+    pub fn well_formed(&self) -> bool {
+        self.size <= MAX_FILE_BYTES
+            && file_name_ok(&self.name)
+            && self.mime.len() <= MAX_FILE_MIME
+            && self.mime.is_ascii()
+            && !self.mime.chars().any(|c| c.is_ascii_control())
+    }
+
+    /// Hosts keep this file (group files §4); otherwise they relay it on demand.
+    pub fn kept_by_hosts(&self) -> bool {
+        self.size <= HOST_KEEP_FILE_MAX
+    }
+
+    /// The blob as the image runtime keeps it (local rows only): hash, key, size, and
+    /// [`FILE_BLOB_MIME`]; the row carries the `FileRef` itself.
+    pub fn as_blob(&self) -> ImageRef {
+        ImageRef { hash: self.hash, key: self.key, size: self.size, w: 0, h: 0, mime: FILE_BLOB_MIME.to_string(), preview: Vec::new() }
+    }
+}
+
 /// One group op, as signed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Record {
@@ -228,6 +307,12 @@ impl Record {
                 bad
             }
             Body::Voice { reply_to, voice } if reply_to.as_ref().is_some_and(|r| r.len() > 64) || !voice.well_formed() => bad,
+            Body::File { caption, reply_to, file }
+                if caption.len() > MAX_TEXT || reply_to.as_ref().is_some_and(|r| r.len() > 64) || !file.well_formed() =>
+            {
+                bad
+            }
+            Body::FileHeld { post, day, .. } if post.is_empty() || post.len() > 64 || !crate::doc::day_valid(day) => bad,
             Body::Admin { member, .. } | Body::Flag { member } if member.len() > 200 => bad,
             Body::HostPermit { host, .. } | Body::CallHostPermit { host, .. } if host.len() > 200 => bad,
             _ => Ok(()),

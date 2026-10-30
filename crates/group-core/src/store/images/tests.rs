@@ -64,6 +64,8 @@ fn image_rows_round_trip_and_forget() {
         failed: false,
         dropped: false,
         referenced: true,
+        file: None,
+        deleted: false,
     };
     s.put_image("g", &row).unwrap();
     s.index_image_post("g", "p2", &h(1)).unwrap();

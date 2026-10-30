@@ -61,6 +61,10 @@ pub fn controller(store: &GroupStore, did: &str, dev: [u8; 32]) -> Arc<MessageRe
 
 /// One stored post as a receipt decision sees it, with its exact version digest.
 fn post_of(shard: &Shard, row: &PostRow) -> Option<(PostRef, [u8; 32])> {
+    // Receipts cover posts only, never file holder announcements in the same day doc.
+    if !row.entry.rec.body.is_post() {
+        return None;
+    }
     let raw = shard.doc.raw_value(&row.entry.id)?;
     Some((
         PostRef {

@@ -84,10 +84,17 @@ the user was away; each is listed at the end.
   `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links, `Hello.presence` and `Presence`; `docs/design/public-group.md`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
   The same endpoint also speaks `tinline/gcall/1` (calls) and the stock iroh-blobs ALPN for the
-  pictures of image posts and the recordings of voice posts (public group §5, `engine/images.rs`): a request is served only if a
+  pictures of image posts, the recordings of voice posts and the files of file posts (public
+  group §5, `engine/images.rs`, `engine/files.rs`): a request is served only if a
   visible post of a group we hold names the hash and the requester's endpoint is, in that group, a
   current member on a session we host or an active host. Members fetch only from hosts; hosts
-  fetch from the author's session or other hosts.
+  fetch from the author's session or other hosts. **Files** (`docs/design/group-files.md`):
+  `Body::File{caption, reply_to, file: FileRef{hash, key, size, name, mime}}` up to 2 GiB, the
+  hash signed by the author and verified chunk by chunk on every download; hosts keep files up to
+  `HOST_KEEP_FILE_MAX` (100 MB, option A, open question) and relay bigger ones on demand (pulled
+  from the author's sessions, announced holders or other member sessions into a short-lived,
+  bounded relay cache); `Body::FileHeld{post, day, hash, held}` in the post's day doc lists who
+  holds a file (not in open groups).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
   addresses (`SignedHostAddr`, DID-signed, newest `at` wins) are the only endpoints that travel to

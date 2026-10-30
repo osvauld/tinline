@@ -7,7 +7,8 @@
 //! is an insert into `r` whose key is the id of its value, whose value is a record of this group
 //! that verifies under its author's DID, whose Loro peer id is `writer_id(author, dev)` of that
 //! record (U16), and that belongs in this doc: a `Post` only in the day doc of its UTC day
-//! (`at` within that day +- 1 h, as in 1:1 chat), every other body only in `meta`. Deletes,
+//! (`at` within that day +- 1 h, as in 1:1 chat), a `FileHeld` only in the day doc its `day`
+//! names (the file post's day), every other body only in `meta`. Deletes,
 //! other containers, nested containers, a mismatched key, peer or doc: the whole batch is
 //! refused (U22: no per-op hiding, every device reaches the same verdict). The verdict depends
 //! only on the batch and the doc, never on arrival order or on who relays.
@@ -112,11 +113,15 @@ impl Entry {
 
 /// Whether `rec` belongs in doc `id` (the rule of the module doc).
 fn fits(id: &DocId, rec: &Record) -> Result<(), Reject> {
-    let post = Body::is_post(&rec.body);
+    let day_doc = Body::in_day_doc(&rec.body);
     match id {
-        DocId::Meta if post => Err(Reject::WrongDoc),
+        DocId::Meta if day_doc => Err(Reject::WrongDoc),
         DocId::Meta => Ok(()),
-        DocId::Day(_) if !post => Err(Reject::WrongDoc),
+        DocId::Day(_) if !day_doc => Err(Reject::WrongDoc),
+        // A file holder announcement goes in the day doc of the post it names, whenever written.
+        DocId::Day(d) if rec.body.held_day().is_some() => {
+            if rec.body.held_day() == Some(d.as_str()) { Ok(()) } else { Err(Reject::WrongDoc) }
+        }
         DocId::Day(d) => {
             let lo = day_start(d).ok_or(Reject::OutOfDay)? - HOUR_MS;
             if rec.at >= lo && rec.at < lo + DAY_MS + 2 * HOUR_MS { Ok(()) } else { Err(Reject::OutOfDay) }

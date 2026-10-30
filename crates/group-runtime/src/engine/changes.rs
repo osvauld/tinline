@@ -24,6 +24,10 @@ impl GroupRt {
         self.search.group(&gid, &changed.posts);
         // Images of posts that show now (public group §5).
         self.group_images_noted(core, &gid, &changed.posts);
+        // Group files §6: the holders of these file posts changed.
+        for post in &changed.held {
+            self.group_image_event(&gid, post);
+        }
         self.group_enforce(core, &gid);
         if changed.doc == DocId::Meta {
             // Public group §2: a closed group keeps no open codes here.

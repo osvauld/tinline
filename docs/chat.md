@@ -135,6 +135,9 @@ A message's `file = { hash (BLAKE3 of the ciphertext), key, name, size, mime }` 
 Storage). The recipient fetches the ciphertext from the author, or from any member who already
 has it (groups), and decrypts with `key`. A device serves a blob only to a peer
 that may read a doc referencing that hash. Auto-download limits per network type; resumable.
+Groups as built (`docs/design/group-files.md`): members never dial members (U7), so a group
+file comes from a host, which keeps files up to 100 MB and relays bigger ones on demand from
+whoever has them; the 1:1 auto-download size limit applies to group files too.
 
 ## 4. Phase 3: groups
 

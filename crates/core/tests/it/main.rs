@@ -22,6 +22,7 @@ mod golden_core;
 mod grant_characterization;
 mod group_call;
 mod group_core;
+mod group_files;
 mod group_g2;
 mod group_g3;
 mod group_shards;

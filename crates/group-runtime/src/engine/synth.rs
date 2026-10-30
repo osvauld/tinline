@@ -138,7 +138,7 @@ impl GroupRt {
             seen: g.hub.seen(),
             body,
         };
-        if rec.body.is_post() {
+        if rec.body.in_day_doc() {
             let day = day_of(at);
             let wid = writer_id(&m.did, &m.dev);
             let doc = m.days.entry(day.clone()).or_insert_with(|| GroupDoc::new_in(&gid, DocId::Day(day.clone()), wid));

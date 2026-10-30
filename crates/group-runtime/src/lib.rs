@@ -16,7 +16,7 @@
 //! store opens. Everything `pub` here beyond `GroupRt`'s constructor and the records is for
 //! p2pcore's facade and the sync engine, not a stable API.
 
-pub use group_core::{doc, mail, record, rotation, shard, state};
+pub use group_core::{doc, files, mail, record, rotation, shard, state};
 pub use group_core::{short, valid_gid};
 pub use node_runtime::Error;
 

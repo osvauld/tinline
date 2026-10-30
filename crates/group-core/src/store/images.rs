@@ -39,6 +39,14 @@ pub struct ImgRow {
     /// A visible post still names it (false once none does: the first to go).
     #[serde(default = "yes")]
     pub referenced: bool,
+    /// A file post's file (`docs/design/group-files.md`): its name, type and signed hash; `image`
+    /// is then `FileRef::as_blob`. `None` for pictures and voice.
+    #[serde(default)]
+    pub file: Option<crate::record::FileRef>,
+    /// The user deleted our copy or cancelled its download: nothing fetches it by itself again
+    /// (a tap does, and clears this).
+    #[serde(default)]
+    pub deleted: bool,
 }
 
 fn yes() -> bool {
