@@ -1684,4 +1684,17 @@
     <string name="onboarding_linked_lead_unnamed">Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa.</string>
     <string name="gcall_is_calling_group_unnamed">Joku soittaa ryhmälle</string>
     <string name="gcall_started_call_unnamed">Joku aloitti puhelun</string>
+    <string name="groupsc_file_line">Tiedosto: %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s myös säilyttää tätä tiedostoa</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s ja %2$d muu ovat saaneet tämän tiedoston</item>
+        <item quantity="other">%1$s ja %2$d muuta ovat saaneet tämän tiedoston</item>
+    </plurals>
+    <string name="groups_file_not_available">Ei saatavilla juuri nyt. Yritä myöhemmin uudelleen.</string>
+    <string name="groups_file_try_again_name">Lataa %1$s uudelleen</string>
+    <string name="groups_file_delete_copy_name">Poista oma kopioni tiedostosta %1$s</string>
+    <string name="groups_attach_title">Jaa ryhmään %1$s</string>
+    <string name="groups_attach_hint">Tiedostot enintään 2 Gt. Ryhmän isännät säilyttävät kopion, joten jäsenet saavat sen, vaikka olisit offline-tilassa.</string>
+    <string name="groups_attach_photo">Kuva</string>
+    <string name="groups_file_no_picker">Tässä puhelimessa ei ole tiedostovalitsinta.</string>
 </resources>

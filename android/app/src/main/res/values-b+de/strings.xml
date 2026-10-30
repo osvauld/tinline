@@ -1684,4 +1684,17 @@
     <string name="onboarding_linked_lead_unnamed">Deine Kontakte und Chats kommen von deinem anderen Gerät und bleiben auf beiden Geräten synchron.</string>
     <string name="gcall_is_calling_group_unnamed">Jemand ruft die Gruppe an</string>
     <string name="gcall_started_call_unnamed">Jemand hat einen Anruf gestartet</string>
+    <string name="groupsc_file_line">Datei: %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s stellt diese Datei auch bereit</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s und %2$d weitere Person haben diese Datei</item>
+        <item quantity="other">%1$s und %2$d weitere Personen haben diese Datei</item>
+    </plurals>
+    <string name="groups_file_not_available">Gerade nicht verfügbar. Versuch es später noch einmal.</string>
+    <string name="groups_file_try_again_name">%1$s noch einmal herunterladen</string>
+    <string name="groups_file_delete_copy_name">Meine Kopie von %1$s löschen</string>
+    <string name="groups_attach_title">In %1$s teilen</string>
+    <string name="groups_attach_hint">Dateien bis 2 GB. Die Hosts der Gruppe behalten eine Kopie, damit Mitglieder sie auch bekommen, wenn du offline bist.</string>
+    <string name="groups_attach_photo">Foto</string>
+    <string name="groups_file_no_picker">Auf diesem Telefon gibt es keine Dateiauswahl.</string>
 </resources>

@@ -4808,3 +4808,34 @@ text = "{name} ist jetzt auf diesem Handy geöffnet. Dein anderes Konto klingelt
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "Dieses Konto ist jetzt auf diesem Handy geöffnet. Dein anderes Konto klingelt hier trotzdem und meldet dir neue Nachrichten. Wechseln kannst du in den Einstellungen."
+
+[groupsc_file_line]
+text = "Datei: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name} stellt diese Datei auch bereit"
+
+[groupsc_file_holders]
+one = "{name} und {count} weitere Person haben diese Datei"
+other = "{name} und {count} weitere Personen haben diese Datei"
+
+[groups_file_not_available]
+text = "Gerade nicht verfügbar. Versuch es später noch einmal."
+
+[groups_file_try_again_name]
+text = "{name} noch einmal herunterladen"
+
+[groups_file_delete_copy_name]
+text = "Meine Kopie von {name} löschen"
+
+[groups_attach_title]
+text = "In {name} teilen"
+
+[groups_attach_hint]
+text = "Dateien bis 2 GB. Die Hosts der Gruppe behalten eine Kopie, damit Mitglieder sie auch bekommen, wenn du offline bist."
+
+[groups_attach_photo]
+text = "Foto"
+
+[groups_file_no_picker]
+text = "Auf diesem Telefon gibt es keine Dateiauswahl."

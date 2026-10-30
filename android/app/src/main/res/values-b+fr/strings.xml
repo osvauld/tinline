@@ -1714,4 +1714,17 @@
     <string name="onboarding_linked_lead_unnamed">Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux.</string>
     <string name="gcall_is_calling_group_unnamed">Quelqu’un appelle le groupe</string>
     <string name="gcall_started_call_unnamed">Quelqu’un a lancé un appel</string>
+    <string name="groupsc_file_line">Fichier : %1$s</string>
+    <string name="groupsc_file_also_hosting">%1$s héberge aussi ce fichier</string>
+    <plurals name="groupsc_file_holders">
+        <item quantity="one">%1$s et %2$d autre personne ont ce fichier</item>
+        <item quantity="other">%1$s et %2$d autres personnes ont ce fichier</item>
+    </plurals>
+    <string name="groups_file_not_available">Pas disponible pour le moment. Réessaie plus tard.</string>
+    <string name="groups_file_try_again_name">Télécharger %1$s à nouveau</string>
+    <string name="groups_file_delete_copy_name">Supprimer ma copie de %1$s</string>
+    <string name="groups_attach_title">Partager dans %1$s</string>
+    <string name="groups_attach_hint">Fichiers jusqu’à 2 Go. Les hôtes du groupe en gardent une copie, pour que les membres puissent l’avoir même quand tu es hors ligne.</string>
+    <string name="groups_attach_photo">Photo</string>
+    <string name="groups_file_no_picker">Aucun sélecteur de fichiers sur ce téléphone.</string>
 </resources>

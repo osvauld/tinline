@@ -4808,3 +4808,34 @@ text = "{name} ഇപ്പോൾ ഈ ഫോണിൽ തുറന്നിര�
 
 [onboarding_restored_lead_adding_push_unnamed]
 text = "ഈ അക്കൗണ്ട് ഇപ്പോൾ ഈ ഫോണിൽ തുറന്നിരിക്കുന്നു. നിങ്ങളുടെ മറ്റേ അക്കൗണ്ട് ഇവിടെ ഇപ്പോഴും റിംഗ് ചെയ്യും, പുതിയ സന്ദേശങ്ങളും അറിയിക്കും. ക്രമീകരണത്തിൽ മാറാം."
+
+[groupsc_file_line]
+text = "ഫയൽ: {name}"
+
+[groupsc_file_also_hosting]
+text = "{name}-ഉം ഈ ഫയൽ ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[groupsc_file_holders]
+one = "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്"
+other = "{name}-നും മറ്റ് {count} പേർക്കും ഈ ഫയൽ ഉണ്ട്"
+
+[groups_file_not_available]
+text = "ഇപ്പോൾ ലഭ്യമല്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കൂ."
+
+[groups_file_try_again_name]
+text = "{name} വീണ്ടും ഡൗൺലോഡ് ചെയ്യുക"
+
+[groups_file_delete_copy_name]
+text = "{name}-ന്റെ എന്റെ പകർപ്പ് ഇല്ലാതാക്കുക"
+
+[groups_attach_title]
+text = "{name}-ൽ പങ്കിടുക"
+
+[groups_attach_hint]
+text = "ഓരോ ഫയലും 2 GB വരെ. ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകൾ ഒരു പകർപ്പ് സൂക്ഷിക്കുന്നു, അതിനാൽ നിങ്ങൾ ഓഫ്‌ലൈനായിരിക്കുമ്പോഴും അംഗങ്ങൾക്ക് ഇത് ലഭിക്കും."
+
+[groups_attach_photo]
+text = "ഫോട്ടോ"
+
+[groups_file_no_picker]
+text = "ഈ ഫോണിൽ ഫയൽ പിക്കർ ഇല്ല."
