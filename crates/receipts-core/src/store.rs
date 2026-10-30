@@ -155,6 +155,18 @@ impl ReceiptStore {
         self.db.apply(ops).map_err(io)
     }
 
+    /// The committed native frontier of one scope as persisted (its `state` row, written in
+    /// every commit), without opening the ledger (no load, no signature checks). `None`: nothing
+    /// was ever committed there. For catalogs that list many days at once.
+    pub fn stored_vv(&self, scope: &Scope) -> Result<Option<VersionVector>, ReceiptError> {
+        let p = prefix(scope)?;
+        let Some(raw) = self.db.get(&format!("{p}state")).map_err(io)? else {
+            return Ok(None);
+        };
+        let state: StoredState = cryptography::codec::from_bytes(&raw, storage::MAX_ROW).map_err(io)?;
+        VersionVector::decode(&state.vv).map(Some).map_err(io)
+    }
+
     /// The backing sealed namespace, for store-owned controllers' sidecar rows.
     #[cfg(any(test, feature = "testkit"))]
     pub fn db(&self) -> &Sealed {

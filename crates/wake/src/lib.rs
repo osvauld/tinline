@@ -561,6 +561,26 @@ impl WakeState {
         changed
     }
 
+    /// One device of `did` was reached (an own-device session came up): only its `msg` wake
+    /// schedule starts over. Whether anything changed.
+    pub fn reached_device(&mut self, did: &str, device: &[u8; 32]) -> bool {
+        match self.held_mut(did, device) {
+            Some(h) if h.msg_wakes != 0 => {
+                h.msg_wakes = 0;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Drops the token one device of `did` gave us (it said it has none any more). Whether one
+    /// was held.
+    pub fn drop_held(&mut self, did: &str, device: &[u8; 32]) -> bool {
+        let before = self.held.len();
+        self.held.retain(|e| !(e.did == did && e.device == *device));
+        self.held.len() != before
+    }
+
     /// Learns from the relay's HTTP status for a wake: 410 the token is dead, drop it; 403 the
     /// kind is not allowed, forget that kind; anything else (202, 429, 5xx) changes nothing.
     pub fn wake_result(&mut self, did: &str, device: &[u8; 32], kind: Kind, status: u16) {

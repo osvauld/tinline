@@ -30,6 +30,7 @@ use node_runtime::{Me, OrLog, OrLogFlat, addr_for, relay_hint, relay_of, short};
 mod blobs;
 mod history;
 mod local;
+pub mod own_receipts;
 mod read;
 pub mod receipts;
 mod session;

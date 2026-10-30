@@ -216,6 +216,18 @@ impl ChatRt {
             .is_some_and(|v| v.values().any(selected))
     }
 
+    /// An own device came up or woke us (it may hold pictures we lack): downloads waiting on a
+    /// backoff try again now, and every picture still missing is started.
+    pub fn profile_retry_now(self: &Arc<Self>) {
+        self.profile_retry.notify_waiters();
+        let Ok(me) = self.me() else { return };
+        self.profile_download(me.id.did().into());
+        let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        for did in dids {
+            self.profile_download(did);
+        }
+    }
+
     pub fn profile_download(self: &Arc<Self>, did: String) {
         let Ok(me) = self.me() else { return };
         let Some(p) = self
@@ -275,8 +287,11 @@ impl ChatRt {
                 if result.is_ok() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_secs(delay)).await;
-                delay = (delay * 2).min(60);
+                tokio::select! {
+                    _ = tokio::time::sleep(Duration::from_secs(delay)) => delay = (delay * 2).min(60),
+                    // An own device came up or woke us: it may hold the picture now.
+                    _ = this.profile_retry.notified() => delay = 1,
+                }
             }
             this.profile_downloads.lock().remove(&token);
         });
@@ -303,10 +318,11 @@ impl ChatRt {
             return Err(Error::Locked);
         }
         hub.keep_owned(did, &hash).await?;
+        // `true`: an own device (it serves cached contact pictures too).
         let mut sources = self
             .own_blob_sources()
             .into_iter()
-            .map(|(d, r, _)| (d, r))
+            .map(|(d, r, _)| (d, r, true))
             .collect::<Vec<_>>();
         if did != me.id.did() {
             let s = self.shared.lock();
@@ -314,27 +330,50 @@ impl ChatRt {
                 return Err(Error::Rejected("picture not accepted".into()));
             }
             if let Some(c) = s.state.contacts.iter().find(|c| c.did == did) {
-                sources.extend(c.devices.iter().map(|d| (d.device, d.relay.clone())));
+                sources.extend(c.devices.iter().map(|d| (d.device, d.relay.clone(), false)));
             }
         }
-        for (device, relay) in sources {
+        // Why each source failed, for one log line (`fetch_log`): a device prefix and a class.
+        let mut failures = Vec::new();
+        let mut from = None;
+        for (device, relay, own) in sources {
             if hub.complete_size(&hash).await == Some(p.size) {
                 break;
             }
-            let addr = addr_for(&device, relay.as_deref())?;
+            let who = format!("{} {}", if own { "own" } else { "contact" }, node_runtime::short(&hex::encode(device)));
+            let addr = match addr_for(&device, relay.as_deref()) {
+                Ok(a) => a,
+                Err(_) => {
+                    failures.push(format!("{who}: bad address"));
+                    continue;
+                }
+            };
             let attempt = async {
-                let conn = ep
-                    .connect(addr, iroh_blobs::ALPN)
-                    .await
-                    .map_err(Error::net)?;
-                let result = hub.fetch_owned(did, conn.clone(), hash, p.size).await.map_err(Error::from);
+                let conn = ep.connect(addr, iroh_blobs::ALPN).await.map_err(|_| "cannot connect".to_string())?;
+                let result = hub.fetch_owned(did, conn.clone(), hash, p.size).await.map_err(|e| super::fetch_log::class(&Error::from(e)));
                 conn.close(0u32.into(), b"picture fetched");
                 result
             };
-            let _ = tokio::time::timeout(Duration::from_secs(30), attempt).await;
+            match tokio::time::timeout(Duration::from_secs(30), attempt).await {
+                Ok(Ok(())) => from = Some(who),
+                Ok(Err(class)) => failures.push(format!("{who}: {class}")),
+                Err(_) => failures.push(format!("{who}: timed out")),
+            }
         }
         if hub.complete_size(&hash).await != Some(p.size) {
+            let reason = if failures.is_empty() { "no device to fetch it from".to_string() } else { failures.join("; ") };
+            if self.profile_fetch_log.lock().should_log(did, &p.hash, &reason, std::time::Instant::now()) {
+                tracing::warn!("profile picture {} of {} not fetched: {reason}", node_runtime::short(&p.hash), node_runtime::short(did));
+            }
             return Err(bad("not downloaded"));
+        }
+        if self.profile_fetch_log.lock().succeeded(did, &p.hash) {
+            tracing::info!(
+                "profile picture {} of {} fetched{} after earlier failures",
+                node_runtime::short(&p.hash),
+                node_runtime::short(did),
+                from.map(|w| format!(" from {w}")).unwrap_or_default()
+            );
         }
         let bytes = hub.read_cipher(&hash).await?;
         decrypt(p, &bytes)?;

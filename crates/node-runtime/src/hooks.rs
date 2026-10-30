@@ -74,4 +74,7 @@ pub trait NodeHooks: Send + Sync + 'static {
     fn group_rotation_policy(self: Arc<Self>) -> Result<crate::RotationPolicy, Error>;
     /// A contact was added or synced in: fetch its profile picture.
     fn profile_for_new_contact(self: Arc<Self>, did: &str);
+    /// An own device woke us: pictures still pending are tried again now, not after their
+    /// backoff.
+    fn profile_retry_now(self: Arc<Self>) {}
 }

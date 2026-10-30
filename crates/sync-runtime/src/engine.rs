@@ -28,9 +28,11 @@ use node_runtime::store::{Backing, OwnDevice};
 
 pub mod account;
 pub mod devices;
+pub mod dm_receipts;
 pub mod group_contents;
 pub mod group_history;
 pub mod group_receipts;
+pub mod own_wake;
 pub mod push;
 pub mod sessions;
 
@@ -63,10 +65,14 @@ pub struct PeerChat {
     pub group_contents: bool,
     pub history: group_history::History,
     pub receipts: group_receipts::Receipts,
+    /// Signed DM receipt ledgers (cap/dm-receipts/v1).
+    pub dm_receipts: dm_receipts::DmReceipts,
     /// The group list last sent (G2), to send only changes.
     pub groups: Option<Vec<Vec<u8>>>,
     /// The invitation rows last sent (G3).
     pub invitations: Option<Vec<Vec<u8>>>,
+    /// Our wake token for the peer: negotiated, and what it was last told (`own_wake.rs`).
+    pub own_wake: own_wake::OwnWake,
 }
 
 impl node_runtime::OwnDocSink for SelfSync {

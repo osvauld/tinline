@@ -13,13 +13,16 @@ pub fn supported(docs: &[(String, Vec<u8>)]) -> bool {
     })
 }
 
+/// Capability markers our Hello carries next to the catalog.
+pub const MARKERS: usize = 5;
+
 pub fn catalog(
     chat: Vec<(String, Vec<u8>)>,
     groups: Vec<(String, Vec<u8>)>,
 ) -> Vec<(String, Vec<u8>)> {
-    // Reserve three slots for content/history/receipt markers. With four fixed account
-    // docs, Hello stays inside older peers' MAX_OWN_DOCS + 4.
-    let limit = MAX_OWN_DOCS - 3;
+    // Reserve five slots for content/history/receipt/own-wake/dm-receipt markers. With four fixed
+    // account docs, Hello stays inside older peers' MAX_OWN_DOCS + 4.
+    let limit = MAX_OWN_DOCS - MARKERS;
     let (meta, days): (Vec<_>, Vec<_>) = groups.into_iter().partition(|(name, _)| {
         matches!(
             contents::parse_doc(name),

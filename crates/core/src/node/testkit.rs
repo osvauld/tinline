@@ -25,6 +25,23 @@ impl Node {
     pub fn own_sessions_for_test(&self) -> u32 {
         self.open().sync.selfsync.sessions.lock().len() as u32
     }
+
+    /// For tests: the open account talks to a relay that only records wakes (no network).
+    #[doc(hidden)]
+    pub fn record_wakes_for_test(&self) -> Arc<node_runtime::push::RecordingRelay> {
+        let relay = Arc::new(node_runtime::push::RecordingRelay::default());
+        self.open().ctx.set_wake_relay(relay.clone());
+        relay
+    }
+
+    /// For tests: how many own devices we hold a wake token of (`docs/push.md` "Own devices").
+    #[doc(hidden)]
+    pub fn own_wake_tokens_held_for_test(&self) -> u32 {
+        let slot = self.open();
+        let Ok(me) = slot.me() else { return 0 };
+        let s = slot.shared.lock();
+        s.state.wake.as_ref().map_or(0, |w| w.held.iter().filter(|e| e.did == me.id.did()).count() as u32)
+    }
 }
 
 impl Node {

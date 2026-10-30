@@ -706,3 +706,57 @@ fn blocked_contacts_cannot_read_profile_blobs_even_with_the_hash() {
         .unwrap();
     assert!(!a.node.profile_blob_allowed_for_test(key, new).unwrap());
 }
+
+/// 2026-10-29 (v0.2.6 field report): a contact changed their picture; the laptop showed it, the
+/// phone kept initials. The phone was asleep while the change arrived; when it wakes with the
+/// contact offline, the laptop is its only source for both the reference and the bytes.
+#[test]
+fn a_contacts_new_picture_reaches_a_sleeping_sibling_from_the_laptop_alone() {
+    let a = peer("newpic-a");
+    let b = peer("newpic-laptop");
+    let mut phone = peer("newpic-phone");
+    phone.node.begin_new_account().unwrap();
+    phone.node.remove_account(phone.did.clone()).unwrap();
+    phone
+        .node
+        .restore_identity(b.phrase.clone(), "phone".into(), "pass".into())
+        .unwrap();
+    phone.did = b.did.clone();
+    b.node
+        .add_own_device_for_test(phone.node.own_attestation_for_test().unwrap())
+        .unwrap();
+    phone
+        .node
+        .add_own_device_for_test(b.node.own_attestation_for_test().unwrap())
+        .unwrap();
+    a.node.set_profile_picture(png(30)).unwrap();
+    a.node.start().unwrap();
+    b.node.start().unwrap();
+    phone.node.start().unwrap();
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    let ready = |n: &Node, hash: &Option<String>| {
+        n.account_profile(a.did.clone())
+            .ok()
+            .flatten()
+            .is_some_and(|p| p.picture_hash == *hash && p.picture_ready)
+    };
+    let first = a.node.account_profile(a.did.clone()).unwrap().unwrap().picture_hash;
+    wait("first picture on the phone", || ready(&phone.node, &first));
+
+    // The phone sleeps; the contact changes the picture; only the laptop is online with them.
+    phone.node.stop();
+    a.node.set_profile_picture(png(60)).unwrap();
+    let second = a.node.account_profile(a.did.clone()).unwrap().unwrap().picture_hash;
+    assert_ne!(first, second);
+    wait("new picture on the laptop", || ready(&b.node, &second));
+    a.node.stop();
+
+    phone.node.start().unwrap();
+    wait("new picture on the phone, served by the laptop", || {
+        ready(&phone.node, &second)
+    });
+    assert_eq!(
+        phone.node.profile_picture(a.did.clone()).unwrap(),
+        b.node.profile_picture(a.did.clone()).unwrap()
+    );
+}

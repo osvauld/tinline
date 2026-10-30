@@ -65,6 +65,8 @@ impl NodeCtx {
     /// differs from the last one pushed, queue it for every contact we may tell (U8).
     pub fn devices_changed(self: &Arc<Self>) {
         let Ok(me) = self.me() else { return };
+        // A new own device gets a wake token of ours, a removed one's is taken back (`push/own.rs`).
+        self.wake_kick();
         let Some(blob) = self.my_device_list(&me) else { return };
         let keys = keys_of(&blob, me.id.did());
         let queued: Vec<String> = {

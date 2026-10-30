@@ -42,6 +42,10 @@ pub struct ChatRt {
     /// Picture downloads in flight: `(epoch, did, hash)`.
     pub profile_downloads: Mutex<HashSet<(u64, String, String)>>,
     pub profile_fetches: Arc<Semaphore>,
+    /// Cuts the backoff of every waiting picture download short (`profile_retry_now`).
+    pub profile_retry: tokio::sync::Notify,
+    /// Picture fetch failures already logged, so the 30 s kick loop logs a reason once.
+    pub profile_fetch_log: Mutex<profile::fetch_log::FetchLog>,
 }
 
 impl ChatRt {
@@ -54,6 +58,8 @@ impl ChatRt {
             profile_events: Default::default(),
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),
+            profile_retry: tokio::sync::Notify::new(),
+            profile_fetch_log: Default::default(),
         }
     }
 
