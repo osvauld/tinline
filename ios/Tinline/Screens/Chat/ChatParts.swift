@@ -481,9 +481,30 @@ struct ChatDialogBody<Content: View>: View {
 }
 
 extension View {
-    /// A bottom sheet as the playground's Layer: raised surface, 24 pt top corners, a drag notch (the system scrim).
+    /// A bottom sheet as the playground's Layer: raised surface, 24 pt top corners, a drag notch (the system scrim), as
+    /// tall as its content.
     func chatSheetStyle(_ tin: TinColors) -> some View {
-        self.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+        self.modifier(ChatSheetFit()).presentationDragIndicator(.visible)
             .presentationCornerRadius(24).presentationBackground(tin.sfRaised)
+    }
+}
+
+private struct ChatSheetHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// Sizes the sheet to its content: the .medium detent is always half the screen, which left a short list (Reply, Copy
+/// text) floating in empty space. The content is measured at its own height and pinned to the top.
+private struct ChatSheetFit: ViewModifier {
+    @State private var height: CGFloat = 0
+    func body(content: Content) -> some View {
+        content
+            .background(GeometryReader { g in
+                Color.clear.preference(key: ChatSheetHeightKey.self, value: g.size.height + g.safeAreaInsets.bottom)
+            })
+            .onPreferenceChange(ChatSheetHeightKey.self) { height = $0 }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .presentationDetents(height > 0 ? [.height(height)] : [.medium])
     }
 }
