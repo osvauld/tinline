@@ -168,7 +168,7 @@ impl App {
         self.live.open.as_ref()?;
         let gone = !gl::active(d.my_role);
         let sub_color = if d.my_role == GroupRole::Removed { t.error } else if self.live.waiting_for_host() { t.thread_text } else { t.ink2 };
-        let on = !self.live.hide_info;
+        let on = self.live.info;
         // Conversation.svelte `.bar` for a group: the head (36 group avatar, name 17/22, "9 members" 13/18), then
         // the details button (here it shows or hides the members pane beside the chat).
         let face = gav(t, self.live.open.as_deref().unwrap_or_default(), 36.0);

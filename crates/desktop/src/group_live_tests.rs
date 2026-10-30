@@ -76,6 +76,7 @@ fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKi
         before_removal: false,
         image: None,
         voice: None,
+        file: None,
     }
 }
 
@@ -1119,4 +1120,31 @@ fn unified_hosting_adding_calls_requires_local_review_and_preserves_messages() {
     let d = l.detail.as_ref().unwrap();
     assert!(d.am_host && !d.am_call_host, "withdrawing calls must preserve messages");
     assert_eq!(*api.hosting_writes.borrow(), ["accept calls false"]);
+}
+
+// The bug: open a group, its Group info, go to another chat, click the group again -> it showed
+// the info page. Opening a group from the list always starts on its conversation.
+#[test]
+fn opening_a_group_shows_its_conversation_not_the_info_left_open() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &[]);
+    api.add("b", "did:key:sam", &[], &[]);
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "a fresh open shows the conversation");
+    l.step(&api, Lm::ToggleInfo);
+    assert!(l.info, "the header opens Group info");
+    l.step(&api, Lm::Open("b".into()));
+    assert!(!l.info, "another group opens on its conversation");
+    l.step(&api, Lm::ToggleInfo);
+    l.step(&api, Lm::Close);
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "back to the first group: its conversation");
+    l.step(&api, Lm::Open("a".into()));
+    l.step(&api, Lm::ToggleInfo);
+    l.step(&api, Lm::Open("a".into()));
+    assert!(!l.info, "the same group clicked again in the list: its conversation");
+    l.step(&api, Lm::OpenInfo("b".into()));
+    assert!(l.info, "OpenInfo still opens the info page");
+    assert_eq!(l.open.as_deref(), Some("b"));
 }

@@ -597,8 +597,9 @@ pub(super) struct GroupsLive {
     pub tick_anims: std::collections::HashMap<String, crate::ticks::Anim>,
     pub input: String,
     pub reply: Option<String>,
-    /// The members pane beside the chat (on by default).
-    pub hide_info: bool,
+    /// The group info page shows in place of the conversation (Group info). Off by default, and
+    /// every open of a group from the list starts on its conversation.
+    pub info: bool,
     /// The call button was pressed in a group with no call host: a calm explanation shows under the header.
     pub call_needs_host: bool,
     /// GroupsList "Left or removed" fold (closed by default).
@@ -829,16 +830,19 @@ impl GroupsLive {
                 // A newly opened group shows its ticks as they are (no transition on first render).
                 self.tick_vis.clear();
                 self.tick_anims.clear();
+                // Opening a group shows its conversation, even if its (or another group's) info
+                // page was showing when I left it.
+                self.info = false;
                 self.reload_open(api);
                 let _ = api.group_mark_read(gid);
                 self.reload_list(api);
                 out.opened = true;
             }
             Lm::Close => self.close(),
-            Lm::ToggleInfo => self.hide_info = !self.hide_info,
+            Lm::ToggleInfo => self.info = !self.info,
             Lm::OpenInfo(gid) => {
                 out = self.step(api, Lm::Open(gid));
-                self.hide_info = false;
+                self.info = true;
             }
             Lm::Menu(did) => self.menu = if self.menu == did { None } else { did },
             Lm::Input(v) => self.input = v,
