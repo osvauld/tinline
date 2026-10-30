@@ -1641,6 +1641,13 @@ impl super::App {
                 // Seeking a bubble that is not playing starts it.
                 return self.live_voice_toggle(id);
             }
+            // Leaving the group closes its picture in the viewer.
+            Lm::Close | Lm::Open(_) if self.chat.viewer.as_ref().is_some_and(|v| v.group_file.is_some()) => {
+                self.chat.viewer = None;
+                if self.chat.player.as_ref().is_some_and(|(pid, _)| self.live.msgs.iter().any(|x| x.id == *pid)) {
+                    self.chat.player = None;
+                }
+            }
             // Leaving the group stops its voice message.
             Lm::Close | Lm::Open(_) if self.chat.player.as_ref().is_some_and(|(pid, _)| self.live.msgs.iter().any(|x| x.id == *pid)) => {
                 self.chat.player = None;

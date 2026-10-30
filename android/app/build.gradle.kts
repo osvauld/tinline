@@ -43,8 +43,8 @@ android {
         // -PvideoTuning=false builds without it.
         buildConfigField("boolean", "VIDEO_TUNING", ((findProperty("videoTuning") as String?) ?: "true").toBoolean().toString())
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 594
-        versionName = (findProperty("versionName") as String?) ?: "0.2.7"
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 595
+        versionName = (findProperty("versionName") as String?) ?: "0.2.8"
         // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
         // would make Play offer the app to devices where the core can't load.
         ndk { abiFilters += abis }

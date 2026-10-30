@@ -70,6 +70,8 @@ class CallSession(
     @Volatile private var activated = false
     @Volatile private var endedHere = false
     @Volatile private var placedSpeaker = false
+    /** The first route Telecom reported has been checked against this call's default ([startRoute]). */
+    @Volatile private var startChecked = false
     /** Telecom disconnected the call itself (car, watch, headset): no fallback, the core call is ending. */
     @Volatile private var remoteEnded = false
     private val ops = Channel<suspend CallControlScope.() -> Unit>(Channel.UNLIMITED)
@@ -120,6 +122,7 @@ class CallSession(
                     combine(availableEndpoints, currentCallEndpoint) { a, c -> a to c }.collect { (a, c) ->
                         endpoints = a
                         _routes.value = RouteState(routeOf(c), a.map(::routeOf))
+                        startRoute(a, c)
                         maybeSpeaker(a, c)
                     }
                 }
@@ -193,6 +196,17 @@ class CallSession(
     fun speakerIfEarpiece() {
         preferSpeaker = true
         if (_routes.value.earpiece) toggleSpeaker()
+    }
+
+    /**
+     * Telecom can start a call on the loudspeaker (it may keep the route the last call ended on): a voice call
+     * starts at the ear, so move it back once. A headset, or the user's own choice later in the call, is left alone.
+     */
+    private fun startRoute(available: List<CallEndpointCompat>, current: CallEndpointCompat) {
+        if (startChecked) return
+        startChecked = true
+        if (preferSpeaker || current.type != CallEndpointCompat.TYPE_SPEAKER) return
+        available.firstOrNull { it.type == CallEndpointCompat.TYPE_EARPIECE }?.let { ep -> op { log("earpiece", requestEndpointChange(ep)) } }
     }
 
     private fun maybeSpeaker(available: List<CallEndpointCompat>, current: CallEndpointCompat) {

@@ -140,7 +140,7 @@ class ReplyReceiver : BroadcastReceiver() {
  * playground and the core has none yet, so every group alerts while the switch is on.
  */
 object GroupNotifier {
-    private class Line(val who: String, val text: String, val at: Long)
+    private class Line(val who: String, val did: String, val text: String, val at: Long)
     private val lines = java.util.concurrent.ConcurrentHashMap<String, MutableList<Line>>()
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private fun id(gid: String) = 3000 + (gid.hashCode() and 0xffff)
@@ -152,11 +152,22 @@ object GroupNotifier {
         if (!AlertPrefs.groups(app)) return
         if (app.blocks.value.blockedByMe(m.authorDid)) return
         val who = m.authorName.trim().substringBefore(' ').ifBlank { app.getString(R.string.common_someone) }
-        lines.getOrPut(m.groupId) { mutableListOf() }.let { synchronized(it) { it.add(Line(who, GroupText.postLine(m), m.at.toLong())); while (it.size > 6) it.removeAt(0) } }
+        lines.getOrPut(m.groupId) { mutableListOf() }.let { synchronized(it) { it.add(Line(who, m.authorDid, GroupText.postLine(m), m.at.toLong())); while (it.size > 6) it.removeAt(0) } }
+        // The sender's picture is read on a worker (never on this core callback), as for a 1:1 message, then the notification goes up.
+        app.scope.launch {
+            NotifFaces.load(app, m.authorDid)
+            if (OpenChat.group != m.groupId && lines.containsKey(m.groupId)) show(app, m.groupId, groupName)
+        }
+    }
+
+    private fun show(app: P2pApp, gid: String, groupName: String?) {
         val me = Person.Builder().setName(app.getString(R.string.common_you)).build()
         val style = NotificationCompat.MessagingStyle(me).setConversationTitle(groupName ?: app.getString(R.string.chat_notif_group)).setGroupConversation(true)
-        lines[m.groupId]?.let { synchronized(it) { it.forEach { l -> style.addMessage(l.text, l.at, Person.Builder().setName(l.who).build()) } } }
-        val open = PendingIntent.getActivity(app, id(m.groupId), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        // Each sender keyed by their DID, with their picture when we have it; without one the system draws their initial (as in 1:1).
+        lines[gid]?.let { synchronized(it) { it.forEach { l ->
+            style.addMessage(l.text, l.at, Person.Builder().setName(l.who).setKey(l.did).setIcon(NotifFaces.icon(NotifFaces.cached(l.did))).build())
+        } } }
+        val open = PendingIntent.getActivity(app, id(gid), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
             .setSilent(AlertPrefs.quiet(app) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
@@ -168,7 +179,7 @@ object GroupNotifier {
             .setAutoCancel(true)
             .setOnlyAlertOnce(false)   // each new post can alert an existing group notification
             .build()
-        try { nm(app).notify(id(m.groupId), n) } catch (_: SecurityException) { }
+        try { nm(app).notify(id(gid), n) } catch (_: SecurityException) { }
     }
 
     /** "Book club · Priya invited you to the group". A tap opens the Groups tab, where the invitation waits. */
