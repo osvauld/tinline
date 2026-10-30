@@ -106,13 +106,29 @@ pub struct SelfSync {
     pub backoff: parking_lot::Mutex<HashMap<[u8; 32], (u32, Instant)>>,
     pub dialing: parking_lot::Mutex<HashSet<[u8; 32]>>,
     /// Per device: the change generation (`SyncRt::sync_tx`) it is known to hold everything up
-    /// to, set when a session with it ends idle. A device below the current generation (or
-    /// missing: after start or `sync_kick`) is owed a sync and gets dialled; others are not
-    /// (sessions are not held open, 2026-10-17).
+    /// to, set when a session with it has been quiet long enough or ends idle
+    /// (`SyncRt::selfsync_settled`). A device below the current generation (or missing: after
+    /// start or `sync_kick`) is owed a sync and gets dialled; others are not (sessions are not
+    /// held open, 2026-10-17).
     pub synced: parking_lot::Mutex<HashMap<[u8; 32], u64>>,
+    /// As `synced`, but a `sync_kick` (start, network change, rotation, linking, being woken)
+    /// does not forget it: a kick only means "dial everyone now", it teaches nothing about what a
+    /// device lacks. Only the wake decision reads it (`SyncRt::wake_owed_device`), so a laptop
+    /// whose network changed does not wake a sleeping phone that already holds everything.
+    pub held: parking_lot::Mutex<HashMap<[u8; 32], u64>>,
     /// This device is unlinking itself: its own tombstone coming back in a batch must not remove
     /// the account before `unlink_device` has pushed that tombstone to the others.
     pub leaving: std::sync::atomic::AtomicBool,
+}
+
+/// How long an own-device session must carry no stream data either way (and nothing unseen)
+/// before the peer counts as holding everything (`SelfSync::synced`), while the session stays
+/// up. Half the idle close: 30 s in production, longer than the transport's idle timeout (20 s,
+/// `node_runtime::lifecycle`), so a peer that vanished with our data still in flight (its
+/// retransmissions count as stream data) has its connection end first and is not counted as
+/// holding it.
+pub fn settle_quiet() -> Duration {
+    node_runtime::wire::idle_close() / 2
 }
 
 pub fn sync_period() -> Duration {

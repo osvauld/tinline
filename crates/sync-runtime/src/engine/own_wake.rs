@@ -69,16 +69,14 @@ impl SyncRt {
     }
 
     /// Our sync dial of own device `device` failed while it is owed a change since `generation`
-    /// (`SelfSync::synced` below it): wake it, once per the `msg` throttle. Not at a bare start
-    /// (generation 0 and nothing known), so restarting a computer does not wake the phone.
+    /// (`SelfSync::held` below it): wake it, once per the `msg` throttle. Not at a bare start
+    /// (generation 0 and nothing known), so restarting a computer does not wake the phone; not
+    /// after a kick alone (`held` outlives it); not while a session with it is up.
     pub async fn wake_owed_device(self: &Arc<Self>, device: [u8; 32], generation: u64) -> bool {
-        let known = self
-            .selfsync
-            .synced
-            .lock()
-            .get(&device)
-            .copied()
-            .unwrap_or(0);
+        if self.selfsync.sessions.lock().contains_key(&device) {
+            return false;
+        }
+        let known = self.selfsync.held.lock().get(&device).copied().unwrap_or(0);
         if generation <= known || !self.ctx.can_wake_own(&device) {
             return false;
         }

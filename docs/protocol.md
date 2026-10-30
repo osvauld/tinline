@@ -381,7 +381,10 @@ frame, the peer's `Auth`, is capped at 64 KiB, `node_runtime::frames::FIRST_FRAM
   session with no stream data either way for the idle time (60 s, `wire::IDLE_CLOSE`) finishes
   its stream and closes; the other side sees a clean end. Each device remembers, per other device,
   the local change generation that device is known to hold (`SelfSync::synced`, set when a
-  session ends idle, or ends cleanly from the other side, with no newer local change unseen). Any
+  session has carried no stream data for half the idle time (30 s, `settle_quiet`: longer than
+  the transport's 20 s idle timeout, so a peer that vanished with data in flight is not counted),
+  when it ends idle, or when it ends cleanly from the other side, each with no newer local change
+  unseen; a session that ends by the peer going away keeps the last such mark). Any
   local change (account doc, calls, profile, chats, read cursors, groups) bumps the generation,
   so the devices behind it are owed a sync. Dial loop: every 15 s (`P2P_SELF_SYNC_SECS`) and at
   once on a change, it dials only owed devices without a session; start, a link,

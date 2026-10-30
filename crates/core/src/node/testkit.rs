@@ -26,6 +26,26 @@ impl Node {
         self.open().sync.selfsync.sessions.lock().len() as u32
     }
 
+    /// For tests: how many other live own devices are owed a change we made (not known to hold
+    /// our current change generation, `SelfSync::held`): the ones a failed dial would wake.
+    #[doc(hidden)]
+    pub fn own_devices_owed_for_test(&self) -> u32 {
+        let slot = self.open();
+        let Ok(me) = slot.me() else { return 0 };
+        let generation = slot.sync.signal.generation();
+        let devices: Vec<[u8; 32]> = slot
+            .shared
+            .lock()
+            .state
+            .registry
+            .iter()
+            .filter(|e| !e.removed && e.device != me.device)
+            .map(|e| e.device)
+            .collect();
+        let held = slot.sync.selfsync.held.lock();
+        devices.iter().filter(|d| held.get(*d).copied().unwrap_or(0) < generation).count() as u32
+    }
+
     /// For tests: the open account talks to a relay that only records wakes (no network).
     #[doc(hidden)]
     pub fn record_wakes_for_test(&self) -> Arc<node_runtime::push::RecordingRelay> {
