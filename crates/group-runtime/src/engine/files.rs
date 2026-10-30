@@ -3,13 +3,10 @@
 //!
 //! - **Sending** streams the file from disk through the chunk cipher into the group blob store
 //!   (`BlobHub::add_file_owned`); the post signs the resulting hash.
-//! - **Host keep or relay (§4, option A by default):** a host keeps a file up to
-//!   `keep_max` (`HOST_KEEP_FILE_MAX`) like a picture. A bigger one it never keeps: when a member
-//!   asks for it (the gate sees the request), the host pulls it from whoever has it and is
-//!   connected (the author's sessions, announced holders, other member sessions, other hosts)
-//!   into a short-lived relay cache (`relay/<gid>` tag, verified against the signed hash), and
-//!   serves it while the pull runs. Entries go `relay_ttl` after the last request; the cache
-//!   holds at most `relay_max` bytes.
+//! - **Hosts keep files (§4, option B):** a host fetches and keeps every file up to
+//!   `HOST_KEEP_FILE_MAX` (2 GiB, so every file) by itself, like a picture, within the group
+//!   budget. Members fetch from hosts only. A file over the constant (if it is ever lowered) is
+//!   not fetched by hosts and so is reachable only while a host holds it for its own user.
 //! - **Holders (§6):** a member device that completed a download writes `FileHeld{held: true}`
 //!   (in the post's day doc), and `held: false` when it deletes its copy. Not in open groups,
 //!   not for a host's kept copy.
@@ -20,37 +17,20 @@ use std::path::PathBuf;
 use iroh_blobs::Hash;
 use transfer::crypt;
 
-use super::images::{CORRUPT, owner_of};
+use super::images::owner_of;
 use super::*;
 use crate::store::ImgRow;
 use chat_core::store::DEFAULT_AUTO_DOWNLOAD;
 
-/// After this long without a request, a relayed file leaves the host's relay cache.
-pub const RELAY_TTL: Duration = Duration::from_secs(10 * 60);
-/// At most this many ciphertext bytes in a host's relay cache (one 2 GiB file and its tags).
-pub const RELAY_CACHE_MAX: u64 = MAX_FILE_BYTES + MAX_FILE_BYTES / 64;
 /// At most one progress event per file this often.
 const PROGRESS_EVERY: Duration = Duration::from_millis(500);
 
 type Key = (String, [u8; 32]);
 
-#[derive(Debug, Clone, Copy)]
-struct Relay {
-    /// Ciphertext bytes.
-    bytes: u64,
-    last: Instant,
-    busy: bool,
-}
-
 /// The file side of an account's image runtime (`ImagesRt::files`).
 pub struct FilesRt {
     /// Files up to this size auto-download (the 1:1 `auto_download_limit`, set by p2pcore).
     auto_max: AtomicU64,
-    /// A host keeps files up to this size (`HOST_KEEP_FILE_MAX`; a test knob).
-    keep_max: AtomicU64,
-    relay_ttl: Mutex<Duration>,
-    relay_max: AtomicU64,
-    relay: Mutex<HashMap<Key, Relay>>,
     /// `(ciphertext bytes so far, total, last event)` of running downloads.
     progress: Mutex<HashMap<Key, (u64, u64, Instant)>>,
     tasks: Mutex<HashMap<Key, tokio::task::AbortHandle>>,
@@ -60,10 +40,6 @@ impl Default for FilesRt {
     fn default() -> Self {
         Self {
             auto_max: AtomicU64::new(DEFAULT_AUTO_DOWNLOAD),
-            keep_max: AtomicU64::new(HOST_KEEP_FILE_MAX),
-            relay_ttl: Mutex::new(RELAY_TTL),
-            relay_max: AtomicU64::new(RELAY_CACHE_MAX),
-            relay: Default::default(),
             progress: Default::default(),
             tasks: Default::default(),
         }
@@ -79,24 +55,6 @@ impl FilesRt {
     /// setting).
     pub fn set_auto_max(&self, bytes: u64) {
         self.auto_max.store(bytes, Ordering::Relaxed);
-    }
-
-    pub fn keep_max(&self) -> u64 {
-        self.keep_max.load(Ordering::Relaxed)
-    }
-
-    /// Test knobs: what hosts keep, how long and how much they relay. `None`: the defaults.
-    pub fn set_limits_for_test(
-        &self,
-        keep_max: Option<u64>,
-        relay_ttl: Option<Duration>,
-        relay_max: Option<u64>,
-    ) {
-        self.keep_max
-            .store(keep_max.unwrap_or(HOST_KEEP_FILE_MAX), Ordering::Relaxed);
-        *self.relay_ttl.lock() = relay_ttl.unwrap_or(RELAY_TTL);
-        self.relay_max
-            .store(relay_max.unwrap_or(RELAY_CACHE_MAX), Ordering::Relaxed);
     }
 
     /// Notes progress; true when an event is due.
@@ -139,41 +97,17 @@ impl FilesRt {
     pub(super) fn task_end(&self, gid: &str, hash: &[u8; 32]) {
         self.tasks.lock().remove(&(gid.to_string(), *hash));
     }
-
-    /// Whether the relay cache holds `hash` of `gid` now (tests).
-    pub fn relaying(&self, gid: &str, hash: &[u8; 32]) -> bool {
-        self.relay.lock().contains_key(&(gid.to_string(), *hash))
-    }
-}
-
-/// The blob store tag of a host's short-lived relay copies for `gid`.
-fn relay_owner(gid: &str) -> String {
-    format!("relay/{gid}")
 }
 
 impl GroupCore {
-    /// A file over what hosts keep.
+    /// A file over what hosts keep (`HOST_KEEP_FILE_MAX`; none while it is the 2 GiB maximum).
     pub(super) fn over_keep(&self, row: &ImgRow) -> bool {
-        row.file
-            .as_ref()
-            .is_some_and(|f| f.size > self.images.files.keep_max())
+        row.file.as_ref().is_some_and(|f| !f.kept_by_hosts())
     }
 
-    /// We host `gid` and relay this file instead of keeping it (unless our user fetched it).
-    pub(super) fn relays(&self, gid: &str, row: &ImgRow) -> bool {
+    /// We host `gid` and do not keep this file, so we fetch it only if our own user asks.
+    pub(super) fn host_skips(&self, gid: &str, row: &ImgRow) -> bool {
         self.over_keep(row) && !row.ready && self.am_host(gid)
-    }
-
-    /// The group whose relayed file has `hash`, if a request for it should start a pull here.
-    pub(super) fn relay_wanted(&self, hash: &[u8; 32]) -> Option<String> {
-        let gids: Vec<String> = self.groups.lock().keys().cloned().collect();
-        gids.into_iter().find(|gid| {
-            self.store
-                .image(gid, hash)
-                .ok()
-                .flatten()
-                .is_some_and(|r| !r.dropped && self.relays(gid, &r))
-        })
     }
 
     /// The DIDs holding the file of post `post` now (group files §6).
@@ -298,189 +232,6 @@ impl GroupRt {
             Ok((_, changed)) => self.group_after(core, changed, None),
             Err(e) => tracing::warn!("group {}: file holder note: {e}", crate::short(gid)),
         }
-    }
-
-    /// A member asked us (a host) for a file we relay: pull it into the relay cache unless that
-    /// is already running or done (then the request only keeps it longer).
-    pub(super) fn group_relay_kick(
-        self: &Arc<Self>,
-        core: &Arc<GroupCore>,
-        gid: &str,
-        hash: [u8; 32],
-    ) {
-        let Ok(Some(row)) = core.store.image(gid, &hash) else {
-            return;
-        };
-        let bytes = crypt::cipher_len(row.image.size);
-        let key = (gid.to_string(), hash);
-        {
-            let files = &core.images.files;
-            let mut relay = files.relay.lock();
-            if let Some(r) = relay.get_mut(&key) {
-                r.last = Instant::now();
-                return;
-            }
-            let max = files.relay_max.load(Ordering::Relaxed);
-            let mut used: u64 = relay.values().map(|r| r.bytes).sum();
-            // Make room: idle entries, oldest first. Their tags go below.
-            let mut idle: Vec<(Instant, Key)> = relay
-                .iter()
-                .filter(|(_, r)| !r.busy)
-                .map(|(k, r)| (r.last, k.clone()))
-                .collect();
-            idle.sort();
-            let mut evict = Vec::new();
-            for (_, k) in idle {
-                if used + bytes <= max {
-                    break;
-                }
-                if let Some(r) = relay.remove(&k) {
-                    used -= r.bytes;
-                    evict.push(k);
-                }
-            }
-            if used + bytes > max {
-                self.log(format!(
-                    "group {}: relay cache full, file {} waits",
-                    crate::short(gid),
-                    &hex::encode(hash)[..12]
-                ));
-                return;
-            }
-            relay.insert(
-                key.clone(),
-                Relay {
-                    bytes,
-                    last: Instant::now(),
-                    busy: true,
-                },
-            );
-            if !evict.is_empty() {
-                let (this, core) = (self.clone(), core.clone());
-                self.handle.spawn(async move {
-                    if let Ok(hub) = this.group_hub(&core).await {
-                        for (g, h) in evict {
-                            let _ = hub
-                                .release_owned(&relay_owner(&g), &Hash::from_bytes(h))
-                                .await;
-                        }
-                    }
-                });
-            }
-        }
-        let (this, core, gid) = (self.clone(), core.clone(), gid.to_string());
-        self.handle.spawn(async move {
-            let res = this.group_relay_pull(&core, &gid, &row).await;
-            let ok = res.is_ok();
-            {
-                let mut relay = core.images.files.relay.lock();
-                if ok {
-                    if let Some(r) = relay.get_mut(&key) {
-                        r.busy = false;
-                        r.last = Instant::now();
-                    }
-                } else {
-                    relay.remove(&key);
-                }
-            }
-            if let Err(e) = res {
-                // Nobody who has it is online (or every copy was bad): the next request tries
-                // again.
-                this.log(format!(
-                    "group {}: relay of file {} failed: {e}",
-                    crate::short(&gid),
-                    &hex::encode(hash)[..12]
-                ));
-                if let Ok(hub) = this.group_hub(&core).await {
-                    let _ = hub
-                        .release_owned(&relay_owner(&gid), &Hash::from_bytes(hash))
-                        .await;
-                }
-            }
-        });
-    }
-
-    /// One relay pull: every source in turn until one sends the whole blob, verified against
-    /// the signed hash.
-    async fn group_relay_pull(
-        self: &Arc<Self>,
-        core: &Arc<GroupCore>,
-        gid: &str,
-        row: &ImgRow,
-    ) -> Result<(), Error> {
-        let hub = self.group_hub(core).await?;
-        let h = Hash::from_bytes(row.image.hash);
-        let total = crypt::cipher_len(row.image.size);
-        let owner = relay_owner(gid);
-        if hub.complete_size(&h).await == Some(total) {
-            return hub.keep_owned(&owner, &h).await.map_err(Error::from);
-        }
-        let ep = self.group_endpoint().ok_or(Error::NotStarted)?;
-        let mut err = Error::NotFound;
-        for (dev, relay) in self.group_image_sources(core, gid, &row.author, Some(&row.post)) {
-            let conn = match addr_for(&dev, relay.as_deref()) {
-                Ok(addr) => {
-                    match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, iroh_blobs::ALPN))
-                        .await
-                    {
-                        Ok(Ok(c)) => c,
-                        Ok(Err(e)) => {
-                            err = Error::net(e);
-                            continue;
-                        }
-                        Err(_) => {
-                            err = Error::Timeout;
-                            continue;
-                        }
-                    }
-                }
-                Err(e) => {
-                    err = e;
-                    continue;
-                }
-            };
-            let res = hub.fetch_owned(&owner, conn.clone(), h, total).await;
-            conn.close(0u32.into(), b"done");
-            match res {
-                Ok(()) => return Ok(()),
-                Err(transfer::Error::Corrupt(e)) => {
-                    let _ = hub.release_owned(&owner, &h).await;
-                    err = Error::Rejected(format!("{CORRUPT}: {e}"));
-                }
-                Err(e) => err = e.into(),
-            }
-        }
-        Err(err)
-    }
-
-    /// Drops relay copies nobody asked for within the TTL (the dial loop's tick).
-    pub(super) fn group_relay_sweep(self: &Arc<Self>, core: &Arc<GroupCore>) {
-        let ttl = *core.images.files.relay_ttl.lock();
-        let gone: Vec<Key> = {
-            let mut relay = core.images.files.relay.lock();
-            let gone: Vec<Key> = relay
-                .iter()
-                .filter(|(_, r)| !r.busy && r.last.elapsed() >= ttl)
-                .map(|(k, _)| k.clone())
-                .collect();
-            for k in &gone {
-                relay.remove(k);
-            }
-            gone
-        };
-        if gone.is_empty() {
-            return;
-        }
-        let (this, core) = (self.clone(), core.clone());
-        self.handle.spawn(async move {
-            if let Ok(hub) = this.group_hub(&core).await {
-                for (g, h) in gone {
-                    let _ = hub
-                        .release_owned(&relay_owner(&g), &Hash::from_bytes(h))
-                        .await;
-                }
-            }
-        });
     }
 
     /// Where the opened copy of a file goes: `group-files/<hash>/<name>` in the account dir.
@@ -624,3 +375,6 @@ impl GroupRt {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

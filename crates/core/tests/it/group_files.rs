@@ -1,7 +1,7 @@
 //! Group files (`docs/design/group-files.md`): any file up to 2 GB as a post. Real nodes over
 //! real iroh endpoints, like `group_voice.rs`: the file is sealed from disk, members fetch it
-//! from hosts verified against the signed hash, hosts keep small files and relay big ones on
-//! demand (option A), and members who hold a file are listed on it.
+//! from hosts verified against the signed hash, hosts keep every file (option B), and members
+//! who hold a file are listed on it.
 #![allow(dead_code)]
 
 use p2pcore::{GroupFile, GroupImageState as St, PictureDownload};
@@ -284,99 +284,64 @@ fn big_files_wait_for_a_tap_and_stream() {
     );
 }
 
-// KIND: acceptance (group files §4 option A) — a host keeps files up to its cap and relays bigger
-// ones on demand: it never fetches one by itself, pulls it from the author when a member asks,
-// serves it on, and drops its relay copy after the TTL. With the author offline, the relay comes
-// from a member who holds it (B); with nobody who has it online, the file ends "not available"
-// (`Failed`, not kept by hosts).
+// KIND: acceptance (group files §4 option B) — a host keeps a big file by itself: one over the
+// old option A cap (100 MB) and over every member's auto-download limit (sparse: zeros past the
+// end, no disk written by the test). Members still wait for a tap. With the author offline, a
+// member who taps gets the same bytes from the host, and becomes a holder.
 #[test]
-fn host_relays_files_over_its_cap() {
-    let o = peer("gfr-o");
-    let a = peer("gfr-a");
-    let b = peer("gfr-b");
-    let c = peer("gfr-c");
-    let d = peer("gfr-d");
-    let g = group_with(&o, &[&a, &b, &c, &d]);
-    tap_only(&[&b, &c, &d]);
-    for p in [&o, &a, &b, &c, &d] {
-        p.node
-            .group_set_file_limits_for_test(Some(64 * 1024), Some(3_000), None);
-    }
-    let path = file_of(&a, "video.mp4", 200 * 1024 + 3);
+fn host_keeps_big_files_for_members() {
+    let o = peer("gfh-o");
+    let a = peer("gfh-a");
+    let b = peer("gfh-b");
+    let g = group_with(&o, &[&a, &b]);
+    b.node
+        .group_set_image_auto_download(PictureDownload::Always)
+        .unwrap();
+    std::fs::create_dir_all(a.dir.path()).unwrap();
+    let big = a.dir.path().join("holiday.mp4");
+    let size: u64 = 101 * 1024 * 1024 + 5;
+    std::fs::File::create(&big).unwrap().set_len(size).unwrap();
     let sent = a
         .node
-        .group_post_file(g.clone(), path.clone(), None, None, None)
+        .group_post_file(
+            g.clone(),
+            big.to_string_lossy().into_owned(),
+            None,
+            None,
+            None,
+        )
         .unwrap();
-    assert!(!sent.file.as_ref().unwrap().kept_by_hosts);
-    eventually(WAIT, "the host has the post", || {
-        file_on(&o, &g, &sent.id).is_some()
+    assert!(sent.file.as_ref().unwrap().kept_by_hosts);
+    eventually(2 * WAIT, "the host keeps it by itself", || {
+        state(&o, &g, &sent.id) == Some(St::Ready)
     });
     assert!(
-        !within(5, || o
-            .node
-            .group_file_blob_here_for_test(g.clone(), sent.id.clone())),
-        "a host never fetches it by itself"
+        o.node
+            .group_file_blob_here_for_test(g.clone(), sent.id.clone())
     );
-    assert_eq!(state(&o, &g, &sent.id), Some(St::Remote));
+    assert_eq!(
+        state(&b, &g, &sent.id),
+        Some(St::Remote),
+        "a member waits for a tap (over the auto-download limit)"
+    );
+    assert_eq!(
+        holders(&b, &g, &sent.id),
+        vec![a.did.clone()],
+        "the host's kept copy is not announced"
+    );
 
-    eventually(WAIT, "b sees it", || file_on(&b, &g, &sent.id).is_some());
+    a.node.stop();
     b.node.group_fetch_file(g.clone(), sent.id.clone()).unwrap();
-    eventually(WAIT, "b gets it through the host's relay", || {
+    eventually(2 * WAIT, "b gets it from the host, the author offline", || {
         state(&b, &g, &sent.id) == Some(St::Ready)
     });
-    assert_eq!(
-        bytes_on(&b, &g, &sent.id).unwrap(),
-        std::fs::read(&path).unwrap()
-    );
-    assert_eq!(
-        state(&o, &g, &sent.id),
-        Some(St::Remote),
-        "the host still does not keep it"
-    );
-    eventually(WAIT, "the relay copy leaves after the TTL", || {
-        !o.node
-            .group_file_relaying_for_test(g.clone(), sent.id.clone())
+    let out = b.node.group_file_path(g.clone(), sent.id.clone()).unwrap();
+    let got = std::fs::read(&out).unwrap();
+    assert_eq!(got.len() as u64, size);
+    assert!(got.iter().all(|x| *x == 0), "the same (all-zero) bytes");
+    eventually(WAIT, "b is a holder", || {
+        holders(&b, &g, &sent.id).contains(&b.did)
     });
-    eventually(WAIT, "the relayed bytes are collected", || {
-        !o.node
-            .group_file_blob_here_for_test(g.clone(), sent.id.clone())
-    });
-
-    // The author goes offline: B (who announced holding it) is the source.
-    eventually(WAIT, "c sees b holds it", || {
-        holders(&c, &g, &sent.id).contains(&b.did)
-    });
-    a.node.stop();
-    c.node.group_fetch_file(g.clone(), sent.id.clone()).unwrap();
-    eventually(WAIT, "c gets it relayed from b", || {
-        state(&c, &g, &sent.id) == Some(St::Ready)
-    });
-    assert_eq!(
-        bytes_on(&c, &g, &sent.id).unwrap(),
-        std::fs::read(&path).unwrap()
-    );
-
-    // Nobody who has it is online: not available right now.
-    b.node.stop();
-    c.node.stop();
-    eventually(WAIT, "the relay copy left again", || {
-        !o.node
-            .group_file_relaying_for_test(g.clone(), sent.id.clone())
-    });
-    eventually(WAIT, "and its bytes", || {
-        !o.node
-            .group_file_blob_here_for_test(g.clone(), sent.id.clone())
-    });
-    d.node.group_fetch_file(g.clone(), sent.id.clone()).unwrap();
-    eventually(GIVE_UP, "d: not available right now", || {
-        state(&d, &g, &sent.id) == Some(St::Failed)
-    });
-    let f = file_on(&d, &g, &sent.id).unwrap();
-    assert!(
-        !f.kept_by_hosts,
-        "the UI says: not available right now, try later"
-    );
-    assert!(d.node.group_file_path(g.clone(), sent.id.clone()).is_none());
 }
 
 // KIND: acceptance (group files, verified streaming) — the host's copy is altered after it

@@ -1,8 +1,7 @@
 # Group files: any file up to 2 GB in a group
 
-Status: core built on `feat/group-files` (2026-10-30). UI not built (`docs/TODO.md`, "Group files").
-One question is open for the user (§4). The default in the code is option A, and one constant
-switches it.
+Status: core, Android and desktop UI built on `feat/group-files` (2026-10-30). iOS UI not built
+(`docs/TODO.md`, "Group files"). Who keeps the bytes (§4): the user chose **option B** for now.
 
 User decision: a group post can carry a file of any type up to 2 GB, as 1:1 chats already can.
 This reuses what exists: the 1:1 chunked blob cipher (`transfer::crypt`, `MAX_FILE`), the group
@@ -75,7 +74,7 @@ Body::FileHeld { post: String, day: String, hash: [u8; 32], held: bool }
   host or an active host.
 - **Member fetch:** from hosts only (live sessions first, then host addresses), as for pictures.
   Retries go 2/5/15/30/60 s and then stop (`Failed`). An attempt that got further than the last
-  one (more verified bytes stored) resets the retry count, so a long or relayed download keeps
+  one (more verified bytes stored) resets the retry count, so a long download keeps
   going while it moves. Partial downloads resume.
 - **Auto-download:** a file downloads by itself only if both of these allow it: the group
   auto-download mode (`group_image_auto_download`: Always / Wi-Fi / Tap), and the size limit the
@@ -87,65 +86,64 @@ Body::FileHeld { post: String, day: String, hash: [u8; 32], held: bool }
 - **Delete my copy:** `group_delete_file_copy` releases our blob and the opened copy. If we had
   announced that we hold the file, it writes `FileHeld{held: false}`.
 
-## 4. Who keeps the bytes: open question for the user
+## 4. Who keeps the bytes: option B (user decision, 2026-10-30)
 
-Group pictures and voice posts are kept by every host today, up to a 2 GB budget per group.
-Files can be 2 GB each. Three options:
+Group pictures and voice posts are kept by every host, within a budget per group. Files can be
+2 GB each. Three options were weighed. **The user chose B for now: it is the simplest, and we
+will change it if storage becomes an issue.**
 
-**A (default in the code): hosts keep small files and relay big ones on demand.**
-- A host keeps a file of at most `HOST_KEEP_FILE_MAX` (**100 MB**, one constant in
-  `group_core::record`) like a picture. It fetches the file from the author and keeps it within
-  the group's 2 GB media budget, and eviction is the same as for pictures.
-- A bigger file is **not stored** by hosts. When a member asks a host for it (the iroh-blobs GET
-  reaches the gate), the host pulls the bytes **on demand** from whoever has them and is
-  connected to it:
-  1. the author's devices that have a session with this host;
-  2. members who announced they hold it (§6);
-  3. any other member session it hosts (each serves only if it has the blob);
-  4. other hosts.
-  The host verifies the bytes against the signed hash while pulling, under a separate store tag
-  (`relay/<gid>`). It serves them on to the member while the pull runs: iroh-blobs serves
-  verified ranges, and the member's resuming fetch picks up more on every attempt.
-- The host keeps this copy only for a short time, in a size-bounded relay cache:
-  `RELAY_TTL` (10 min after the last request) and `RELAY_CACHE_MAX` (one 2 GiB file plus
-  overhead, per account). The oldest idle entries go first. A new pull that cannot fit waits
-  until something expires, and the member's retries see that as "not yet". The relay cache
-  never holds a permanent copy. It is not counted in the group budget, and it is never a holder.
-- **Nobody who has the file is online:** the host's pull finds no source, the member's attempts
-  get no bytes, and after the retries the file shows `Failed` with `kept_by_hosts = false`. The
-  UI says "Not available right now. Try again later." A tap tries again, and so does the next
-  session in the group.
-- **Cost to the host:** bandwidth, not storage. Each relayed download costs the host the
-  file's size twice (in from the source, out to the requester), but only once per
-  `RELAY_TTL` window when several members ask close together. Disk use is at most
-  `RELAY_CACHE_MAX`, held briefly.
-- **Optimisation, not built:** two members who are also contacts could fetch directly over their
-  1:1 link. This is never the only path.
+**B (current): hosts keep every file up to 2 GB.** `HOST_KEEP_FILE_MAX = MAX_FILE_BYTES` (one
+constant in `group_core::record`).
+- A host fetches every file post by itself, as soon as it sees it, like a picture (it ignores the
+  member auto-download settings, as it does for pictures). It keeps the file within the group's
+  media budget (`MAX_GROUP_IMAGE_BYTES`: 2 GiB plus the cipher tags of one 2 GiB file, so the
+  largest file fits on its own), and eviction is the same as for pictures: blobs no visible post
+  references go first, then the oldest.
+- **Members** never download a big file by themselves: only within the 1:1 auto-download size
+  limit (§3). Bigger files wait for a tap.
+- Members fetch only from hosts (U7). A file is available whenever a host that has finished
+  fetching it is online. Until then, and when no such host is online, the member's retries end
+  `Failed` and the UI says "Not available right now. Try again later." A tap tries again, and
+  so does the next session in the group.
+- Cost: storage on every host, up to 2 GB per file. A 2 GB file evicts every older picture of
+  the group on every host, and phones that host can fill up. This is the reason to revisit.
+- There is no on-demand relay path. A relay as a fallback for a file a host has not finished
+  fetching was considered and left out as extra complexity: it would be a second transfer path
+  for the short window while a host is still fetching. (iroh-blobs can serve a partial blob's
+  verified ranges, and member fetches resume, so a member asking during that window may get
+  part of the file and the rest on a later attempt; this is not covered by a test.)
 
-**B: hosts keep every file up to 2 GB.** Set `HOST_KEEP_FILE_MAX = MAX_FILE`. This is the simplest
-option, and files are available whenever a host is online. The cost is storage on every host:
-up to 2 GB per file, limited only by the 2 GB group budget. A 2 GB file evicts every picture of
-the group on every host, and phones fill up.
+**User's ideas for later (not built):**
+- (a) Only laptop/desktop hosts keep big files. Phone hosts keep pictures, voice and small files,
+  and leave big files to a desktop host of the group.
+- (b) A host can ask other members to host a file: a request that a member's device keeps and
+  serves a given file for the group (it would need the member to accept, and a way for members
+  to serve through or beside hosts, since members never dial members, U7).
 
-**C: hosts never keep files, they only relay.** Set `HOST_KEEP_FILE_MAX = 0`. This is the lowest
-storage cost. Every download needs a holder online at the same time as a host. Small files are
-then often unavailable, which is worse than 1:1 for small attachments.
+**Alternatives kept for reference:**
 
-Acceptance tests (in `crates/core/tests/it/group_files.rs`; the cap is set small with the test
-knob):
-- A: a file at or under the cap is fetched by the host from the author, and a member gets it
-  with the author offline. A file over the cap is not kept by the host (no ready row, no owned
-  tag), but a member who taps gets identical bytes while the author is online. After
-  `RELAY_TTL` the host no longer holds the bytes. With the author offline and no holder, the
-  file ends `Failed`. With the author offline but member B holding it, member C gets it through
-  the host.
-- B (switch the constant): a 2 GB-class file is kept by the host. This is the same test as "at
-  or under the cap".
-- C (switch the constant): even a small file is relayed. This is the "over the cap" test.
+**A: hosts keep small files and relay big ones on demand.** A host keeps a file of at most a cap
+(100 MB was the guess) like a picture. A bigger file is not stored: when a member asks a host
+for it, the host pulls the bytes on demand from whoever has them and is connected to it (the
+author's sessions, announced holders, other member sessions, other hosts), verifies them
+against the signed hash into a short-lived, size-bounded relay cache (10 min idle, one 2 GiB
+file), and serves them on while the pull runs. Cost to the host: bandwidth (the file's size
+twice per relayed download), not storage. Every big download needs a holder online at the
+same time as a host. This was built first (commit b83819b3) and removed when B was chosen;
+switching to A means lowering the constant and bringing the relay back.
 
-Recommendation: **A**. It keeps small attachments as reliable as pictures without filling phones
-with other people's videos, and big files cost hosts bandwidth only when someone wants them.
-The 100 MB cap is a guess and should be checked against real host devices.
+**C: hosts never keep files, they only relay.** `HOST_KEEP_FILE_MAX = 0` plus the relay of A.
+The lowest storage cost, but every download needs a holder online at the same time as a host,
+so small files are often unavailable, which is worse than 1:1 for small attachments.
+
+Acceptance tests (in `crates/core/tests/it/group_files.rs`):
+- B: a file over the old A cap (101 MiB, sparse) is fetched and kept by the host by itself;
+  members still wait for a tap; with the author offline, a member who taps gets identical bytes
+  from the host and becomes a holder (`host_keeps_big_files_for_members`).
+- B: a 24 MiB file is kept by the host while a member waits for a tap; it streams with progress;
+  cancel makes it `Remote` again (`big_files_wait_for_a_tap_and_stream`).
+- The largest file fits a host's group budget on its own (`group-runtime` unit test
+  `the_largest_file_fits_a_hosts_group_budget`).
 
 ## 5. What the app sees
 
@@ -157,9 +155,9 @@ GroupFile { name, size, mime, state: GroupImageState, done: u64,
 ```
 
 - `state` uses the picture states: `Ready` (here), `Loading` (on its way; `done` = verified
-  bytes so far), `Remote` (tap to download), `Failed` (could not be fetched; if
-  `kept_by_hosts` is false, say "Not available right now").
-- `kept_by_hosts`: `size <= HOST_KEEP_FILE_MAX`.
+  bytes so far), `Remote` (tap to download), `Failed` (could not be fetched: "Not available
+  right now. Try again later.", a tap tries again).
+- `kept_by_hosts`: `size <= HOST_KEEP_FILE_MAX` (always true under option B).
 - `holders`: who has a copy now (§6). The author comes first unless they deleted it.
   Example UI line: "Anoop is also hosting this file" or "Anoop and 2 others have this file".
 - Events: `GroupEvents.on_group_image(group, message)` fires when the state changes, when
@@ -177,8 +175,7 @@ once into `group-files/<hash>/<name>` in the account directory and returns that 
   `FileHeld{post, day, hash, held: true}`. It writes `held: false` when it deletes its copy.
   These are ordinary signed group records. Hosts relay them, and every device derives the same
   list.
-- A host keeping a file under the cap does not announce (that is `kept_by_hosts`), and neither
-  does a relay copy. A host's own device announces only if its user downloaded the file for
+- A host keeping a file does not announce (that is `kept_by_hosts`). A host's own device announces only if its user downloaded the file for
   themselves.
 - Derivation: for each `(author DID, device)`, the latest `FileHeld` naming the post and its
   hash (by `at`, then record id) says whether that device holds the file. A DID holds the file
@@ -187,8 +184,7 @@ once into `group-files/<hash>/<name>` in the account directory and returns that 
   `held: false`.
 - **Privacy:** this tells the group who downloaded a file. It is in line with group read
   receipts, which the group already sees. Open (public) groups send no receipts
-  (`public-group.md` §4), so devices there **do not announce** holdings either. The host's relay
-  then tries the author and the member sessions it has without the hint.
+  (`public-group.md` §4), so devices there **do not announce** holdings either.
 - Cost: one small record per download and per deletion, in the post's day doc.
 
 ## 7. Limits
@@ -197,9 +193,8 @@ once into `group-files/<hash>/<name>` in the account directory and returns that 
 | --- | --- | --- |
 | Largest file | 2 GiB (`MAX_FILE`) | record check, every device |
 | Name | 1 to 255 bytes, no path separators | record check |
-| Host keeps | up to 100 MB (`HOST_KEEP_FILE_MAX`) | the A/B/C switch |
-| Host relay cache | 2 GiB + overhead, 10 min idle | `engine/images.rs` |
-| Group budget (pictures, voice, kept files) | 2 GB per group per host | unchanged |
+| Host keeps | every file, up to 2 GiB (`HOST_KEEP_FILE_MAX`, option B) | `group_core::record` |
+| Group budget (pictures, voice, kept files) | 2 GiB + the tags of one 2 GiB file, per group per host | `engine/images.rs` |
 | Auto-download | the 1:1 size limit (default 10 MB) and the group mode | unchanged settings |
 
 ## 8. Older apps
@@ -217,9 +212,8 @@ breakage.
 
 ## 9. Not built / follow-ups
 
-- UI on Android, desktop and iOS (`docs/TODO.md`).
+- UI on iOS (`docs/TODO.md`).
 - A direct member-to-member fetch over an existing contact link (optimisation).
-- Cut-through relay without a temporary copy. Today the host holds the file in the bounded relay
-  cache while it relays.
-- A per-host setting for `HOST_KEEP_FILE_MAX` (today one constant, the same on every device, so
+- The user's ideas (a) and (b) of §4, and options A/C if host storage becomes an issue.
+- A per-host setting for what a host keeps (today one constant, the same on every device, so
   that members can show `kept_by_hosts`).

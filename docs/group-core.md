@@ -90,10 +90,10 @@ the user was away; each is listed at the end.
   current member on a session we host or an active host. Members fetch only from hosts; hosts
   fetch from the author's session or other hosts. **Files** (`docs/design/group-files.md`):
   `Body::File{caption, reply_to, file: FileRef{hash, key, size, name, mime}}` up to 2 GiB, the
-  hash signed by the author and verified chunk by chunk on every download; hosts keep files up to
-  `HOST_KEEP_FILE_MAX` (100 MB, option A, open question) and relay bigger ones on demand (pulled
-  from the author's sessions, announced holders or other member sessions into a short-lived,
-  bounded relay cache); `Body::FileHeld{post, day, hash, held}` in the post's day doc lists who
+  hash signed by the author and verified chunk by chunk on every download; hosts fetch and keep
+  every file by themselves, like pictures, within the group budget (`HOST_KEEP_FILE_MAX` = 2 GiB,
+  option B, user decision); members auto-download only within the 1:1 size limit;
+  `Body::FileHeld{post, day, hash, held}` in the post's day doc lists who
   holds a file (not in open groups).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host

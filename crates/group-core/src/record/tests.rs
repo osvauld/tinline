@@ -401,7 +401,7 @@ fn file_posts_are_bounded() {
         assert_eq!(open_record(&forge(&rec(&a, "g", bad.clone()), &a).to_bytes(), "g"), Err(RecordError::Malformed), "{bad:?}");
     }
     let f = file(HOST_KEEP_FILE_MAX, "a");
-    assert!(f.kept_by_hosts() && !file(HOST_KEEP_FILE_MAX + 1, "a").kept_by_hosts());
+    assert!(f.kept_by_hosts() && file(MAX_FILE_BYTES, "a").kept_by_hosts(), "option B: hosts keep every file");
     let b = f.as_blob();
     assert_eq!((b.hash, b.key, b.size, b.mime.as_str()), (f.hash, f.key, f.size, FILE_BLOB_MIME));
     let tag = |b: &Body| cryptography::codec::to_bytes(b).unwrap()[0];

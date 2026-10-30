@@ -82,12 +82,13 @@ pub struct GroupFile {
     pub size: u64,
     pub mime: String,
     /// `Ready` here; `Loading` on its way (`done` bytes so far); `Remote` tap to download;
-    /// `Failed` could not be fetched (tap tries again; with `kept_by_hosts` false say "Not
-    /// available right now. Try again later.").
+    /// `Failed` could not be fetched (say "Not available right now. Try again later."; a tap
+    /// tries again).
     pub state: GroupImageState,
     /// Bytes arrived so far while `Loading` (0 otherwise).
     pub done: u64,
-    /// The group's hosts keep this file; otherwise they relay it on demand from whoever has it.
+    /// The group's hosts keep this file (`HOST_KEEP_FILE_MAX`, today the 2 GiB maximum, so
+    /// always true).
     pub kept_by_hosts: bool,
     /// Who has a copy now: the author first (unless they deleted it), then members who
     /// downloaded it ("Anoop and 2 others have this file").

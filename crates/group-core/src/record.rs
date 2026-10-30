@@ -193,11 +193,12 @@ pub const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 pub const MAX_FILE_NAME: usize = 255;
 /// Longest file type.
 pub const MAX_FILE_MIME: usize = 100;
-/// THE switch of group files §4: hosts keep files up to this many bytes (like pictures, within
-/// the group budget) and relay bigger ones on demand without keeping them. Option A (default):
-/// 100 MB. Option B (hosts keep everything): `MAX_FILE_BYTES`. Option C (hosts never keep
-/// files): 0. One value on every device, so members can show `kept_by_hosts`.
-pub const HOST_KEEP_FILE_MAX: u64 = 100 * 1024 * 1024;
+/// Group files §4: hosts fetch and keep files up to this many bytes by themselves, like
+/// pictures, within the group budget. The current choice is option B: hosts keep every file
+/// (`MAX_FILE_BYTES`). Options A (a smaller cap) and C (0) also need the on-demand host relay,
+/// which is not built now (`docs/design/group-files.md` §4). One value on every device, so
+/// members can show `kept_by_hosts`.
+pub const HOST_KEEP_FILE_MAX: u64 = MAX_FILE_BYTES;
 /// The local row mime of a file blob in the image runtime (never on the wire).
 pub const FILE_BLOB_MIME: &str = "application/x-tinline-file";
 
@@ -234,7 +235,7 @@ impl FileRef {
             && !self.mime.chars().any(|c| c.is_ascii_control())
     }
 
-    /// Hosts keep this file (group files §4); otherwise they relay it on demand.
+    /// Hosts keep this file (group files §4; every file under option B).
     pub fn kept_by_hosts(&self) -> bool {
         self.size <= HOST_KEEP_FILE_MAX
     }

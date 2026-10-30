@@ -23,9 +23,8 @@
 //!   visible post references go first, then the oldest (`group_core::store::plan_eviction`).
 //!   Both limits have test knobs.
 //! - **Files** (`docs/design/group-files.md`, runtime in `engine/files.rs`) ride the same rows,
-//!   gate and fetch: a host keeps a file up to `HOST_KEEP_FILE_MAX` like a picture and relays a
-//!   bigger one on demand without keeping it; a member auto-downloads one only within the 1:1
-//!   size limit; progress is reported; a source that sends bytes not matching the signed hash
+//!   gate and fetch: a host keeps every file (up to `HOST_KEEP_FILE_MAX`, the 2 GiB maximum)
+//!   like a picture; a member auto-downloads one only within the 1:1 size limit; progress is reported; a source that sends bytes not matching the signed hash
 //!   is given up at that chunk.
 
 use std::collections::BTreeSet;
@@ -43,8 +42,9 @@ use crate::store::{ImgRow, plan_eviction};
 /// author-signed hash.
 pub const CORRUPT: &str = "data does not match the signed hash";
 
-/// A host keeps at most this many bytes of image blobs per group.
-pub const MAX_GROUP_IMAGE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// A host keeps at most this many bytes of image blobs per group (pictures, voice, files): 2 GiB
+/// plus the cipher tags of a 2 GiB file (16 bytes per 64 KiB chunk), so the largest file fits.
+pub const MAX_GROUP_IMAGE_BYTES: u64 = MAX_FILE_BYTES + MAX_FILE_BYTES / 4096;
 /// Waits between fetch attempts of one image; after the last, it is given up (`failed`).
 const RETRY_S: [u64; 5] = [2, 5, 15, 30, 60];
 /// Image fetches running at once per account.
@@ -63,7 +63,7 @@ pub struct ImagesRt {
     pub limits: Mutex<(u64, u64)>,
     /// One budget pass at a time.
     budget: tokio::sync::Mutex<()>,
-    /// Group files: limits, relay cache, progress and running fetches (`engine/files.rs`).
+    /// Group files: auto-download limit, progress and running fetches (`engine/files.rs`).
     pub files: super::files::FilesRt,
 }
 
@@ -82,7 +82,7 @@ pub(super) struct Pend {
     /// A file's plaintext size (auto-download applies the 1:1 size limit to it).
     pub(super) file: Option<u64>,
     /// Verified bytes we held after the last attempt: an attempt that got further starts the
-    /// retries over (a long or relayed download goes on while it moves).
+    /// retries over (a long download goes on while it moves).
     best: u64,
 }
 
@@ -255,8 +255,8 @@ impl GroupCore {
         let mut p = self.images.pending.lock();
         for gid in gids {
             for r in self.store.images(&gid).unwrap_or_default() {
-                // A file a host relays (not kept) is fetched only when its own user asks.
-                if !r.ready && !r.dropped && !r.failed && !r.deleted && (r.wanted || !self.relays(&gid, &r)) {
+                // A file a host does not keep is fetched only when its own user asks.
+                if !r.ready && !r.dropped && !r.failed && !r.deleted && (r.wanted || !self.host_skips(&gid, &r)) {
                     p.entry((gid.clone(), r.image.hash)).or_insert(Pend {
                         wanted: r.wanted,
                         file: r.file.as_ref().map(|f| f.size),
@@ -282,18 +282,9 @@ impl GroupRt {
         core.images
             .hub
             .get_or_try_init(|| async move {
-                let rt = Arc::downgrade(self);
                 let gate: Gate = Arc::new(move |ep, hash| {
                     let Some(c) = weak.upgrade() else { return false };
-                    let ok = c.image_may_serve(ep, hash.as_bytes());
-                    // A file this host relays: pull it from whoever has it while we serve.
-                    if ok
-                        && let Some(gid) = c.relay_wanted(hash.as_bytes())
-                        && let Some(rt) = rt.upgrade()
-                    {
-                        rt.group_relay_kick(&c, &gid, *hash.as_bytes());
-                    }
-                    ok
+                    c.image_may_serve(ep, hash.as_bytes())
                 });
                 let progress: UploadProgress = Arc::new(|_, _, _, _| {});
                 let ended: UploadEnd = Arc::new(|_, _, _| {});
@@ -357,7 +348,7 @@ impl GroupRt {
                     continue;
                 }
             }
-            // A file over what hosts keep is relayed, never refused (`files.rs`).
+            // A file is never refused by size here: the record check bounds it (2 GiB).
             let limit = if i.voice.is_some() {
                 MAX_VOICE_BYTES
             } else if i.file.is_some() {
@@ -390,7 +381,7 @@ impl GroupRt {
                 tracing::warn!("group {}: image row: {e}", crate::short(gid));
                 continue;
             }
-            if !refused && !core.relays(gid, &row) {
+            if !refused && !core.host_skips(gid, &row) {
                 core.images.pending.lock().insert(
                     (gid.to_string(), img.hash),
                     Pend { file: row.file.as_ref().map(|f| f.size), ..Default::default() },
@@ -407,7 +398,7 @@ impl GroupRt {
     pub(super) fn group_images_on_session(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
         core.images_load();
         for mut r in core.store.images(gid).unwrap_or_default() {
-            if r.failed && !r.dropped && !r.ready && !r.deleted && (r.wanted || !core.relays(gid, &r)) {
+            if r.failed && !r.dropped && !r.ready && !r.deleted && (r.wanted || !core.host_skips(gid, &r)) {
                 r.failed = false;
                 if core.store.put_image(gid, &r).is_ok() {
                     core.images.pending.lock().insert(
@@ -436,7 +427,6 @@ impl GroupRt {
             return;
         }
         core.images_load();
-        self.group_relay_sweep(core);
         let limit = self.file_auto_limit.lock().clone().and_then(|f| f());
         core.images.files.set_auto_max(limit.unwrap_or(chat_core::store::DEFAULT_AUTO_DOWNLOAD));
         let keys: Vec<((String, [u8; 32]), Pend)> = core

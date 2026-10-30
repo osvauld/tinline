@@ -163,34 +163,6 @@ impl Node {
 /// Test hooks that release builds do not have (Rust only: not exported through uniffi).
 #[cfg(any(test, feature = "dev-tools"))]
 impl Node {
-    /// What hosts keep (`HOST_KEEP_FILE_MAX`), how long an idle relayed file stays and how many
-    /// bytes the relay cache holds; `None` for each default. Not in release builds.
-    pub fn group_set_file_limits_for_test(
-        &self,
-        keep_max: Option<u64>,
-        relay_ttl_ms: Option<u64>,
-        relay_max: Option<u64>,
-    ) {
-        if let Ok(core) = self.open().group.group_core() {
-            core.images.files.set_limits_for_test(
-                keep_max,
-                relay_ttl_ms.map(std::time::Duration::from_millis),
-                relay_max,
-            );
-        }
-    }
-
-    /// Whether this device holds the file of post `message_id` in its relay cache now (a host).
-    pub fn group_file_relaying_for_test(&self, group_id: String, message_id: String) -> bool {
-        let Ok(core) = self.open().group.group_core() else {
-            return false;
-        };
-        let Ok(Some(row)) = core.store.image_of_post(&group_id, &message_id) else {
-            return false;
-        };
-        core.images.files.relaying(&group_id, &row.image.hash)
-    }
-
     /// Whether the complete sealed blob of the file of post `message_id` is in this device's
     /// group blob store (any tag).
     pub fn group_file_blob_here_for_test(&self, group_id: String, message_id: String) -> bool {

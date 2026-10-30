@@ -130,7 +130,7 @@ impl GroupRt {
                     mime: f.mime.clone(),
                     done: if state == GroupImageState::Loading { core.images.files.done_of(gid, &f.hash, f.size) } else { 0 },
                     state,
-                    kept_by_hosts: f.size <= core.images.files.keep_max(),
+                    kept_by_hosts: f.kept_by_hosts(),
                     holders: core
                         .file_holders_of(gid, &i.id)
                         .into_iter()
