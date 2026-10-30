@@ -31,8 +31,16 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -125,6 +133,37 @@ fun DrawScope.drawFingerprint(d: FingerprintDrawing, fg: Color, gold: Color) {
     }
 }
 
+/**
+ * Mandalas as pictures: stroking every path again each frame cost the moto ~15 ms of RenderThread CPU per frame while a
+ * list scrolled (perfetto, 2026-10-30), so each drawing is rasterised once per pixel size and colour pair and reused.
+ * Kept by bytes (8 MiB, a few hundred list-sized avatars).
+ */
+object FingerprintBitmaps {
+    private data class Key(val art: FingerprintDrawing, val px: Int, val fg: ULong, val gold: ULong)
+    private val cache = object : android.util.LruCache<Key, ImageBitmap>(8 shl 20) {
+        override fun sizeOf(key: Key, value: ImageBitmap) = value.width * value.height * 4
+    }
+
+    fun of(art: FingerprintDrawing, px: Int, fg: Color, gold: Color): ImageBitmap {
+        val k = Key(art, px, fg.value, gold.value)
+        cache.get(k)?.let { return it }
+        val img = ImageBitmap(px, px)
+        CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(img), Size(px.toFloat(), px.toFloat())) { drawFingerprint(art, fg, gold) }
+        cache.put(k, img)
+        return img
+    }
+}
+
+/** [art] in [fg]/[gold] as a picture [size] across, from [FingerprintBitmaps]. */
+@Composable
+fun rememberFingerprint(art: FingerprintDrawing, size: Dp, fg: Color, gold: Color): ImageBitmap {
+    val px = with(LocalDensity.current) { size.roundToPx() }.coerceAtLeast(1)
+    return remember(art, px, fg, gold) { FingerprintBitmaps.of(art, px, fg, gold) }
+}
+
+/** Draws [img] filling the draw area. */
+fun DrawScope.drawFilling(img: ImageBitmap) = drawImage(img, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()))
+
 /** The profile of [did] from the app's profile adapter (watching it), or null. Every avatar and profile surface reads through here. */
 @Composable
 fun rememberProfileView(did: String?): ProfileView? {
@@ -158,8 +197,8 @@ fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier:
     ) {
         if (art != null) {
             // A person with a DID: the fingerprint mandala instead of initials (a picture, when ready, covers it below).
-            val gold = c.gold
-            Box(Modifier.fillMaxSize().drawBehind { drawFingerprint(art, fg, gold) })
+            val img = rememberFingerprint(art, size, fg, c.gold)
+            Box(Modifier.fillMaxSize().drawBehind { drawFilling(img) })
         } else Text(
             uniffi.present.initials(name), color = fg, maxLines = 1, softWrap = false,
             style = TextStyle(
