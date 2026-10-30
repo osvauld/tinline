@@ -170,3 +170,6 @@ impl Writer {
         send_frame(&mut self.0, msg, MAX_FRAME, "group ").await
     }
 }
+
+#[cfg(test)]
+mod hello_size_tests;
