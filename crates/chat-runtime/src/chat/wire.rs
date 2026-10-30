@@ -4,7 +4,7 @@
 use iroh::endpoint::{RecvStream, SendStream};
 
 use crate::Error;
-use node_runtime::frames::{FrameBuf, send_frame};
+use node_runtime::frames::{FIRST_FRAME, FrameBuf, send_frame};
 
 pub use chat_core::wire::*;
 
@@ -19,6 +19,12 @@ impl ChatReader {
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv(&mut self) -> Result<Option<ChatMsg>, Error> {
         self.0.recv(MAX_FRAME, "chat ").await
+    }
+
+    /// The session's first frame (`Auth`, or a `Notice`), before the peer is authenticated:
+    /// capped at `FIRST_FRAME` rather than `MAX_FRAME`.
+    pub async fn recv_first(&mut self) -> Result<Option<ChatMsg>, Error> {
+        self.0.recv(FIRST_FRAME, "chat ").await
     }
 }
 

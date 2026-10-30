@@ -87,9 +87,6 @@ text = "Käyntikorttisi QR-koodi"
 [chat_card_preparing]
 text = "Valmistellaan koodiasi…"
 
-[chat_card_once]
-text = "Toimii kerran. Uuden koodin luominen peruu tämän."
-
 [chat_card_share_subject]
 text = "Jaa käyntikortti"
 
@@ -2032,9 +2029,6 @@ text = "Uusi salalause"
 [security_pass]
 text = "Salalause"
 
-[security_pass_notice]
-text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
-
 [security_encrypting]
 text = "Salataan…"
 
@@ -2268,9 +2262,6 @@ text = "Luo uusi tili"
 
 [unlock_link]
 text = "Linkitä tili toiselta laitteelta"
-
-[unlock_one_online]
-text = "Avaamasi tili on verkossa. Muut tilisi soivat ja ilmoittavat silti, kun Tinline voi herättää ne; siihen asti niiden puhelut soivat muilla laitteillasi."
 
 [shell_account_unread]
 one = "{count} lukematon"
@@ -2675,9 +2666,6 @@ text = "Valinnainen. Lukko, jotta vain sinä voit avata Tinlinen tällä puhelim
 [onboarding_pass]
 text = "Salalause"
 
-[onboarding_pass_notice]
-text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
-
 [onboarding_encrypting]
 text = "Salataan…"
 
@@ -2792,9 +2780,6 @@ text = "Puheluhistoria"
 [onboarding_sync_slow]
 text = "Ei vielä mitään. Toinen laite ei ehkä ole verkossa: se jatkaa siitä, mihin jäi, kun molemmat ovat seuraavan kerran verkossa."
 
-[onboarding_sync_keep]
-text = "Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla."
-
 [onboarding_nosave_title]
 text = "Tiliäsi ei voitu tallentaa"
 
@@ -2854,9 +2839,6 @@ text = "Jotta näet saapuvat puhelut ja viestit."
 
 [onboarding_perms_title]
 text = "Jotta puhelut tavoittavat sinut"
-
-[onboarding_perms_lead]
-text = "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
 
 [onboarding_perm_allowed]
 text = "Sallittu: {name}"
@@ -4596,3 +4578,21 @@ text = "{date} klo {time}"
 
 [people_when_date]
 text = "{date} klo {time}"
+
+[chat_card_once]
+text = "Toimii 7 päivää kaikille, joille sen annat. Jokainen kysyy ensin sinulta. Uuden koodin luominen mitätöi tämän."
+
+[security_pass_notice]
+text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa salalauseen, joten Tinline aukeaa ilman kysymistä joka kerta. Jos unohdat sen, palautussanasi antavat sinun asettaa uuden."
+
+[unlock_one_online]
+text = "Vain avaamasi tili on verkossa tällä puhelimella. Muille tileillesi tulevat puhelut soivat muilla laitteillasi, kunnes vaihdat niihin."
+
+[onboarding_pass_notice]
+text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa salalauseen, joten Tinline aukeaa ilman kysymistä joka kerta. Jos unohdat sen, palautussanasi antavat sinun asettaa uuden."
+
+[onboarding_sync_keep]
+text = "Pidä molemmat laitteet auki ja verkossa, kunnes tämä valmistuu."
+
+[onboarding_perms_lead]
+text = "Tinline on linjasi lisäämiisi ihmisiin. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."

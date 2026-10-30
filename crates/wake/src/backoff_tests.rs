@@ -212,3 +212,51 @@ fn backoff_old_state_without_the_count_loads() {
     let s: WakeState = serde_json::from_value(v).unwrap();
     assert_eq!(s.held[0].held.msg_wakes, 0);
 }
+
+#[test]
+fn backoff_reached_device_touches_only_that_device() {
+    let mut s = holding();
+    let other = [8u8; 32];
+    assert!(s.hold(
+        "did:test:b",
+        other,
+        "tok-2".into(),
+        NOW + DAY_MS,
+        Kinds::MSG,
+        NOW
+    ));
+    assert!(s.wake_for("did:test:b", &DEV, Kind::Msg, NOW).is_some());
+    assert!(s.wake_for("did:test:b", &other, Kind::Msg, NOW).is_some());
+    assert!(s.reached_device("did:test:b", &DEV));
+    assert!(
+        !s.reached_device("did:test:b", &DEV),
+        "nothing left to reset"
+    );
+    let wakes = |d: &[u8; 32]| {
+        s.held
+            .iter()
+            .find(|e| e.device == *d)
+            .unwrap()
+            .held
+            .msg_wakes
+    };
+    assert_eq!((wakes(&DEV), wakes(&other)), (0, 1));
+}
+
+#[test]
+fn backoff_drop_held_forgets_one_device_only() {
+    let mut s = holding();
+    let other = [8u8; 32];
+    assert!(s.hold(
+        "did:test:b",
+        other,
+        "tok-2".into(),
+        NOW + DAY_MS,
+        Kinds::MSG,
+        NOW
+    ));
+    assert!(s.drop_held("did:test:b", &DEV));
+    assert!(!s.drop_held("did:test:b", &DEV));
+    assert_eq!(s.held.len(), 1);
+    assert_eq!(s.held[0].device, other);
+}

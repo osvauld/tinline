@@ -269,8 +269,11 @@ impl GroupRt {
         self: &Arc<Self>,
         core: Arc<GroupCore>,
         conn: Connection,
+        permit: tokio::sync::OwnedSemaphorePermit,
     ) -> Result<(), Error> {
-        if !core.image_peer_known(conn.remote_id().as_bytes()) {
+        let known = core.image_peer_known(conn.remote_id().as_bytes());
+        drop(permit);
+        if !known {
             conn.close(0u32.into(), b"not accepted");
             return Ok(());
         }

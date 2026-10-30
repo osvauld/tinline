@@ -261,6 +261,16 @@ impl ChatRt {
         }
     }
 
+    /// A new message for `did`: the session reaches one of their devices, and the others hear of
+    /// it only from that device, which cannot wake them. Wake those we hold a token for. With no
+    /// session yet, the dial does this once it connects.
+    pub(super) fn chat_wake_others(self: &Arc<Self>, core: &ChatCore, did: &str) {
+        let reached: Vec<[u8; 32]> = self.chat_sessions_of(core, did).iter().map(|s| s.device).collect();
+        if !reached.is_empty() {
+            self.ctx.wake_others(did, &reached);
+        }
+    }
+
     pub(super) fn chat_wants(&self, core: &ChatCore, pair: &str) -> bool {
         core.store
             .wanted_blobs()
@@ -318,6 +328,9 @@ impl ChatRt {
                 match res {
                     Ok(()) => {
                         this.ctx.wake_reached(&did);
+                        if has_pending(&this) {
+                            this.chat_wake_others(&core, &did);
+                        }
                         break;
                     }
                     Err(e) => tracing::debug!("chat dial {}: {e}", short(&did)),
@@ -461,7 +474,7 @@ impl ChatRt {
             };
             let grant = grant.ok_or(Error::NotFound)?;
             writer.send(&self.auth_msg(me, grant)).await?;
-            let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+            let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::eof("peer closed"))?;
@@ -483,7 +496,7 @@ impl ChatRt {
             self.chat_admit(&did, &grant)?;
             (did, hint)
         } else {
-            let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+            let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::eof("peer closed before auth"))?;

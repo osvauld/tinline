@@ -39,7 +39,7 @@ push at a time. This fits "no anonymity promise" (`AGENTS.md`); the privacy poli
 | Android | Play | FCM high-priority data message (`firebase-messaging` only, no analytics, auto-init off) | Always-on service as a setting |
 | Android | Tinline Liberum (GitHub + site) | UnifiedPush when the user has a distributor app (ntfy, NextPush, Sunup, …) | Always-on service (as today) without one |
 | iOS | App Store / TestFlight | APNs: PushKit VoIP push for calls, alert push for messages | none |
-| Desktop | — | none (runs while open, as today) | — |
+| Desktop | — | none (runs while open, as today); it can still send wakes, to contacts and to its own phone | — |
 
 - FCM cannot deliver PushKit VoIP pushes, so iOS talks to APNs directly; no Firebase on iOS.
 - Liberum has no Google code, so it could also go to F-Droid later (which refuses the closed
@@ -268,6 +268,55 @@ learns who holds the code.
 - Group invitations (G3 letters) wake a sleeping invitee the same way when a delivery fails
   (`invites_kick` → `wake_unreached`, then the fast redials).
 
+## Own devices (2026-10-29)
+
+**Problem (v0.2.6 field report).** A contact changed their picture. The account's laptop (always
+on) got it; the phone (Play, push mode) kept showing initials. Own-device sync only dials, and
+wake tokens went to contacts only, so nothing could wake the phone for a change that reached
+only the laptop (a contact's profile, a message they sent while only the laptop was in a session,
+a read cursor, a group change).
+
+**Design** (`crates/node-runtime/src/push/own.rs`, `crates/sync-runtime/src/engine/own_wake.rs`):
+
+- **Tokens.** A device with a push target registers one `msg` tag per other live own device (the
+  registry: not removed, not rotated), like a contact's, keyed `self:<device hex>` in
+  `WakeState::issued`. Never `call`: an own device does not ring us. A desktop or a Liberum
+  install without a distributor has no target and issues none, but can send wakes.
+- **Handover** on the own-device link, not the calls ALPN: `SelfMsg::OwnWake { token, exp_ms }`
+  after both `Hello`s carried `cap/own-wake/v1` (`docs/protocol.md` "Own-device sync"); again
+  whenever the token changes in a live session; `token: None` tells the peer to drop ours (push
+  turned off). A new token bumps the sync generation, so the next session carries it. The receiver
+  keeps it under our own DID and the sender's device (`WakeState::held`), only from a live own
+  device.
+- **Wake.** The own-device dial loop dials devices owed a change; when such a dial fails to
+  connect (not when a session came up and then ended, e.g. the phone stopping), and the device is
+  not known to hold the current change generation (`SelfSync::held`: like `synced`, but a
+  `sync_kick` does not forget it, so a network change or restart of the laptop wakes nothing) and
+  has no session up, the dialler sends that device one `msg` wake (`SyncRt::wake_owed_device` ->
+  `NodeCtx::wake_own_device`), on the contact schedule (`wake::msg_wake_due`: 0, 30 s, 2, 10,
+  30 min, then hourly), which an own-device session with it starts over. Not on a bare start
+  (generation 0, nothing changed yet), so restarting the laptop does not wake the phone. No wake
+  loop: the woken phone stays up 90 s (Android `CoreService.IDLE_HOLD_MS`), its session marks it
+  in sync after 30 s quiet, so when it sleeps again nothing is owed and nothing wakes it
+  (`it` test `own_wake::own_wake_a_phone_that_caught_up_and_sleeps_again_is_not_woken_again`).
+- **Woken.** The hint opens to a `self:` tag: `on_wake` returns `DialBack` with our own DID (the
+  app starts the node as for any dial-back; the app API is unchanged), kicks own-device sync
+  (`sync_kick`: dial every own device now) and retries pending pictures at once (no contact is
+  dialled).
+- **Unlink.** When the registry tombstones a device, its token is taken back at the relay (revoke
+  outbox) and the token it gave us is dropped; the others keep theirs (one tag per device).
+- Log lines (no tokens, short device ids): `own wake token from device X: kept / refused`, `wake Msg
+  sent for own device X: relay status N`, `wake received: outcome DialBack (own device)`.
+
+**Security.** Holding an own device's token lets that device wake it, nothing more: the push is
+content-free, a wake only starts the node, which then syncs only with authenticated own devices.
+Every own device already holds the root secret, so this grants nothing it could not do anyway. A
+removed device's token is revoked when the registry learns of the removal; until a device that
+was removed while offline is tombstoned on the phone, it can wake the phone (battery only),
+bounded by the relay's per-tag limit and our throttle. Not decided here: whether a hostile
+linked device should be able to wake at all (shared root secret, no strong revocation,
+`AGENTS.md`).
+
 ## Relay
 
 `POST /v1/register`, `POST /v1/wake {wake_token, kind}` → 202, `POST /v1/revoke {wake_token}`.
@@ -409,6 +458,10 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      fast redials at +2, 4, 7, 10, 15, 20, 30 s); `call.rs` `connect_leg` wakes a callee device
      (`call`) after a first dial of 6 s and redials every 1 s for 30 s, state stays `Dialing`.
      Tests: `dial_tests.rs` (W1, W2, W4/4b/4c, W8, W9, 410).
+     W9b (2026-10-29): a chat session reaches one device of a contact (a computer that stays
+     on), and their other devices hear of a message only from it, which cannot wake them. So a new
+     message, or a dial that connects with something pending, also sends a `msg` wake to each
+     device without a session that we hold a token for (`NodeCtx::wake_others`, usual throttle).
    - Slice 5 done (2026-10-24): `NodeCtx::on_wake` and the wake ring (`crates/node-runtime/src/push/ring.rs`;
      tests `ring_tests.rs`), the app API `crates/core/src/node/api_push.rs` (`PushTarget`, `set_push_target`,
      `push_target`, `on_wake -> WakeOutcome { Ignore, EndCall, DialedBack, Ring { did, name } }` (+ `CodeWake`, 2026-10-26),
@@ -453,6 +506,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W7 | `allow_calls(A, false)` | A's `call` wakes refused; `msg` wakes still work |
 | W8 | A sends 10 messages in 5 s | At most 2 `msg` wakes per minute per device |
 | W9 | B has two devices, both asleep | Both woken; both sync |
+| W9b | B's laptop online, B's phone asleep; A sends | Laptop gets it over the session; phone woken once; phone notifies |
 | W10 | B's FCM/APNs token changes | Contacts receive new tokens; old ones stop working |
 | W11 | A offline before B wakes | B's dial-back fails quietly; message arrives at the next overlap |
 | W12 | Inspect relay and push payload | No DID, name, text or call detail anywhere; two pushes from the same contact are not linkable |
@@ -466,6 +520,9 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W15d | Contact set up by code with push on both sides | Each holds the other's token before any `WakeTokens` round (`wake_code_iv_…`) |
 | W15e | A resets its code ("New code") or blocks someone | The code's token is revoked at the relay; the next code carries a new one (`wake_code_v_…`) |
 | W15f | Many code wakes on one tag | At most 4 per 10 min start the node; a `call` hint on a code tag is ignored (`wake_code_on_wake_outcomes`, `wake` `code_tests`) |
+| W16 | Laptop on, phone asleep (push); a contact's change reaches the laptop | The laptop's sync dial fails, one `msg` wake with the phone's own-device token; the phone dials its own devices and syncs (`own_wake_the_laptop_wakes_the_sleeping_phone_once_…`, `wake_own_*`) |
+| W16b | Contact changes picture while the phone sleeps, then goes offline | The phone gets the new reference and the bytes from the laptop alone (`a_contacts_new_picture_reaches_a_sleeping_sibling_from_the_laptop_alone`) |
+| W16c | An own device is unlinked | Its token is revoked at the relay; the token it gave is dropped (`wake_own_an_unlinked_device_…`) |
 | W15g | Code size | FCM: 262 → 666 characters, QR v9 → v17 (M); scans on the Pixel 3a / moto g52 from a phone screen (device check, not done) |
 
 ## Open

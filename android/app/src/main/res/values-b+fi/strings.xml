@@ -25,7 +25,6 @@
     <string name="groups_cant_do">Se ei onnistunut</string>
     <string name="groups_waiting_host">Odottaa isäntälaitetta</string>
     <string name="groups_host_ask_title">%1$s pyysi tätä puhelinta isännöimään ryhmää %2$s</string>
-    <string name="groups_host_ask_body">Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen pitää pysyä verkossa, ja se kuluttaa akkua: jatkuvasti päällä oleva tietokone on parempi isäntälaite. Isännöinti ei tee sinusta ylläpitäjää.</string>
     <string name="groups_host_here">Isännöi täällä</string>
     <string name="groups_host_declined">Hylätty. Ylläpitäjät eivät näe vastausta tältä puhelimelta.</string>
     <string name="groups_list_new_title">Uusi ryhmä</string>
@@ -69,7 +68,6 @@
     <string name="groups_chat_call_return">Palaa ryhmäpuheluun</string>
     <string name="groups_chat_call_join">Liity ryhmäpuheluun</string>
     <string name="groups_chat_call_start">Aloita ryhmäpuhelu</string>
-    <string name="groups_chat_no_call_host">Puhelulla ei ole vielä isäntälaitetta: ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa</string>
     <string name="groups_chat_info">Ryhmän tiedot</string>
     <string name="groups_chat_earlier">Näytä aiemmat viestit</string>
     <string name="groups_chat_no_messages">Ei vielä viestejä</string>
@@ -143,7 +141,7 @@
     <string name="groupsb_invite_contacts">Kutsu yhteystietoja</string>
     <string name="groupsb_invite_contacts_sub">Yksityinen kutsu jokaiselle</string>
     <string name="groupsb_create_link">Luo kutsulinkki</string>
-    <string name="groupsb_create_link_nohost">Nimeä ensin isäntälaite. Linkissä on yksi isäntälaite.</string>
+    <string name="groupsb_create_link_nohost">Määritä ensin isäntälaite. Linkki nimeää yhden isäntälaitteen.</string>
     <string name="groupsb_create_link_valid">Voimassa 7 päivää</string>
     <string name="groupsb_members_sec">Jäsenet</string>
     <string name="groupsb_req_pending">Keskustelupyyntö lähetetty</string>
@@ -165,7 +163,6 @@
     <string name="groupsb_pill_admin">Ylläpitäjä</string>
     <string name="groupsb_pill_member">Jäsen</string>
     <string name="groupsb_host">Isäntälaite</string>
-    <string name="groupsb_call_host">Puheluisäntä</string>
     <string name="groupsb_leave_group">Poistu ryhmästä</string>
     <string name="groupsb_owner_cant_leave">Omistaja ei voi vielä poistua</string>
     <string name="groupsb_leave_title">Poistutko ryhmästä %1$s?</string>
@@ -195,34 +192,7 @@
     <string name="groupsb_hosts_sec">Isäntälaitteet</string>
     <string name="groupsb_this_device">Tämä laite</string>
     <string name="groupsb_hosts_none">Tällä ryhmällä ei ole isäntälaitetta. Viestit odottavat, kunnes sellainen nimetään.</string>
-    <plurals name="groupsb_hosts_online">
-        <item quantity="one">%1$d isäntälaite verkossa. Viestit menevät perille heti.</item>
-        <item quantity="other">%1$d isäntälaitetta verkossa. Viestit menevät perille heti.</item>
-    </plurals>
-    <string name="groupsb_hosts_offline">Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon.</string>
-    <string name="groupsb_also_hosts_calls">isännöi myös puheluita</string>
-    <string name="groupsb_remove_host_desc">Poista %1$s isäntälaitteista</string>
-    <string name="groupsb_cancel_host_desc">Peru isännöintipyyntö laitteelle %1$s</string>
-    <string name="groupsb_waiting_accept">Odottaa hyväksyntää</string>
-    <string name="groupsb_offered_host">Tarjoutui isännöimään · tarvitsee ylläpitäjän</string>
-    <string name="groupsb_appoint">Nimeä</string>
-    <string name="groupsb_hosts_note">Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun.</string>
-    <string name="groupsb_hosts_note_admin">Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää.</string>
-    <string name="groupsb_callhosts_sec">Puheluisännät</string>
-    <string name="groupsb_callhosts_none">Tällä ryhmällä ei ole puheluisäntää. Kukaan ei voi aloittaa puhelua, ennen kuin ylläpitäjä nimeää sellaisen.</string>
-    <plurals name="groupsb_callhosts_ready">
-        <item quantity="one">%1$d puheluisäntä valmiina. Puhelut alkavat sen kautta.</item>
-        <item quantity="other">%1$d puheluisäntää valmiina. Puhelut alkavat niiden kautta.</item>
-    </plurals>
-    <string name="groupsb_callhosts_offline">Yksikään puheluisäntä ei ole juuri nyt saatavilla. Puhelu voi alkaa, kun jokin palaa.</string>
-    <string name="groupsb_callhosts_me">Tämä puhelin välittää aloittamasi puhelut.</string>
-    <string name="groupsb_remove_callhost_desc">Poista %1$s puheluisännistä</string>
-    <string name="groupsb_cancel_callhost_desc">Peru puheluisäntäpyyntö laitteelle %1$s</string>
-    <string name="groupsb_stop_calls_phone">Lopeta puheluiden isännöinti tällä puhelimella</string>
-    <string name="groupsb_host_calls_phone">Isännöi puheluita tällä puhelimella</string>
     <string name="groupsb_host_calls_phone_sub">Välittää täältä aloittamasi puhelut. Jatkuvasti päällä oleva tietokone voi välittää kaikkien puhelut.</string>
-    <string name="groupsb_callhosts_note">Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan.</string>
-    <string name="groupsb_callhosts_note_admin">Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita.</string>
     <string name="groupsb_flags_on_you">Sinuun kohdistuvat merkinnät</string>
     <plurals name="groupsb_flags_left_note">
         <item quantity="one">Vielä yksi merkintä keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti.</item>
@@ -265,20 +235,6 @@
     <string name="groupsb_sends_request">Lähettää keskustelupyynnön ryhmän isäntälaitteen kautta</string>
     <string name="groupsb_make_admin">Tee ylläpitäjäksi</string>
     <string name="groupsb_remove_admin">Poista ylläpito-oikeudet</string>
-    <string name="groupsb_make_device_host">Tee laitteesta %1$s isäntälaite</string>
-    <string name="groupsb_make_host">Tee isäntälaitteeksi</string>
-    <string name="groupsb_asks_host">Pyytää henkilöä %1$s isännöimään. Hänen täytyy hyväksyä.</string>
-    <string name="groupsb_stop_device_host">Lopeta laitteen %1$s isännöinti</string>
-    <string name="groupsb_remove_as_host">Poista isäntälaitteista</string>
-    <string name="groupsb_cancel_callhost_request">Peru puheluisäntäpyyntö</string>
-    <string name="groupsb_waiting_device">Odotetaan, että henkilön %1$s laite hyväksyy</string>
-    <string name="groupsb_remove_as_callhost">Poista puheluisännistä</string>
-    <string name="groupsb_make_callhost">Tee puheluisännäksi</string>
-    <string name="groupsb_asks_callhost">Pyytää henkilöä %1$s välittämään ryhmäpuhelut. Hänen täytyy hyväksyä.</string>
-    <string name="groupsb_stop_hosting_device">Lopeta isännöinti tällä laitteella</string>
-    <string name="groupsb_host_device">Isännöi tällä laitteella</string>
-    <string name="groupsb_host_device_sub">Myös ylläpitäjän täytyy nimetä se. Jatkuvasti päällä oleva tietokone on parempi isäntälaite.</string>
-    <string name="groupsb_stop_calls_device">Lopeta puheluiden isännöinti tällä laitteella</string>
     <string name="groupsb_flag_removal">Merkitse poistettavaksi</string>
     <plurals name="groupsb_flag_removal_sub">
         <item quantity="one">%1$d merkintä poistaa henkilön %2$s ryhmästä</item>
@@ -295,7 +251,7 @@
     <string name="groupsb_send_request">Lähetä pyyntö</string>
     <string name="groupsb_new_group">Uusi ryhmä</string>
     <string name="groupsb_group_name">Ryhmän nimi</string>
-    <string name="groupsb_new_group_host_note">Tämä puhelin isännöi ryhmää aluksi: se säilyttää ryhmän ja välittää viestit eteenpäin. Jatkuvasti päällä oleva tietokone on parempi isäntälaite — nimeä sellainen ryhmän tiedoista, kun se on liittynyt.</string>
+    <string name="groupsb_new_group_host_note">Tämä puhelin isännöi ryhmää aluksi: se säilyttää ryhmän ja välittää viestit eteenpäin. Päällä pysyvä tietokone on parempi isäntälaite. Määritä sellainen kohdassa Isännöintioikeudet ryhmän tiedoissa, kun se on liittynyt.</string>
     <string name="groupsb_new_group_own">Ryhmä on sinun. Kutsu ihmisiä ryhmän tiedoista.</string>
     <string name="groupsb_making">Luodaan…</string>
     <string name="groupsb_create_group">Luo ryhmä</string>
@@ -547,8 +503,8 @@
     <string name="onboarding_done_add_contact">Lisää ensimmäinen yhteystietoni</string>
     <string name="onboarding_tip_devices_title">Kaksi laitetta on parempi kuin yksi</string>
     <string name="onboarding_tip_devices_body">Linkitä toinen laite, kun ehdit, niin pääset tilillesi, vaikka yksi laite katoaisi.</string>
-    <string name="onboarding_tip_groups_title">Ryhmiä isännöidään tietokoneella</string>
-    <string name="onboarding_tip_groups_body">Jos haluat aloittaa ryhmän, asenna Tinline tietokoneelle, joka voi olla jatkuvasti päällä.</string>
+    <string name="onboarding_tip_groups_title">Tietokone on hyvä isäntälaite</string>
+    <string name="onboarding_tip_groups_body">Voit aloittaa ryhmän tällä puhelimella. Päällä pysyvä tietokone pitää sen tavoitettavana, kun puhelimesi nukkuu.</string>
     <string name="onboarding_name_title">Millä nimellä ihmiset voivat kutsua sinua?</string>
     <string name="onboarding_name_lead">Vain lisäämäsi ihmiset näkevät sen.</string>
     <string name="onboarding_name_hint">Voit muuttaa sen milloin tahansa asetuksista.</string>
@@ -586,6 +542,7 @@
     <string name="onboarding_device_hint">Voit nimetä sen myöhemmin uudelleen.</string>
     <string name="onboarding_restored_title_adding">Lisätty tälle puhelimelle: %1$s</string>
     <string name="onboarding_restored_lead_adding">Vain valitsemasi tili on kerrallaan verkossa, joten %1$s on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista.</string>
+    <string name="onboarding_restored_lead_adding_push">%1$s on nyt avoinna tällä puhelimella. Toinen tilisi soi silti täällä ja kertoo uusista viesteistä. Voit vaihtaa asetuksista.</string>
     <string name="onboarding_restored_lead">Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät palvelimella. Tämä puhelin aloittaa tyhjällä yhteystietolistalla.</string>
     <string name="onboarding_open_tinline">Avaa Tinline</string>
     <string name="onboarding_linked_title">Linkitetty: %1$s</string>
@@ -594,7 +551,7 @@
     <string name="onboarding_sync_calls">Puheluhistoria</string>
     <string name="onboarding_sync_waiting">Odottaa</string>
     <string name="onboarding_sync_slow">Ei vielä mitään. Toinen laite ei ehkä ole verkossa: se jatkaa siitä, mihin jäi, kun molemmat ovat seuraavan kerran verkossa.</string>
-    <string name="onboarding_sync_keep_online">Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla.</string>
+    <string name="onboarding_sync_keep_online">Pidä molemmat laitteet auki ja verkossa, kunnes tämä valmistuu.</string>
     <string name="onboarding_savefail_title">Tiliäsi ei voitu tallentaa</string>
     <string name="onboarding_savefail_lead">Tinline ei voinut tallentaa tilisi avaavaa avainta tälle puhelimelle, joten tiliäsi ei ole vielä tallennettu.</string>
     <string name="onboarding_savefail_trying">Yritetään…</string>
@@ -643,6 +600,7 @@
     <string name="settings_see_details">Näytä tiedot</string>
     <string name="settings_account_selected">Valittu · verkossa</string>
     <string name="settings_account_paused">Tauolla · vaihda napauttamalla</string>
+    <string name="settings_account_rings">Soi täällä · napauta vaihtaaksesi</string>
     <string name="settings_add_account">Lisää toinen tili</string>
     <string name="settings_accounts_note">Vain valittu tili on verkossa tällä puhelimella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen.</string>
     <string name="settings_appearance">Ulkoasu</string>
@@ -686,6 +644,7 @@
     <string name="notif_perm_battery">Akun käyttö</string>
     <string name="notif_perm_unrestricted">Rajoittamaton</string>
     <string name="notif_perm_restricted">Rajoitettu</string>
+    <string name="notif_perm_optimized">Optimoitu</string>
     <string name="notif_fix">Korjaa</string>
     <string name="notif_ring_lock">Soitto lukitusnäytön päällä</string>
     <string name="notif_system_note">Nämä asettaa järjestelmäsi, ei Tinline. Tinline kysyy vain, kun tarvitsee jotain niistä.</string>
@@ -763,6 +722,7 @@
     <string name="settings_calls_allowed_note">Sallimasi henkilöt voivat soittaa sinulle; ne, joilla on vain viestit, voivat silti kirjoittaa. Estämäsi henkilöt eivät voi kumpaakaan.</string>
     <string name="settings_battery_title">Tausta ja akku</string>
     <string name="settings_battery_keep">Pidä linjani auki</string>
+    <string name="settings_battery_keep_push">Miten Tinline tavoittaa minut</string>
     <string name="settings_battery_hint">Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen.</string>
     <string name="settings_battery_hint_push">Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen, joten se ei tarvitse akkupoikkeusta. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee soidakseen.</string>
     <string name="settings_stay_connected">Pysy aina yhteydessä</string>
@@ -1148,7 +1108,7 @@
     <string name="card_nothing_to_share">Ei sovellusta, jolla jakaa</string>
     <string name="card_qr_desc">Käyntikorttisi QR-koodi</string>
     <string name="card_preparing">Valmistellaan koodiasi…</string>
-    <string name="card_works_once">Toimii kerran. Uuden koodin luominen peruu tämän.</string>
+    <string name="card_works_once">Toimii 7 päivää kaikille, joille sen annat. Jokainen kysyy ensin sinulta. Uuden koodin luominen mitätöi tämän.</string>
     <string name="card_new_code">Uusi koodi</string>
     <string name="card_none_found">Viestissä ei ole Tinline-käyntikorttia</string>
     <string name="card_chat_with">Avataanko keskustelu: %1$s?</string>
@@ -1194,15 +1154,6 @@
     <string name="groupsc_made_admin">Nimetty ylläpitäjäksi.</string>
     <string name="groupsc_no_longer_admin">Ei enää ylläpitäjä.</string>
     <string name="groupsc_left_group">Poistuit ryhmästä. Sen viestit jäävät tänne.</string>
-    <string name="groupsc_appointed">Nimetty. Laite alkaa isännöidä, kun se suostuu.</string>
-    <string name="groupsc_host_revoked">Se laite ei enää isännöi ryhmää.</string>
-    <string name="groupsc_host_agreed">Tämä puhelin suostui isännöimään. Se alkaa isännöidä heti, kun ylläpitäjä on nimennyt sen.</string>
-    <string name="groupsc_host_stopped">Tämä puhelin lopetti ryhmän isännöinnin.</string>
-    <string name="groupsc_call_host_asked">Pyydetty. Laite välittää puhelut, kun se hyväksyy.</string>
-    <string name="groupsc_call_host_revoked">Se laite ei enää isännöi ryhmän puheluita.</string>
-    <string name="groupsc_call_host_agreed">Tämä laite isännöi nyt ryhmän puheluita.</string>
-    <string name="groupsc_call_host_declined">Tämä laite ei isännöi ryhmän puheluita.</string>
-    <string name="groupsc_calls_here">Tämä puhelin välittää nyt itse aloittamansa puhelut tässä ryhmässä.</string>
     <string name="groupsc_admins_only_on">Nyt vain ylläpitäjät kirjoittavat. Kaikki voivat yhä lukea.</string>
     <string name="groupsc_admins_only_off">Kaikki voivat taas kirjoittaa.</string>
     <string name="groupsc_req_declined">Hylätty. %1$s saa tiedon ”hylätty”.</string>
@@ -1297,9 +1248,9 @@
     <string name="addcontact_why_known">%1$s on jo yhteystiedoissasi.</string>
     <string name="addcontact_why_added">Linjasi henkilöön %1$s on auki. Sano hei.</string>
     <string name="addcontact_why_requested">Pyyntö lähetetty. Linjasi aukeaa, kun %1$s hyväksyy.</string>
-    <string name="addcontact_why_slow">Yritetään yhä. Henkilön %1$s Tinlinen täytyy olla auki ja verkossa tätä varten.</string>
+    <string name="addcontact_why_slow">Yritetään yhä. Jos henkilön %1$s puhelin nukkuu, Tinline herättää sen.</string>
     <string name="addcontact_why_reaching">Tavoitetaan henkilön %1$s Tinlinea…</string>
-    <string name="addcontact_why_timeout">Henkilön %1$s Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkossa, joten yritä uudelleen, kun %1$s on paikalla.</string>
+    <string name="addcontact_why_timeout">Henkilön %1$s Tinlinea ei tavoitettu. Yritä uudelleen hetken kuluttua tai kun %1$s on paikalla.</string>
     <string name="addcontact_why_refused">Henkilön %1$s koodi ei ole enää voimassa. Hän on ehkä luonut uuden, joten pyydä henkilöltä %1$s hänen uusin koodinsa.</string>
     <string name="addcontact_why_blocked_them">Et voi lisätä henkilöä %1$s juuri nyt. Hän on päättänyt olla pitämättä yhteyttä täällä.</string>
     <string name="addcontact_why_offline">Et ole verkossa. Yritä uudelleen, kun olet yhteydessä.</string>
@@ -1537,7 +1488,7 @@
     <string name="home_first_title">Lisää ensimmäinen yhteystietosi</string>
     <string name="home_first_lead">Näytä koodisi ystävälle tai kopioi ja lähetä se. Tai skannaa hänen koodinsa.</string>
     <string name="home_first_scan">Skannaa hänen koodinsa</string>
-    <string name="home_first_paste">Liitä hänen käyntikorttinsa</string>
+    <string name="home_first_paste">Liitä hänen koodinsa</string>
     <string name="home_first_waiting">Odotetaan, että hän skannaa — pidä tämä auki.</string>
     <string name="chats_filter_all">Kaikki</string>
     <string name="chats_filter_unread">Lukemattomat</string>
@@ -1687,6 +1638,7 @@
     <string name="onboarding_linked_title_unnamed">Linkitetty toiseen laitteeseesi</string>
     <string name="onboarding_restored_title_adding_unnamed">Tilisi lisättiin tälle puhelimelle</string>
     <string name="onboarding_restored_lead_adding_unnamed">Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista.</string>
+    <string name="onboarding_restored_lead_adding_push_unnamed">Tämä tili on nyt avoinna tällä puhelimella. Toinen tilisi soi silti täällä ja kertoo uusista viesteistä. Voit vaihtaa asetuksista.</string>
     <string name="devices_syncing_unnamed">Synkronoidaan laitteen kanssa…</string>
     <string name="devices_confirm_unlink_title_unnamed">Poistetaanko tämän laitteen linkitys?</string>
     <string name="devices_unlinked_msg_unnamed">Laitteen linkitys poistettu</string>
@@ -1728,7 +1680,6 @@
     <string name="common_list_separator">, </string>
     <string name="groupsb_member_desc">%1$s. Avaa toiminnot</string>
     <string name="groupsb_role_host_lc">isäntälaite</string>
-    <string name="groupsb_role_callhost_lc">puheluisäntä</string>
     <string name="avail_note_unnamed">Kun olet poissa, soittajat näkevät, ettei sinua tavoitettu. Mitään ei jää jonoon, eikä kenellekään kerrota syytä.</string>
     <string name="onboarding_linked_lead_unnamed">Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa.</string>
     <string name="gcall_is_calling_group_unnamed">Joku soittaa ryhmälle</string>

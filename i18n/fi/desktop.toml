@@ -693,9 +693,6 @@ text = "Lähetys ei onnistunut: {error}"
 [chat_could_not_show_this]
 text = "Tätä ei voitu näyttää: {error}"
 
-[chat_couldnt_download_tap_to]
-text = "{value} · lataus ei onnistunut — yritä uudelleen napauttamalla"
-
 [chat_delete]
 text = "Poista"
 
@@ -758,9 +755,6 @@ text = "Lataa aiemmat viestit"
 
 [chat_message_deleted]
 text = "Viesti poistettu"
-
-[chat_messages_go_straight_to]
-text = "Viestit kulkevat suoraan hänen laitteisiinsa."
 
 [chat_new_messages]
 one = "{count} uusi viesti"
@@ -825,9 +819,6 @@ text = "Allekirjoittaja {name} · {value}"
 
 [chat_signed_by_2]
 text = "Allekirjoittaja {value}"
-
-[chat_tap_to_retry]
-text = "Yritä uudelleen napauttamalla"
 
 [chat_that_is_everything_has]
 text = "Siinä on kaikki, mitä henkilöllä {name} on."
@@ -943,9 +934,6 @@ text = "Yritä uudelleen"
 [gate_the_system_keyring_did]
 text = "Järjestelmän avainnippu ei hyväksynyt avainta."
 
-[gate_these_24_words_are]
-text = "Nämä {words} sanaa ovat ainoa tapa palauttaa identiteettisi toiselle laitteelle."
-
 [gate_this_computer_no_longer]
 text = "Tällä tietokoneella ei enää ole avainta, joka avaa sen, ja sen avainnipun merkintä puuttuu. Kun palautat tilin, puhelusi tulevat taas perille."
 
@@ -958,9 +946,6 @@ text = "Yritetään..."
 [gate_turn_on]
 text = "Ota käyttöön"
 
-[gate_you_didnt_set_a]
-text = "Et asettanut salalausetta, joten {words} palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
-
 [gate_your_calls_come_through]
 text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
 
@@ -972,9 +957,6 @@ text = "Et ole tavoitettavissa"
 
 [gate_youre_offline]
 text = "Et ole verkossa"
-
-[gcall_a_call_host_is]
-text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on eri asia kuin keskustelun isännöinti. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
 
 [gcall_battery_is_low_or]
 text = "Akku on vähissä tai tietokone on kuuma. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
@@ -1022,33 +1004,12 @@ text = "Olet jo puhelussa."
 [gcall_youre_the_call_host]
 text = "Olet puheluisäntä"
 
-[group_a_call_host_carries]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan."
-
-[group_a_call_host_is]
-text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhelun. Ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa."
-
-[group_a_call_host_is_a]
-text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhelun. Voit isännöidä puheluita tällä tietokoneella tai nimetä jäsenen ryhmän tiedoissa."
-
-[group_a_call_needs_a]
-text = "Puhelu tarvitsee puheluisännän"
-
 [group_a_flag_is_signed]
 text = "Allekirjoitat merkinnän, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
-
-[group_a_host_keeps_a]
-text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet ovat yhteydessä isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
-
-[group_a_host_keeps_a_full]
-text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen täytyy pysyä käynnissä. Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
 
 [group_a_host_lists_up]
 one = "Isäntälaite näyttää kerrallaan enintään {count} henkilön, joten heitä voi olla enemmänkin."
 other = "Isäntälaite näyttää kerrallaan enintään {count} henkilöä, joten heitä voi olla enemmänkin."
-
-[group_a_host_stays_on]
-text = "Isäntälaite pysyy päällä ja välittää viestit eteenpäin, kun muut eivät ole verkossa"
 
 [group_a_link_that_doesnt]
 text = "Linkki, joka ei vanhene"
@@ -1080,12 +1041,6 @@ text = "Jo jäsen"
 [group_also_confirmed]
 text = "Myös vahvistaneet: {value}"
 
-[group_also_hosts_calls]
-text = "Isännöi myös puheluita"
-
-[group_an_admin_asked_this]
-text = "Ylläpitäjä pyysi tätä tietokonetta välittämään ryhmän puhelut"
-
 [group_anyone_holding_the_link]
 text = "Kuka tahansa, jolla on linkki, voi liittyä ilman kutsua, eikä linkki vanhene. Jaa se siellä, mistä haluat ihmisten löytävän ryhmän."
 
@@ -1095,29 +1050,14 @@ text = "Kuka tahansa linkin saanut voi liittyä"
 [group_anyone_with_this_link]
 text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
-[group_appoint]
-text = "Nimeä"
-
-[group_appoint_a_host_first]
-text = "Nimeä ensin isäntälaite. Linkissä on yksi isäntälaite."
-
-[group_appointed_the_device_hosts]
-text = "Nimetty. Laite alkaa isännöidä, kun se suostuu (Isännöi tältä laitteelta)."
-
 [group_as_a_host_this]
 text = "Isäntälaitteena tämä tietokone:"
 
 [group_ask_for_a_private]
 text = "Pyydä yksityistä keskustelua: {name}"
 
-[group_asked_the_device_carries]
-text = "Pyydetty. Laite välittää puhelut, kun se hyväksyy."
-
 [group_asked_this_computer_to]
 text = "{name} pyysi tätä tietokonetta isännöimään ryhmää {group}"
-
-[group_asks_to_carry_group]
-text = "Pyytää henkilöä {name} välittämään ryhmäpuhelut sillä laitteella; hänen täytyy hyväksyä"
 
 [group_block]
 text = "Estä {name}"
@@ -1131,21 +1071,8 @@ text = "Estetty {value}"
 [group_blocked_you]
 text = "Esti sinut"
 
-[group_call_hosts]
-text = "Puheluisännät"
-
-[group_call_hosts_ready]
-one = "{count} puheluisäntä valmiina. Puhelut alkavat sen kautta."
-other = "{count} puheluisäntää valmiina. Puhelut alkavat niiden kautta."
-
-[group_calls_go_through_the]
-text = "Puhelut kulkevat muiden puheluisäntien kautta"
-
 [group_can_invite_flag_members]
 text = "Voi kutsua, merkitä jäseniä ja nimetä isäntälaitteita"
-
-[group_carries_the_groups_calls]
-text = "Välittää ryhmän puhelut; jatkuvasti päällä oleva tietokone on paras"
 
 [group_checking_with_the_groups]
 text = "Tarkistetaan ryhmän isäntälaitteelta…"
@@ -1223,17 +1150,11 @@ text = "Aloittamasi ja liittymäsi ryhmät näkyvät täällä."
 [group_has_no_other_host]
 text = "Ryhmällä {gname} ei ole muuta isäntälaitetta: viestit odottavat ihmisten laitteilla, kunnes jokin toinen isännöi sitä."
 
-[group_host_calls_on_this]
-text = "Isännöi puheluita tällä tietokoneella"
-
 [group_host_here]
 text = "Isännöi täällä"
 
 [group_host_on_this_computer]
 text = "Isännöidäänkö ryhmää {gname} tällä tietokoneella?"
-
-[group_host_this_group_on]
-text = "Isännöi tätä ryhmää tällä tietokoneella"
 
 [group_hosts]
 text = "Isäntälaitteet"
@@ -1241,16 +1162,6 @@ text = "Isäntälaitteet"
 [group_hosts_count]
 one = "{count} isäntälaite"
 other = "{count} isäntälaitetta"
-
-[group_hosts_once_agrees_on]
-text = "Isännöi, kun {name} suostuu sillä laitteella; jatkuvasti päällä oleva tietokone on paras"
-
-[group_hosts_online]
-one = "{count} isäntälaite verkossa. Viestit menevät perille heti."
-other = "{count} isäntälaitetta verkossa. Viestit menevät perille heti."
-
-[group_hosts_store_the_group]
-text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun."
 
 [group_if_accepts_you_can]
 text = "Jos {name} hyväksyy, voitte lähettää viestejä suoraan toisillenne. Puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
@@ -1292,9 +1203,6 @@ text = "Kutsuttu · odotetaan vastausta"
 [group_invites]
 text = "Kutsut"
 
-[group_it_starts_hosting_once]
-text = "Se alkaa isännöidä, kun ylläpitäjä nimeää sen (jos joku on jo nimennyt, heti). Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
-
 [group_join_a_group]
 text = "Liity ryhmään"
 
@@ -1334,18 +1242,6 @@ text = "Tee ylläpitäjäksi"
 [group_make_an_admin]
 text = "Nimetäänkö {name} ylläpitäjäksi?"
 
-[group_make_call_host]
-text = "Tee puheluisännäksi"
-
-[group_make_device_a_call]
-text = "Tee laitteesta {value} puheluisäntä"
-
-[group_make_device_a_host]
-text = "Tee laitteesta {value} isäntälaite"
-
-[group_make_host]
-text = "Tee isäntälaitteeksi"
-
 [group_making_it]
 text = "Luodaan…"
 
@@ -1377,9 +1273,6 @@ other = "{count} jäsentä"
 [group_members_see_that_you]
 text = "Jäsenet näkevät, että poistuit. Viestit jäävät tälle tietokoneelle luettaviksi. Palataksesi tarvitset uuden kutsun ylläpitäjältä."
 
-[group_members_stop_going_through]
-text = "Jäsenten yhteydet eivät enää kulje sen kautta"
-
 [group_message_from_whom_you]
 text = "Viesti henkilöltä {name}, jonka estit"
 
@@ -1395,9 +1288,6 @@ text = "Yksikään ryhmä ei vastaa hakua."
 [group_no_host_answered_in]
 text = "Yksikään isäntälaite ei vastannut ajoissa. Yritä uudelleen, kun jokin isäntälaite on verkossa."
 
-[group_no_host_is_online]
-text = "Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
-
 [group_no_longer_an_admin]
 text = "Ei enää ylläpitäjä."
 
@@ -1409,9 +1299,6 @@ text = "Ketään ei ole estetty. Jos haluat estää jonkun, avaa hänet yhteysti
 
 [group_not_yet]
 text = "Ei vielä"
-
-[group_offered_to_host]
-text = "Tarjoutui isännöimään"
 
 [group_on_their_device]
 text = "Heidän laitteellaan"
@@ -1525,35 +1412,14 @@ text = "{name} pysyy jäsenenä"
 [group_stays_in_the_group]
 text = "{name} pysyy ryhmässä jäsenenä. Hänen jo tekemänsä merkinnät lasketaan yhä."
 
-[group_stop_device_carrying_calls]
-text = "Lopeta laitteen {value} puheluiden välitys"
-
-[group_stop_device_hosting]
-text = "Lopeta laitteen {value} isännöinti"
-
 [group_stop_hosting]
 text = "Lopeta isännöinti"
-
-[group_stop_hosting_calls]
-text = "Lopeta puheluiden isännöinti"
-
-[group_stop_hosting_calls_on]
-text = "Lopeta puheluiden isännöinti tällä tietokoneella"
 
 [group_stop_hosting_here]
 text = "Lopetetaanko ryhmän {gname} isännöinti täällä?"
 
-[group_stop_hosting_on_this]
-text = "Lopeta isännöinti tällä tietokoneella"
-
 [group_text]
 text = "{label}: {value}"
-
-[group_that_device_no_longer]
-text = "Se laite ei enää välitä tämän ryhmän puheluita."
-
-[group_that_device_no_longer_hosts]
-text = "Se laite ei enää isännöi ryhmää."
 
 [group_that_group_isnt_on]
 text = "Ryhmää ei ole tällä tietokoneella."
@@ -1582,35 +1448,8 @@ text = "Kutsu sitten ihmisiä jäsenpaneelista."
 [group_they_blocked_you_so]
 text = "Hän on estänyt sinut, joten et voi pyytää häneltä keskustelua."
 
-[group_this_computer_carries_the]
-text = "Tämä tietokone välittää puhelut."
-
-[group_this_computer_carries_this]
-text = "Tämä tietokone välittää nyt tämän ryhmän puhelut."
-
 [group_this_computer_doesnt_host]
 text = "Tämä tietokone ei isännöi yhtään ryhmää. Jos haluat isännöidä ryhmää, avaa se ja valitse jäsenpaneelista Isännöi tältä tietokoneelta."
-
-[group_this_computer_hosts_the]
-text = "Tämä tietokone isännöi ryhmää. Viestit menevät perille heti."
-
-[group_this_computer_stopped_carrying]
-text = "Tämä tietokone lopetti tämän ryhmän puheluiden välittämisen."
-
-[group_this_computer_stops_passing]
-text = "Tämä tietokone lopettaa ryhmän viestien välittämisen. Pysyt jäsenenä."
-
-[group_this_device_agreed_to]
-text = "Tämä laite suostui isännöimään. Se alkaa isännöidä heti, kun ylläpitäjä on nimennyt sen."
-
-[group_this_device_stopped_hosting]
-text = "Tämä laite lopetti ryhmän isännöinnin."
-
-[group_this_group_has_no]
-text = "Tällä ryhmällä ei ole puheluisäntää. Kukaan ei voi aloittaa puhelua, ennen kuin ylläpitäjä nimeää sellaisen."
-
-[group_this_group_has_no_host]
-text = "Tällä ryhmällä ei ole isäntälaitetta. Viestit odottavat, kunnes sellainen nimetään."
 
 [group_turn_on_open_link]
 text = "Ota Julkinen linkki käyttöön, niin voit jakaa sen"
@@ -1630,9 +1469,6 @@ text = "Odottaa isäntälaitetta"
 [group_waiting_for_a_host_no]
 text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
-[group_waiting_to_accept]
-text = "Odottaa hyväksyntää"
-
 [group_while_its_open_no]
 text = "Kun ryhmä on avoin, siinä ei lähetetä lukukuittauksia, ja jäsenet näkevät, kuka on paikalla. Jokainen voi piilottaa itsensä asetuksistaan."
 
@@ -1651,9 +1487,6 @@ text = "Miksi sinut poistettiin"
 [group_will_be_able_to]
 one = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {count} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
 other = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {count} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
-
-[group_withdraw_the_offer_to]
-text = "Peru tarjous isännöidä"
 
 [group_working]
 text = "Käsitellään…"
@@ -2345,9 +2178,6 @@ text = "Pois päältä tarkoittaa vain viestejä"
 [profile_on_this_computer]
 text = "Tällä tietokoneella"
 
-[profile_on_wi_fi_and]
-text = "Wi-Fi-yhteydellä ja mobiilidatalla"
-
 [profile_online_now]
 text = "Verkossa nyt"
 
@@ -2910,9 +2740,6 @@ text = "Kopioi sanani"
 [signup_couldnt_make_a_new]
 text = "Uutta koodia ei voitu luoda juuri nyt. Yritä hetken kuluttua uudelleen."
 
-[signup_couldnt_reach_s_tinline]
-text = "Henkilön {name} Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkossa, joten yritä uudelleen, kun {name} on paikalla."
-
 [signup_couldnt_read_the_clipboard]
 text = "Leikepöytää ei voitu lukea. Liitä ensimmäiseen ruutuun sen sijaan."
 
@@ -3099,9 +2926,6 @@ text = "Ohita toistaiseksi"
 [signup_start_a_chat]
 text = "Aloita keskustelu"
 
-[signup_still_trying_s_tinline]
-text = "Yritetään yhä. Henkilön {name} Tinlinen täytyy olla auki ja verkossa tätä varten."
-
 [signup_strong]
 text = "Vahva"
 
@@ -3116,9 +2940,6 @@ text = "Käyttöehdot"
 
 [signup_that_code_from_has]
 text = "Henkilön {value} koodi on vanhentunut. Koodit ovat voimassa 7 päivää, joten pyydä häneltä uusi."
-
-[signup_that_doesnt_look_like]
-text = "Tämä ei näytä Tinline-koodilta. Voisiko hän kopioida sen sinulle uudelleen?"
 
 [signup_that_key_has_a]
 text = "Avaimessa on kirjoitusvirhe tai se on katkennut. Liitä se uudelleen sieltä, minne tallensit sen."
@@ -3552,16 +3373,6 @@ text = "Paikalla"
 [group_host_offline]
 text = "Poissa"
 
-[group_hosts_online_here]
-one = "{count} isäntälaite verkossa, myös tämä tietokone. Viestit menevät perille heti."
-other = "{count} isäntälaitetta verkossa, myös tämä tietokone. Viestit menevät perille heti."
-
-[group_hosts_store_the_group_admin]
-text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun. Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää."
-
-[group_a_call_host_carries_admin]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan. Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä tietokoneella."
-
 [group_asked_this_computer_to_unnamed]
 text = "Ylläpitäjä pyysi tätä tietokonetta isännöimään ryhmää {group}"
 
@@ -3812,3 +3623,52 @@ text = "Linkitetty tiliisi"
 
 [chat_you_blocked_on]
 text = "Estit henkilön {name} · {when}"
+
+[accounts_tap_to_switch]
+text = "Vaihda napsauttamalla"
+
+[accounts_new_tap_to_switch]
+one = "{count} uusi viesti · vaihda napsauttamalla"
+other = "{count} uutta viestiä · vaihda napsauttamalla"
+
+[chat_couldnt_download_tap_to]
+text = "{value} · lataus ei onnistunut — yritä uudelleen napsauttamalla"
+
+[chat_messages_go_straight_to]
+text = "Viestit kulkevat suoraan heidän laitteilleen, ilman palvelinta välissä. Ne saapuvat, kun olette molemmat verkossa."
+
+[chat_tap_to_retry]
+text = "Yritä uudelleen napsauttamalla"
+
+[gate_these_24_words_are]
+text = "Nämä {words} sanaa palauttavat tilisi millä tahansa laitteella. Säilytä ne turvallisessa paikassa."
+
+[gate_you_didnt_set_a]
+text = "Et asettanut salalausetta, joten {words} palautussanaa ovat tie takaisin, ellei jollain toisella linkitetyllä laitteella ole tiliäsi yhä. Yhteystietosi säilyvät."
+
+[gcall_a_call_host_is]
+text = "Puheluisäntä on laite, jolle ylläpitäjä on sallinut puheluiden välittämisen ja joka on suostunut siihen. Ylläpitäjät muuttavat tätä kohdassa Isännöintioikeudet ryhmän tiedoissa."
+
+[group_a_host_keeps_a]
+text = "Isäntälaite säilyttää ryhmän täyden kopion ja välittää viestit eteenpäin, kun jäsenten puhelimet nukkuvat. Jäsenet yhdistävät isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline isännöi niin kauan kuin se on käynnissä, myös ikkuna suljettuna (se pysyy ilmaisinalueella)."
+
+[group_appoint_a_host_first]
+text = "Määritä ensin isäntälaite. Linkki nimeää yhden isäntälaitteen."
+
+[group_it_starts_hosting_once]
+text = "Isännöinti alkaa, kun ylläpitäjä sallii sen (jos joku jo salli, heti). Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
+
+[group_this_group_has_no_host]
+text = "Tällä ryhmällä ei ole isäntälaitetta. Viestit odottavat, kunnes ylläpitäjä sallii sellaisen."
+
+[profile_on_wi_fi_and]
+text = "Jokainen kuva latautuu heti, kun se saapuu"
+
+[signup_couldnt_reach_s_tinline]
+text = "Henkilön {name} Tinlinea ei tavoitettu. Yritä uudelleen hetken kuluttua tai kun {name} on paikalla."
+
+[signup_still_trying_s_tinline]
+text = "Yritetään yhä. Jos henkilön {name} puhelin nukkuu, Tinline herättää sen."
+
+[signup_that_doesnt_look_like]
+text = "Tämä ei näytä Tinline-koodilta. Vanhempien versioiden koodit eivät toimi, joten pyydä heiltä uusi."

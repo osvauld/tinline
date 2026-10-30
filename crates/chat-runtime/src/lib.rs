@@ -44,6 +44,10 @@ pub struct ChatRt {
     pub profile_fetches: Arc<Semaphore>,
     /// The platform pauses sending older days to contacts (metered network, low battery).
     pub backfill_paused: std::sync::atomic::AtomicBool,
+    /// Cuts the backoff of every waiting picture download short (`profile_retry_now`).
+    pub profile_retry: tokio::sync::Notify,
+    /// Picture fetch failures already logged, so the 30 s kick loop logs a reason once.
+    pub profile_fetch_log: Mutex<profile::fetch_log::FetchLog>,
 }
 
 impl ChatRt {
@@ -57,6 +61,8 @@ impl ChatRt {
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),
             backfill_paused: Default::default(),
+            profile_retry: tokio::sync::Notify::new(),
+            profile_fetch_log: Default::default(),
         }
     }
 

@@ -11468,55 +11468,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "একবারই কাজ করে। নতুন কোড তৈরি করলে এটা বাতিল হয়ে যাবে।"
+            "value": "7 দিন কাজ করে, আপনি যাঁদের দেবেন তাঁদের সবার জন্য। যোগ দেওয়ার আগে প্রত্যেকের ব্যাপারে আপনাকে জিজ্ঞেস করা হবে। নতুন কোড তৈরি করলে এটি বাতিল হয়ে যায়।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Funktioniert einmal. Ein neuer Code ersetzt diesen."
+            "value": "Gilt 7 Tage lang für alle, denen du ihn gibst. Jede Person fragt zuerst bei dir an. Ein neuer Code macht diesen ungültig."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Works once. Making a new code cancels this one."
+            "value": "Works for 7 days, for anyone you give it to. Each one asks you first. Making a new code cancels this one."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Toimii kerran. Uuden koodin luominen peruu tämän."
+            "value": "Toimii 7 päivää kaikille, joille sen annat. Jokainen kysyy ensin sinulta. Uuden koodin luominen mitätöi tämän."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Fonctionne une fois. Créer un nouveau code annule celui-ci."
+            "value": "Valable 7 jours, pour toute personne à qui vous le donnez. Chacune vous demande d’abord. Créer un nouveau code annule celui-ci."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "एक बार काम करता है। नया कोड बनाने पर यह रद्द हो जाता है।"
+            "value": "7 दिन चलता है, जिस-जिसे आप देंगे उसके लिए। जुड़ने से पहले हर किसी के बारे में आपसे पूछा जाएगा। नया कोड बनाने पर यह वाला रद्द हो जाता है।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ഒരു തവണ മാത്രം പ്രവർത്തിക്കും. പുതിയ കോഡ് ഉണ്ടാക്കിയാൽ ഇത് റദ്ദാകും."
+            "value": "7 ദിവസത്തേക്ക് പ്രവർത്തിക്കും, നിങ്ങൾ ആർക്ക് കൊടുത്താലും. ഓരോരുത്തരും ആദ്യം നിങ്ങളോട് ചോദിക്കും. പുതിയ കോഡ് ഉണ്ടാക്കിയാൽ ഇത് റദ്ദാകും."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "एकदाच चालतो. नवीन कोड तयार केल्यावर हा रद्द होतो."
+            "value": "7 दिवस चालतो, तुम्ही ज्याला द्याल त्या प्रत्येकासाठी. जोडण्याआधी प्रत्येकाबद्दल तुम्हाला विचारले जाते. नवीन कोड तयार केल्यावर हा रद्द होतो."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ஒருமுறை மட்டுமே செயல்படும். புதிய குறியீட்டை உருவாக்கினால் இது ரத்தாகும்."
+            "value": "7 நாட்களுக்குச் செல்லும், நீங்கள் யாருக்குக் கொடுத்தாலும். ஒவ்வொருவரும் முதலில் உங்களிடம் கேட்பார்கள். புதிய குறியீடு உருவாக்கினால் இது செல்லாததாகிவிடும்."
           }
         }
       }
@@ -56228,55 +56228,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "এই ফোনে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। আপনার ফোন এটা মনে রাখে, তাই রিস্টার্টের পরেও কল আসে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
+            "value": "এই ফোনে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। আপনার ফোন এটা মনে রাখে, তাই Tinline প্রতিবার না জিজ্ঞেস করেই খোলে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Anrufe auch nach einem Neustart klingeln. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
+            "value": "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Tinline ohne Nachfrage öffnet. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
+            "value": "Encrypts your account on this phone. Your phone remembers it, so Tinline opens without asking each time. If you forget it, your recovery words let you set a new one."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
+            "value": "Salaa tilisi tällä puhelimella. Puhelimesi muistaa salalauseen, joten Tinline aukeaa ilman kysymistä joka kerta. Jos unohdat sen, palautussanasi antavat sinun asettaa uuden."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Chiffre votre compte sur ce téléphone. Votre téléphone s’en souvient, donc les appels sonnent toujours après un redémarrage. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
+            "value": "Chiffre votre compte sur ce téléphone. Votre téléphone s’en souvient, donc Tinline s’ouvre sans rien demander à chaque fois. Si vous l’oubliez, vos mots de récupération vous permettent d’en définir une nouvelle."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "इस फ़ोन पर आपके खाते को एन्क्रिप्ट करता है। आपका फ़ोन इसे याद रखता है, इसलिए रीस्टार्ट के बाद भी कॉल की घंटी बजती है। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
+            "value": "इस फ़ोन पर आपके खाते को एन्क्रिप्ट करता है। आपका फ़ोन इसे याद रखता है, इसलिए Tinline हर बार पूछे बिना खुल जाता है। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ റീസ്റ്റാർട്ട് ചെയ്താലും കോളുകൾ റിംഗ് ചെയ്യും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
+            "value": "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ ഓരോ തവണയും ചോദിക്കാതെ Tinline തുറക്കും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "या फोनवर तुमचे खाते एन्क्रिप्ट करते. तुमचा फोन तो लक्षात ठेवतो, त्यामुळे रीस्टार्टनंतरही कॉल रिंग होतात. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
+            "value": "या फोनवर तुमचे खाते एन्क्रिप्ट करते. तुमचा फोन तो लक्षात ठेवतो, त्यामुळे Tinline प्रत्येक वेळी न विचारता उघडते. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "இந்த ஃபோனில் உங்கள் கணக்கை என்க்ரிப்ட் செய்யும். உங்கள் ஃபோன் இதை நினைவில் வைத்திருக்கும், எனவே மறுதொடக்கத்துக்குப் பிறகும் அழைப்புகள் ஒலிக்கும். இதை மறந்துவிட்டால், உங்கள் மீட்பு வார்த்தைகள் மூலம் புதியதை அமைக்கலாம்."
+            "value": "இந்த ஃபோனில் உங்கள் கணக்கை என்க்ரிப்ட் செய்யும். உங்கள் ஃபோன் இதை நினைவில் வைத்திருக்கும், எனவே ஒவ்வொரு முறையும் கேட்காமலே Tinline திறக்கும். இதை மறந்துவிட்டால், உங்கள் மீட்பு வார்த்தைகள் மூலம் புதியதை அமைக்கலாம்."
           }
         }
       }
@@ -56768,55 +56768,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline একটি ফোন লাইনের মতো কাজ করে: ব্যাকগ্রাউন্ডে চুপচাপ খোলা থাকে। এগুলোর প্রতিটিই ঐচ্ছিক, আর পরে বদলাতে পারবেন।"
+            "value": "Tinline হলো আপনার যোগ করা মানুষদের কাছে পৌঁছানোর আপনার লাইন। এগুলোর প্রতিটিই ঐচ্ছিক, আর পরে বদলাতে পারবেন।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline funktioniert wie eine Telefonleitung: Sie bleibt still im Hintergrund offen. Alles hier ist optional, und du kannst es später ändern."
+            "value": "Tinline ist deine Leitung zu den Menschen, die du hinzufügst. Jede dieser Berechtigungen ist optional, und du kannst sie später ändern."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
+            "value": "Tinline is your line to the people you add. Each of these is optional, and you can change them later."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
+            "value": "Tinline on linjasi lisäämiisi ihmisiin. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
+            "value": "Tinline est votre ligne vers les personnes que vous ajoutez. Chacune de ces autorisations est facultative, et vous pouvez les modifier plus tard."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline एक फ़ोन लाइन की तरह काम करता है: यह बैकग्राउंड में चुपचाप खुला रहता है। इनमें से कोई भी ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।"
+            "value": "Tinline आपकी लाइन है उन लोगों तक, जिन्हें आप जोड़ते हैं। इनमें से कोई भी ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline ഒരു ഫോൺ ലൈൻ പോലെയാണ് പ്രവർത്തിക്കുന്നത്: അത് പശ്ചാത്തലത്തിൽ നിശ്ശബ്ദമായി തുറന്നിരിക്കും. ഇവയെല്ലാം നിർബന്ധമില്ലാത്തവയാണ്, പിന്നീട് മാറ്റാനും കഴിയും."
+            "value": "നിങ്ങൾ ചേർക്കുന്ന ആളുകളിലേക്കുള്ള നിങ്ങളുടെ ലൈനാണ് Tinline. ഇവ ഓരോന്നും ഐച്ഛികമാണ്, പിന്നീട് മാറ്റാം."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline फोन लाइनसारखे काम करते: ते बॅकग्राउंडमध्ये शांतपणे खुले राहते. यापैकी प्रत्येक परवानगी ऐच्छिक आहे, आणि तुम्ही त्या नंतर बदलू शकता."
+            "value": "Tinline ही तुम्ही जोडलेल्या लोकांपर्यंत जाणारी तुमची लाइन आहे. यातील प्रत्येक गोष्ट ऐच्छिक आहे, आणि तुम्ही ती नंतर बदलू शकता."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tinline ஒரு ஃபோன் லைன் போலச் செயல்படுகிறது: அது பின்னணியில் அமைதியாகத் திறந்திருக்கும். இவை ஒவ்வொன்றும் விருப்பத்தேர்வு, பிறகு மாற்றலாம்."
+            "value": "Tinline என்பது நீங்கள் சேர்க்கும் மனிதர்களுடனான உங்கள் லைன். இவை ஒவ்வொன்றும் விருப்பத்தேர்வு, பிறகு மாற்றலாம்."
           }
         }
       }
@@ -57668,55 +57668,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "দুটো ডিভাইসই অনলাইনে রাখুন। সিঙ্ক ব্যাকগ্রাউন্ডে চলতে থাকবে।"
+            "value": "এটি শেষ না হওয়া পর্যন্ত দুটি ডিভাইসই খোলা আর অনলাইনে রাখুন।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Lass beide Geräte online. Der Abgleich läuft im Hintergrund weiter."
+            "value": "Lass beide Geräte geöffnet und online, bis das fertig ist."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keep both devices online. Sync keeps going in the background."
+            "value": "Keep both devices open and online until this finishes."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla."
+            "value": "Pidä molemmat laitteet auki ja verkossa, kunnes tämä valmistuu."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Gardez les deux appareils en ligne. La synchronisation continue en arrière-plan."
+            "value": "Gardez les deux appareils ouverts et en ligne jusqu’à la fin."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "दोनों डिवाइस ऑनलाइन रखें। सिंक बैकग्राउंड में चलता रहता है।"
+            "value": "यह पूरा होने तक दोनों डिवाइस खुले और ऑनलाइन रखें।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "രണ്ട് ഉപകരണങ്ങളും ഓൺലൈനിൽ വയ്ക്കുക. സിങ്ക് പശ്ചാത്തലത്തിൽ തുടരും."
+            "value": "ഇത് പൂർത്തിയാകുന്നതുവരെ രണ്ട് ഉപകരണങ്ങളും തുറന്ന് ഓൺലൈനിൽ വയ്ക്കുക."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "दोन्ही डिव्हाइस ऑनलाइन ठेवा. सिंक बॅकग्राउंडमध्ये चालू राहते."
+            "value": "हे पूर्ण होईपर्यंत दोन्ही डिव्हाइस उघडी आणि ऑनलाइन ठेवा."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "இரண்டு சாதனங்களையும் ஆன்லைனில் வைத்திருங்கள். ஒத்திசைவு பின்னணியில் தொடரும்."
+            "value": "இது முடியும் வரை இரண்டு சாதனங்களையும் திறந்து, ஆன்லைனில் வைத்திருங்கள்."
           }
         }
       }
@@ -73448,55 +73448,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "এই ফোনে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। আপনার ফোন এটা মনে রাখে, তাই রিস্টার্টের পরেও কল আসে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
+            "value": "এই ফোনে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। আপনার ফোন এটা মনে রাখে, তাই Tinline প্রতিবার না জিজ্ঞেস করেই খোলে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Anrufe auch nach einem Neustart klingeln. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
+            "value": "Verschlüsselt dein Konto auf diesem Handy. Dein Handy merkt sie sich, sodass Tinline ohne Nachfrage öffnet. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
+            "value": "Encrypts your account on this phone. Your phone remembers it, so Tinline opens without asking each time. If you forget it, your recovery words let you set a new one."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
+            "value": "Salaa tilisi tällä puhelimella. Puhelimesi muistaa salalauseen, joten Tinline aukeaa ilman kysymistä joka kerta. Jos unohdat sen, palautussanasi antavat sinun asettaa uuden."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Chiffre votre compte sur ce téléphone. Votre téléphone s’en souvient, donc les appels sonnent toujours après un redémarrage. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
+            "value": "Chiffre votre compte sur ce téléphone. Votre téléphone s’en souvient, donc Tinline s’ouvre sans rien demander à chaque fois. Si vous l’oubliez, vos mots de récupération vous permettent d’en définir une nouvelle."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "इस फ़ोन पर आपके खाते को एन्क्रिप्ट करता है। आपका फ़ोन इसे याद रखता है, इसलिए रीस्टार्ट के बाद भी कॉल की घंटी बजती है। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
+            "value": "इस फ़ोन पर आपके खाते को एन्क्रिप्ट करता है। आपका फ़ोन इसे याद रखता है, इसलिए Tinline हर बार पूछे बिना खुल जाता है। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ റീസ്റ്റാർട്ട് ചെയ്താലും കോളുകൾ റിംഗ് ചെയ്യും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
+            "value": "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ ഓരോ തവണയും ചോദിക്കാതെ Tinline തുറക്കും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "या फोनवर तुमचे खाते एन्क्रिप्ट करते. तुमचा फोन तो लक्षात ठेवतो, त्यामुळे रीस्टार्टनंतरही कॉल रिंग होतात. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
+            "value": "या फोनवर तुमचे खाते एन्क्रिप्ट करते. तुमचा फोन तो लक्षात ठेवतो, त्यामुळे Tinline प्रत्येक वेळी न विचारता उघडते. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "இந்த ஃபோனில் உங்கள் கணக்கை என்க்ரிப்ட் செய்யும். உங்கள் ஃபோன் இதை நினைவில் வைத்திருக்கும், எனவே மறுதொடக்கத்துக்குப் பிறகும் அழைப்புகள் ஒலிக்கும். இதை மறந்துவிட்டால், உங்கள் மீட்பு வார்த்தைகள் மூலம் புதியதை அமைக்கலாம்."
+            "value": "இந்த ஃபோனில் உங்கள் கணக்கை என்க்ரிப்ட் செய்யும். உங்கள் ஃபோன் இதை நினைவில் வைத்திருக்கும், எனவே ஒவ்வொரு முறையும் கேட்காமலே Tinline திறக்கும். இதை மறந்துவிட்டால், உங்கள் மீட்பு வார்த்தைகள் மூலம் புதியதை அமைக்கலாம்."
           }
         }
       }
@@ -93566,55 +93566,55 @@
         "bn": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "আপনি যে অ্যাকাউন্ট খোলেন সেটি অনলাইনে থাকে। Tinline আপনার অন্য অ্যাকাউন্টগুলোকে জাগাতে পারলে সেগুলোর কলও রিং হয় ও বিজ্ঞপ্তি আসে; ততক্ষণ সেগুলোর কল আপনার অন্য ডিভাইসগুলোতে রিং হয়।"
+            "value": "এই ফোনে শুধু যে অ্যাকাউন্টটি আপনি খুলেছেন সেটিই অনলাইনে থাকে। আপনার অন্য অ্যাকাউন্টগুলোতে কল এলে, সেগুলোতে না বদলানো পর্যন্ত, আপনার অন্য ডিভাইসগুলোতে রিং হয়।"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Das Konto, das du öffnest, ist online. Deine anderen Konten klingeln und benachrichtigen dich trotzdem, wenn Tinline sie wecken kann; bis dahin klingeln ihre Anrufe auf deinen anderen Geräten."
+            "value": "Nur das Konto, das du öffnest, ist auf diesem Handy online. Anrufe an deine anderen Konten klingeln auf deinen anderen Geräten, bis du zu ihnen wechselst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The account you open is online. Your other accounts still ring and notify when Tinline can wake them; until then, their calls ring on your other devices."
+            "value": "Only the account you open is online on this phone. Calls to your other accounts ring on your other devices until you switch to them."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Avaamasi tili on verkossa. Muut tilisi soivat ja ilmoittavat silti, kun Tinline voi herättää ne; siihen asti niiden puhelut soivat muilla laitteillasi."
+            "value": "Vain avaamasi tili on verkossa tällä puhelimella. Muille tileillesi tulevat puhelut soivat muilla laitteillasi, kunnes vaihdat niihin."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Le compte que vous ouvrez est en ligne. Vos autres comptes sonnent et vous préviennent aussi quand Tinline peut les réveiller ; d’ici là, leurs appels sonnent sur vos autres appareils."
+            "value": "Seul le compte que vous ouvrez est en ligne sur ce téléphone. Les appels vers vos autres comptes sonnent sur vos autres appareils jusqu’à ce que vous les ouvriez."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "आप जो खाता खोलते हैं, वह ऑनलाइन रहता है। जब Tinline आपके दूसरे खातों को जगा सकता है, तब उनकी कॉल भी बजती हैं और सूचनाएँ आती हैं; तब तक उनकी कॉल आपके दूसरे डिवाइस पर बजती हैं।"
+            "value": "इस फ़ोन पर सिर्फ़ वही खाता ऑनलाइन रहता है जो आपने खोला है। आपके दूसरे खातों की कॉल, जब तक आप उन पर न बदलें, आपके दूसरे डिवाइस पर बजती हैं।"
           }
         },
         "ml": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "നിങ്ങൾ തുറക്കുന്ന അക്കൗണ്ട് ഓൺലൈനിലായിരിക്കും. Tinline-ന് നിങ്ങളുടെ മറ്റ് അക്കൗണ്ടുകളെ ഉണർത്താൻ കഴിയുമ്പോൾ അവയിലേക്കുള്ള കോളുകളും റിംഗ് ചെയ്യും, അറിയിപ്പുകളും വരും; അതുവരെ ആ കോളുകൾ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ റിംഗ് ചെയ്യും."
+            "value": "നിങ്ങൾ തുറക്കുന്ന അക്കൗണ്ട് മാത്രമേ ഈ ഫോണിൽ ഓൺലൈനിലുണ്ടാകൂ. നിങ്ങളുടെ മറ്റ് അക്കൗണ്ടുകളിലേക്കുള്ള കോളുകൾ, നിങ്ങൾ അവയിലേക്ക് മാറുന്നതുവരെ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ റിംഗ് ചെയ്യും."
           }
         },
         "mr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "तुम्ही उघडलेले खाते ऑनलाइन असते. Tinline तुमची इतर खाती जागी करू शकते तेव्हा त्यांचे कॉलही रिंग होतात आणि सूचना येतात; तोपर्यंत त्यांचे कॉल तुमच्या इतर डिव्हाइसवर रिंग होतात."
+            "value": "या फोनवर तुम्ही उघडलेले खातेच ऑनलाइन असते. तुमच्या इतर खात्यांचे कॉल, तुम्ही त्यांच्यावर स्विच करेपर्यंत, तुमच्या इतर डिव्हाइसवर रिंग होतात."
           }
         },
         "ta": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "நீங்கள் திறக்கும் கணக்கு ஆன்லைனில் இருக்கும். Tinline உங்கள் மற்ற கணக்குகளை எழுப்ப முடியும்போது அவற்றின் அழைப்புகளும் ஒலிக்கும், அறிவிப்புகளும் வரும்; அதுவரை அவற்றின் அழைப்புகள் உங்கள் மற்ற சாதனங்களில் ஒலிக்கும்."
+            "value": "நீங்கள் திறக்கும் கணக்கு மட்டுமே இந்த ஃபோனில் ஆன்லைனில் இருக்கும். உங்கள் மற்றக் கணக்குகளுக்கான அழைப்புகள், நீங்கள் அவற்றுக்கு மாறும் வரை உங்கள் மற்றச் சாதனங்களில் ஒலிக்கும்."
           }
         }
       }

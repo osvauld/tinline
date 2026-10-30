@@ -20,11 +20,14 @@ impl SyncRt {
         r
     }
 
+    /// Dials own device `device` and runs the session. The outer `Err`: it was not reached (no
+    /// connection came up); `Ok(r)`: it was, and the session ended with `r` (an error there,
+    /// such as the peer stopping, says nothing about whether it sleeps).
     pub async fn self_dial(
         self: Arc<Self>,
         device: [u8; 32],
         relay: Option<String>,
-    ) -> Result<(), Error> {
+    ) -> Result<Result<(), Error>, Error> {
         let ep = self.endpoint()?;
         let addr = addr_for(&device, relay.as_deref())?;
         let conn = tokio::time::timeout(
@@ -37,7 +40,7 @@ impl SyncRt {
         if r.is_err() {
             conn.close(0u32.into(), b"done");
         }
-        r
+        Ok(r)
     }
 
     pub fn tombstones(&self) -> HashSet<[u8; 32]> {
@@ -158,7 +161,7 @@ impl SyncRt {
         if dialer {
             writer.send(&my_auth).await?;
         }
-        let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+        let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv_first())
             .await
             .map_err(|_| Error::Timeout)??
             .ok_or_else(|| Error::eof("peer closed before auth"))?;
@@ -203,6 +206,10 @@ impl SyncRt {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
+        // Reached: its wake schedule starts over, and pictures waiting on a backoff are asked
+        // for at once (this device may be the only source while the contact is offline).
+        self.ctx.own_reached(&remote);
+        self.chat.profile_retry_now();
         self.log(format!(
             "own-device sync with {} ({})",
             proto::device_to_text(&remote),
@@ -268,6 +275,11 @@ impl SyncRt {
             group_receipts::CAPABILITY.into(),
             VersionVector::default().encode(),
         ));
+        docs.push((own_wake::CAPABILITY.into(), VersionVector::default().encode()));
+        docs.push((
+            dm_receipts::CAPABILITY.into(),
+            VersionVector::default().encode(),
+        ));
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
@@ -292,12 +304,18 @@ impl SyncRt {
                     if t != seen {
                         seen = t;
                         active = Instant::now();
-                    } else if active.elapsed() >= node_runtime::wire::idle_close() && !changes.has_changed().unwrap_or(true) {
+                    } else if !changes.has_changed().unwrap_or(true) && active.elapsed() >= settle_quiet() {
+                        // Quiet with nothing unseen: the peer holds everything up to here, also
+                        // if the session later ends by the peer going away (a phone that stops
+                        // before the idle close). Without this a stopped phone counted as owed
+                        // everything since our start, and a failed dial woke it for nothing.
                         self.selfsync_settled(remote, &changes);
-                        writer.finish();
-                        let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
-                        self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
-                        return Ok(());
+                        if active.elapsed() >= node_runtime::wire::idle_close() {
+                            writer.finish();
+                            let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                            self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
+                            return Ok(());
+                        }
                     }
                 }
                 m = reader.recv::<SelfMsg>() => {
@@ -324,6 +342,12 @@ impl SyncRt {
                                 return Err(Error::Protocol("own receipts renegotiation".into()));
                             }
                             peer.receipts.enabled = receipts;
+                            peer.own_wake.enabled = own_wake::supported(&docs);
+                            let dm = dm_receipts::supported(&docs);
+                            if peer.hello && dm != peer.dm_receipts.enabled {
+                                return Err(Error::Protocol("own dm receipts renegotiation".into()));
+                            }
+                            peer.dm_receipts.enabled = dm;
                             for (name, vv) in docs {
                                 let Some(vv) = Self::peer_vv_of(&vv) else { continue };
                                 if name == DOC_NAME {
@@ -454,12 +478,16 @@ impl SyncRt {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
                         }
+                        SelfMsg::OwnWake { token, exp_ms } => self.own_wake_in(remote, token, exp_ms),
                         message @ (SelfMsg::GroupHistoryGet { .. } | SelfMsg::GroupHistoryPage { .. }
                             | SelfMsg::GroupWant { .. } | SelfMsg::GroupBatch { .. } | SelfMsg::GroupHistoryChanged { .. }) => {
                             group_history::handle(&self, me, &remote, &mut peer, message, writer).await?;
                         }
                         message @ (SelfMsg::GroupReceiptGet { .. } | SelfMsg::GroupReceiptPage { .. }) => {
                             group_receipts::handle(&self, me, &remote, &mut peer, message, writer).await?;
+                        }
+                        message @ (SelfMsg::DmReceiptHello { .. } | SelfMsg::DmReceipts { .. } | SelfMsg::DmReceiptAck { .. }) => {
+                            dm_receipts::handle(&self, &mut peer, message, writer).await?;
                         }
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
@@ -469,7 +497,12 @@ impl SyncRt {
                     if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     if full {
                         self.push_all_chat(me, &remote, &mut peer, writer).await?;
+                        // After the shards: receipts attach only to days the peer holds.
+                        peer.dm_receipts.start(&self, writer).await?;
                         self.chat.chat_resume_all();
+                    }
+                    if peer.hello {
+                        self.push_own_wake(&remote, &mut peer, writer).await?;
                     }
                     peer.history.pump(&self, me, &remote, writer).await?;
                     peer.receipts.pump(&self, me, &remote, writer).await?;
@@ -499,6 +532,8 @@ impl SyncRt {
                                 self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
+                            } else if let Some(doc) = dm_receipts::marked(&name) {
+                                peer.dm_receipts.push(&self, doc, writer).await?;
                             } else if let Some((gid, _)) = group_documents::parse_doc(&name) {
                                 peer.receipts.refresh(&gid);
                                 if peer.group_contents {
@@ -508,6 +543,9 @@ impl SyncRt {
                                 self.push_chat_doc(me, &name, &mut peer, writer).await?;
                             }
                         }
+                    }
+                    if peer.hello {
+                        self.push_own_wake(&remote, &mut peer, writer).await?;
                     }
                     peer.history.pump(&self, me, &remote, writer).await?;
                     peer.receipts.pump(&self, me, &remote, writer).await?;

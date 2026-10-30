@@ -4,7 +4,7 @@ use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::Error;
-use node_runtime::frames::{FrameBuf, send_frame};
+use node_runtime::frames::{FIRST_FRAME, FrameBuf, send_frame};
 
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 
@@ -20,6 +20,12 @@ impl FrameReader {
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
         self.0.recv(MAX_FRAME, "").await
+    }
+
+    /// The session's first frame (`Auth`), before the peer is authenticated: capped at
+    /// `FIRST_FRAME` rather than `MAX_FRAME`.
+    pub async fn recv_first<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
+        self.0.recv(FIRST_FRAME, "").await
     }
 }
 
@@ -69,4 +75,17 @@ pub enum SelfMsg {
     // Appended; only after cap/group-receipts/v1 (and both content/history markers).
     GroupReceiptGet { request: u64, group: String, after: Option<String> },
     GroupReceiptPage { request: u64, group: String, after: Option<String>, proofs: Vec<(String, Vec<u8>)>, next: Option<String> },
+    // Appended; only after cap/own-wake/v1 in both Hellos (`engine::own_wake`).
+    /// The sender's wake token for the receiver (`docs/push.md` "Own devices"): `None` when it has
+    /// none (no push target), so the receiver drops an old one. Never logged.
+    OwnWake { token: Option<String>, exp_ms: u64 },
+    // Appended; only after cap/dm-receipts/v1 (`engine::dm_receipts`). `doc` = `dm/{pair}/{day}`.
+    /// Our signed DM receipt-ledger frontier per held day, `(doc, VersionVector::encode)`.
+    DmReceiptHello { days: Vec<(String, Vec<u8>)> },
+    /// Original native receipt-ledger ops the peer lacks (the contact's and our account's
+    /// DID-signed statements, never re-signed); `vv` = the sender's whole frontier of that day.
+    DmReceipts { doc: String, vv: Vec<u8>, update: Vec<u8> },
+    /// What the receiver holds of that day's ledger now (authoritative; a refused frame is resent
+    /// on the next trigger).
+    DmReceiptAck { doc: String, vv: Vec<u8> },
 }

@@ -37,6 +37,7 @@ mod multi_online;
 mod multi_online_edges;
 mod multi_online_review;
 mod old_writer_delivery;
+mod own_wake;
 mod private_rotation;
 mod profile_sync;
 mod public_group;

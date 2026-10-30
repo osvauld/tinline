@@ -928,7 +928,7 @@ impl App {
     pub(super) fn viewer_overlay<'a>(&'a self, t: Tok) -> Option<El<'a>> {
         let v = self.chat.viewer.as_ref()?;
         let white = Color::WHITE;
-        let ids = self.chat.viewable_images();
+        let ids = self.viewable_images(v.group_file.is_some());
         let pos = ids.iter().position(|x| *x == v.id);
         let is_img = !matches!(v.body, ViewBody::Text(_)) && pos.is_some() || matches!(v.body, ViewBody::Image { .. });
         let mut bar = row![semi(v.name.clone(), 15.0, white).width(Fill).wrapping(iced::widget::text::Wrapping::None)]
@@ -951,11 +951,14 @@ impl App {
                     .on_press(Msg::Chat(Cm::CloseView)),
             );
         let body: El = match &v.body {
-            ViewBody::Image { handle, .. } => iced::widget::image(handle.clone())
+            // The wheel zooms (at the pointer, up to 8x, never smaller than fit); dragging moves a zoomed picture.
+            ViewBody::Image { handle, .. } => iced::widget::image::viewer(handle.clone())
                 .content_fit(iced::ContentFit::Contain)
+                .min_scale(1.0)
+                .max_scale(8.0)
+                .scale_step(0.2)
                 .width(Fill)
                 .height(Fill)
-                .border_radius(6.0)
                 .into(),
             ViewBody::Text(txt) => container(scroll(t, container(text(txt.clone()).font(ui::MONO).size(13).color(t.ink)).padding(16)).width(Fill))
                 .max_width(860)
